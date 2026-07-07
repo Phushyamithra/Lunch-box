@@ -10,14 +10,20 @@ import type {
 } from '../models';
 import { createStorageAdapter, type StorageAdapter } from './storage';
 
-/** date-key → log, for a single user. */
-export type LogsByDate = Record<string, MealLog>;
+/** date-key → logs for that day, for a single user. */
+export type LogsByDate = Record<string, MealLog[]>;
 /** email → LogsByDate. Multi-user ready. */
 type LogsRoot = Record<string, LogsByDate>;
 /** email → achievements. Multi-user ready. */
 type AchievementsRoot = Record<string, AchievementMap>;
 /** email → (date → Google Task id). */
 type SyncTaskRoot = Record<string, Record<string, string>>;
+/** OAuth access token persisted across popup sessions (short-lived). */
+export interface StoredSyncToken {
+  token: string;
+  expiresAt: number; // epoch ms
+}
+
 /** Preserved original workbooks (e.g. macro-enabled), base64 by name. */
 type WorkbookArchive = Record<string, { base64: string; storedAt: string }>;
 
@@ -76,12 +82,33 @@ export class StorageService {
     return (await this.adapter.get<LogsRoot>(STORAGE_KEYS.logs)) ?? {};
   }
 
-  async getAllLogs(email: string): Promise<LogsByDate> {
-    return (await this.getLogsRoot())[email] ?? {};
+  /**
+   * Migrates legacy shape (one log object per date) to arrays on read.
+   * Legacy logs get id = date, which also matches the old sync-task map.
+   */
+  private normalizeUserLogs(raw: unknown): LogsByDate {
+    const result: LogsByDate = {};
+    if (!raw || typeof raw !== 'object') return result;
+    for (const [date, value] of Object.entries(raw as Record<string, unknown>)) {
+      if (Array.isArray(value)) {
+        result[date] = (value as (MealLog & { id?: string })[]).map((log) => ({
+          ...log,
+          id: log.id ?? date,
+        }));
+      } else if (value && typeof value === 'object') {
+        const legacy = value as Omit<MealLog, 'id'> & { id?: string };
+        result[date] = [{ ...legacy, id: legacy.id ?? date }];
+      }
+    }
+    return result;
   }
 
-  async getMealLog(email: string, date: string): Promise<MealLog | null> {
-    return (await this.getAllLogs(email))[date] ?? null;
+  async getAllLogs(email: string): Promise<LogsByDate> {
+    return this.normalizeUserLogs((await this.getLogsRoot())[email]);
+  }
+
+  async getLogsForDate(email: string, date: string): Promise<MealLog[]> {
+    return (await this.getAllLogs(email))[date] ?? [];
   }
 
   /** @param monthKey YYYY-MM */
@@ -92,9 +119,13 @@ export class StorageService {
     );
   }
 
+  /** Upserts by log id — appends a new log or replaces an edited one. */
   async saveMealLog(log: MealLog): Promise<void> {
     const root = await this.getLogsRoot();
-    root[log.email] = { ...root[log.email], [log.date]: log };
+    const userLogs = this.normalizeUserLogs(root[log.email]);
+    const day = userLogs[log.date] ?? [];
+    userLogs[log.date] = [...day.filter((l) => l.id !== log.id), log];
+    root[log.email] = userLogs;
     await this.adapter.set(STORAGE_KEYS.logs, root);
   }
 
@@ -103,12 +134,14 @@ export class StorageService {
     return this.saveMealLog(log);
   }
 
-  async deleteMealLog(email: string, date: string): Promise<void> {
+  async deleteMealLog(email: string, date: string, logId: string): Promise<void> {
     const root = await this.getLogsRoot();
-    if (root[email]) {
-      delete root[email][date];
-      await this.adapter.set(STORAGE_KEYS.logs, root);
-    }
+    const userLogs = this.normalizeUserLogs(root[email]);
+    const remaining = (userLogs[date] ?? []).filter((l) => l.id !== logId);
+    if (remaining.length > 0) userLogs[date] = remaining;
+    else delete userLogs[date];
+    root[email] = userLogs;
+    await this.adapter.set(STORAGE_KEYS.logs, root);
   }
 
   async clearLogs(email: string): Promise<void> {
@@ -142,6 +175,18 @@ export class StorageService {
   }
 
   // ---------- Google Tasks sync (persistence only) ----------
+
+  getSyncToken(): Promise<StoredSyncToken | null> {
+    return this.adapter.get<StoredSyncToken>(STORAGE_KEYS.syncToken);
+  }
+
+  saveSyncToken(token: StoredSyncToken): Promise<void> {
+    return this.adapter.set(STORAGE_KEYS.syncToken, token);
+  }
+
+  clearSyncToken(): Promise<void> {
+    return this.adapter.remove(STORAGE_KEYS.syncToken);
+  }
 
   getSyncSettings(): Promise<SyncSettings | null> {
     return this.adapter.get<SyncSettings>(STORAGE_KEYS.sync);

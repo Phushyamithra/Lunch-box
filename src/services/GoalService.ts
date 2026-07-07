@@ -50,7 +50,8 @@ export class GoalService {
     mealById: Map<string, Meal>,
     settings: GoalSettings,
   ): GoalProgress {
-    const entries = Object.values(logs);
+    const dayKeys = Object.keys(logs).filter((date) => (logs[date]?.length ?? 0) > 0);
+    const entries = dayKeys.flatMap((date) => logs[date]);
 
     const counts = new Map<MealCategory, number>();
     for (const log of entries) {
@@ -80,7 +81,7 @@ export class GoalService {
     });
 
     const dayTarget = settings.totalDays;
-    const dayCount = entries.length; // one log per day by design
+    const dayCount = dayKeys.length; // distinct days with at least one log
     const days = {
       count: dayCount,
       target: dayTarget,

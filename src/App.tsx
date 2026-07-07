@@ -64,17 +64,21 @@ function Root() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <SnackbarProvider>
-        {loading ? (
-          <Splash />
-        ) : user ? (
-          <NavigationProvider>
-            <Pages />
-          </NavigationProvider>
-        ) : (
-          <Suspense fallback={<Splash />}>
-            <Onboarding />
-          </Suspense>
-        )}
+        {/* Centered app column — comfortable in the 560px app window and
+            when the user resizes it wider. */}
+        <Box sx={{ height: '100%', maxWidth: 640, mx: 'auto' }}>
+          {loading ? (
+            <Splash />
+          ) : user ? (
+            <NavigationProvider>
+              <Pages />
+            </NavigationProvider>
+          ) : (
+            <Suspense fallback={<Splash />}>
+              <Onboarding />
+            </Suspense>
+          )}
+        </Box>
       </SnackbarProvider>
     </ThemeProvider>
   );

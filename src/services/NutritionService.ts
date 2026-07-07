@@ -29,6 +29,7 @@ const round1 = (n: number): number => Math.round(n * 10) / 10;
 /**
  * Pure nutrition analytics derived from logs + the meal catalog.
  * Stateless: everything is computed on demand, nothing is persisted.
+ * Days can contain multiple logs; every logged meal counts.
  */
 export class NutritionService {
   /** Inclusive date-range summary (totals + per-meal averages). */
@@ -43,13 +44,15 @@ export class NutritionService {
     const total: Nutrition = { ...EMPTY_NUTRITION };
     let count = 0;
 
-    for (const [date, log] of Object.entries(logs)) {
+    for (const [date, dayLogs] of Object.entries(logs)) {
       if (date < fromKey || date > toKey) continue;
-      const meal = mealById.get(log.mealId);
-      if (!meal) continue;
-      count += 1;
-      for (const key of Object.keys(total) as (keyof Nutrition)[]) {
-        total[key] += meal.nutrition?.[key] ?? 0;
+      for (const log of dayLogs) {
+        const meal = mealById.get(log.mealId);
+        if (!meal) continue;
+        count += 1;
+        for (const key of Object.keys(total) as (keyof Nutrition)[]) {
+          total[key] += meal.nutrition?.[key] ?? 0;
+        }
       }
     }
 
@@ -82,7 +85,7 @@ export class NutritionService {
   categoryBreakdown(logs: LogsByDate, mealById: Map<string, Meal>): CategoryBreakdownEntry[] {
     const counts = new Map<MealCategory, number>();
     let total = 0;
-    for (const log of Object.values(logs)) {
+    for (const log of Object.values(logs).flat()) {
       const meal = mealById.get(log.mealId);
       if (!meal) continue;
       total += 1;
@@ -97,7 +100,7 @@ export class NutritionService {
       .sort((a, b) => b.count - a.count);
   }
 
-  /** Daily values of one nutrient over the trailing `days` days. */
+  /** Daily totals of one nutrient over the trailing `days` days. */
   trend(
     logs: LogsByDate,
     mealById: Map<string, Meal>,
@@ -107,8 +110,11 @@ export class NutritionService {
     const points: TrendPoint[] = [];
     for (let i = days - 1; i >= 0; i -= 1) {
       const date = toDateKey(dayjs().subtract(i, 'day'));
-      const meal = logs[date] ? mealById.get(logs[date].mealId) : undefined;
-      points.push({ date, value: round1(meal?.nutrition?.[key] ?? 0) });
+      const value = (logs[date] ?? []).reduce((sum, log) => {
+        const meal = mealById.get(log.mealId);
+        return sum + (meal?.nutrition?.[key] ?? 0);
+      }, 0);
+      points.push({ date, value: round1(value) });
     }
     return points;
   }

@@ -1,5 +1,5 @@
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
-import { Box, ButtonBase, Typography, useTheme } from '@mui/material';
+import { Box, ButtonBase, Chip, Typography, useTheme } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { AnimatePresence, motion } from 'framer-motion';
 import { memo } from 'react';
@@ -9,20 +9,23 @@ import type { Meal } from '../../models';
 interface MealCardProps {
   meal: Meal;
   selected: boolean;
+  /** Already logged for this day — visible but not selectable again. */
+  logged?: boolean;
   onClick: () => void;
 }
 
-/** Selectable meal chip-card used in the logging dialog. */
-export const MealCard = memo(function MealCard({ meal, selected, onClick }: MealCardProps) {
+/** Selectable meal row used in the logging dialog (full-width list item). */
+export const MealCard = memo(function MealCard({ meal, selected, logged = false, onClick }: MealCardProps) {
   const theme = useTheme();
   const icon = meal.icon ?? getCategoryMeta(meal.category).emoji;
 
   return (
-    <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.96 }}>
+    <motion.div whileHover={logged ? undefined : { y: -1 }} whileTap={logged ? undefined : { scale: 0.98 }}>
       <ButtonBase
-        onClick={onClick}
+        onClick={logged ? undefined : onClick}
+        disabled={logged}
         aria-pressed={selected}
-        aria-label={`${meal.name}, ${meal.nutrition?.calories ?? 0} kilocalories`}
+        aria-label={`${meal.name}, ${meal.nutrition?.calories ?? 0} kilocalories${logged ? ', already logged today' : ''}`}
         sx={{
           width: '100%',
           justifyContent: 'flex-start',
@@ -35,6 +38,7 @@ export const MealCard = memo(function MealCard({ meal, selected, onClick }: Meal
           bgcolor: selected
             ? alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.24 : 0.1)
             : 'background.paper',
+          opacity: logged ? 0.55 : 1,
           transition: 'border-color 0.15s, background-color 0.15s',
           textAlign: 'left',
         }}
@@ -50,8 +54,9 @@ export const MealCard = memo(function MealCard({ meal, selected, onClick }: Meal
             {meal.nutrition?.calories ?? 0} kcal
           </Typography>
         </Box>
+        {logged && <Chip label="Logged ✓" size="small" sx={{ height: 20 }} />}
         <AnimatePresence>
-          {selected && (
+          {selected && !logged && (
             <motion.span
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}

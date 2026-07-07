@@ -1,7 +1,7 @@
 import type { GoalSettings, MealCategory, Nutrition } from '../models';
 
 export const APP_NAME = 'LunchBox';
-export const APP_VERSION = '1.2.0';
+export const APP_VERSION = '1.3.0';
 export const APP_TAGLINE = 'Your daily lunch, logged with joy.';
 
 export const DATE_KEY_FORMAT = 'YYYY-MM-DD';
@@ -19,6 +19,7 @@ export const STORAGE_KEYS = {
   achievements: 'lunchbox.achievements',
   sync: 'lunchbox.sync',
   syncTasks: 'lunchbox.sync.tasks',
+  syncToken: 'lunchbox.sync.token',
   workbooks: 'lunchbox.workbooks',
 } as const;
 

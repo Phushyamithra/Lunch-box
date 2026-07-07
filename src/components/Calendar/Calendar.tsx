@@ -9,7 +9,7 @@ import { calendarDays, toDateKey, todayKey } from '../../utils/date';
 
 interface CalendarProps {
   month: Dayjs;
-  logs: Record<string, MealLog>;
+  logs: Record<string, MealLog[]>;
   mealById: Map<string, Meal>;
   /** Date to briefly pulse (set when jumping from the summary list). */
   highlightDate: string | null;
@@ -58,10 +58,12 @@ export const Calendar = memo(function Calendar({
           const key = toDateKey(day);
           const inMonth = day.month() === month.month();
           const isToday = key === today;
-          const log = logs[key];
-          const meal = log ? mealById.get(log.mealId) : undefined;
-          const meta = meal ? getCategoryMeta(meal.category) : null;
-          const accent = meta?.color ?? theme.palette.primary.main;
+          const dayLogs = logs[key] ?? [];
+          const dayMeals = dayLogs
+            .map((log) => mealById.get(log.mealId))
+            .filter((m): m is Meal => Boolean(m));
+          const firstMeta = dayMeals[0] ? getCategoryMeta(dayMeals[0].category) : null;
+          const accent = firstMeta?.color ?? theme.palette.primary.main;
           const isHighlighted = highlightDate === key;
 
           return (
@@ -71,7 +73,11 @@ export const Calendar = memo(function Calendar({
               role="gridcell"
               aria-label={
                 `${day.format('MMMM D, YYYY')}` +
-                (meal ? `, logged: ${meal.name}` : log ? ', meal logged' : '')
+                (dayMeals.length > 0
+                  ? `, logged: ${dayMeals.map((m) => m.name).join(', ')}`
+                  : dayLogs.length > 0
+                    ? ', meal logged'
+                    : '')
               }
               onClick={() => onDayClick(key)}
               whileHover={{ scale: 1.08 }}
@@ -91,7 +97,7 @@ export const Calendar = memo(function Calendar({
                 justifyContent: 'center',
                 gap: 1,
                 padding: 0,
-                background: log
+                background: dayLogs.length > 0
                   ? alpha(accent, theme.palette.mode === 'dark' ? 0.28 : 0.18)
                   : 'transparent',
                 opacity: inMonth ? 1 : 0.35,
@@ -109,15 +115,21 @@ export const Calendar = memo(function Calendar({
               >
                 {day.date()}
               </Typography>
-              {log && (
+              {dayLogs.length > 0 && (
                 <motion.span
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ type: 'spring', stiffness: 500, damping: 18 }}
-                  style={{ fontSize: 12, lineHeight: 1 }}
+                  style={{ fontSize: 10, lineHeight: 1, whiteSpace: 'nowrap' }}
                   aria-hidden
                 >
-                  {meal ? (meal.icon ?? meta?.emoji) : '✅'}
+                  {dayMeals.length > 0
+                    ? dayMeals
+                        .slice(0, 2)
+                        .map((m) => m.icon ?? getCategoryMeta(m.category).emoji)
+                        .join('')
+                    : '✅'}
+                  {dayLogs.length > 2 ? `⁺${dayLogs.length - 2}` : ''}
                 </motion.span>
               )}
             </motion.button>

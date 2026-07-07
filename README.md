@@ -11,7 +11,9 @@ A production build is already included in `dist/`.
 1. Open Chrome and go to `chrome://extensions`.
 2. Enable **Developer mode** (top right).
 3. Click **Load unpacked** and select the `dist/` folder.
-4. Pin **LunchBox** and click its icon — enter your email on first launch and start logging.
+4. Click the LunchBox toolbar icon — the app opens as a **centered application window** (560×800, reused/focused if already open) instead of a toolbar popup. Enter your email on first launch and start logging.
+
+The extension ID is pinned via the manifest `key` to `gghekejecnlabppaolhgkgpljilnjbnp`, so OAuth configuration never breaks when the extension is reloaded or moved. See `OPERATING_MANUAL.md` for architecture, sync setup and troubleshooting.
 
 ## Development
 
@@ -34,14 +36,14 @@ npm run build    # type-checks (strict) + builds the extension into dist/
 
 ### Google Tasks setup (one-time)
 
-Sync uses `chrome.identity.launchWebAuthFlow`, which works with a standard **Web application** OAuth client (NOT the "Chrome extension" client type — that path fails with "Custom URI scheme is not supported"):
+Sync uses `chrome.identity.launchWebAuthFlow` with a standard **Web application** OAuth client (NOT the "Chrome extension" client type — that path fails with "Custom URI scheme is not supported"):
 
 1. In Google Cloud Console, enable the **Google Tasks API**.
 2. Configure the OAuth consent screen (External) and add yourself under **Test users**.
-3. Create an **OAuth client ID** of type **Web application** and add this **Authorized redirect URI**: `https://<your-extension-id>.chromiumapp.org/` (extension ID from `chrome://extensions`).
+3. Create an **OAuth client ID** of type **Web application** and add this **Authorized redirect URI**: `https://gghekejecnlabppaolhgkgpljilnjbnp.chromiumapp.org/` (the extension ID is pinned by the manifest `key`, so this URI is permanent; it is also shown in Settings → Google Tasks Sync).
 4. Put the client ID into `manifest.json` → `oauth2.client_id` (both `public/` and `dist/`) and reload the extension.
 
-Note: the redirect URI is bound to your extension ID, so loading the extension from a different folder/machine changes the ID and requires updating the redirect URI (or pinning the ID with a manifest `"key"`).
+Scopes requested: Google Tasks + account email (shown in Settings). Full troubleshooting matrix in `OPERATING_MANUAL.md`.
 
 ## Architecture
 

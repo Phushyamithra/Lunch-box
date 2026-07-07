@@ -1,10 +1,11 @@
-/* Extension popup sizing: Chrome caps popups at ~800x600. */
+/* App-window shell: fill the window (560×800 by default), stay usable
+   when resized, and keep content on a centered column. */
 html,
 body {
   margin: 0;
   padding: 0;
-  width: 400px;
-  height: 600px;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
 }
 

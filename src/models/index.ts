@@ -30,8 +30,13 @@ export interface Meal {
   createdAt: string; // ISO timestamp
 }
 
-/** One logged lunch. Exactly one per user per date. */
+/**
+ * One logged meal. A day can hold multiple logs (e.g. a sandwich AND a
+ * smoothie). Legacy single-log-per-day data is migrated with id = date.
+ */
 export interface MealLog {
+  /** Unique log id — also the key for the linked Google Task. */
+  id: string;
   email: string;
   date: string; // YYYY-MM-DD
   mealId: string;
@@ -119,6 +124,8 @@ export type AchievementMap = Partial<Record<AchievementId, string>>;
 
 export interface SyncSettings {
   connected: boolean;
+  /** Google account email captured at connect time (userinfo.email scope). */
+  accountEmail: string | null;
   enabled: boolean;
   taskListId: string | null;
   taskListTitle: string | null;

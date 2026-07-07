@@ -6,8 +6,8 @@ import type { Meal, MealLog } from '../../models';
 import { formatFriendly } from '../../utils/date';
 
 interface MealSummaryListProps {
-  /** Logs for the currently displayed month. */
-  logs: Record<string, MealLog>;
+  /** Logs for the currently displayed month (a day can hold several). */
+  logs: Record<string, MealLog[]>;
   mealById: Map<string, Meal>;
   onSelect: (dateKey: string) => void;
 }
@@ -21,7 +21,8 @@ export const MealSummaryList = memo(function MealSummaryList({
   const entries = useMemo(
     () =>
       Object.values(logs)
-        .sort((a, b) => b.date.localeCompare(a.date))
+        .flat()
+        .sort((a, b) => b.date.localeCompare(a.date) || b.loggedAt.localeCompare(a.loggedAt))
         .slice(0, RECENT_LOGS_LIMIT),
     [logs],
   );
@@ -48,7 +49,7 @@ export const MealSummaryList = memo(function MealSummaryList({
         const icon = meal ? (meal.icon ?? getCategoryMeta(meal.category).emoji) : '🍽️';
         return (
           <motion.div
-            key={log.date}
+            key={log.id}
             initial={{ opacity: 0, x: -12 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.04, duration: 0.2 }}

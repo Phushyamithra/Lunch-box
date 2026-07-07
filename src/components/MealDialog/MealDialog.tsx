@@ -1,3 +1,4 @@
+import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
@@ -5,10 +6,10 @@ import {
   Box,
   Button,
   ButtonBase,
-  Chip,
   Dialog,
   DialogContent,
   IconButton,
+  Paper,
   Typography,
 } from '@mui/material';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -16,14 +17,20 @@ import { useEffect, useMemo, useState } from 'react';
 import { getCategoryMeta } from '../../constants';
 import { useAppData } from '../../context/AppDataContext';
 import { useSnackbar } from '../../context/SnackbarContext';
-import type { MealCategory } from '../../models';
+import type { MealCategory, MealLog } from '../../models';
 import { formatWithWeekday } from '../../utils/date';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { MealCard } from '../MealCard/MealCard';
 import { NutritionCard } from '../Nutrition/NutritionCard';
 import { SuccessCheck } from './SuccessCheck';
 
-type Step = 'category' | 'meal' | 'success';
+/**
+ * view     — day overview: logged meals (removable) + "Add another meal"
+ * category — pick a category (vertical list)
+ * meal     — pick a meal (vertical list) + nutrition preview + Add
+ * success  — brief checkmark, then back to the day overview
+ */
+type Step = 'view' | 'category' | 'meal' | 'success';
 
 interface MealDialogProps {
   open: boolean;
@@ -32,7 +39,7 @@ interface MealDialogProps {
   onClose: () => void;
 }
 
-const SUCCESS_CLOSE_DELAY_MS = 1100;
+const SUCCESS_TO_VIEW_DELAY_MS = 900;
 
 const stepVariants = {
   enter: { opacity: 0, x: 32 },
@@ -41,34 +48,47 @@ const stepVariants = {
 };
 
 /**
- * Two-step logging flow: pick a category, pick a meal, save. Categories
- * come from the live catalog, so new ones appear automatically. Selecting
- * a meal reveals its nutrition card before saving.
+ * Day logging dialog. A day can hold MULTIPLE meals. One scrollable body
+ * hosts every step, so nothing is ever clipped; after adding a meal you
+ * return to the day overview to add more or finish.
  */
 export function MealDialog({ open, dateKey, onClose }: MealDialogProps) {
   const { meals, mealById, categories, logs, logMeal, deleteLog } = useAppData();
   const { showSnackbar } = useSnackbar();
 
-  const existingLog = dateKey ? (logs[dateKey] ?? null) : null;
-  const existingMeal = existingLog ? mealById.get(existingLog.mealId) : undefined;
+  const dayLogs: MealLog[] = useMemo(
+    () => (dateKey ? (logs[dateKey] ?? []) : []),
+    [logs, dateKey],
+  );
+  const loggedMealIds = useMemo(() => new Set(dayLogs.map((l) => l.mealId)), [dayLogs]);
+  const dayCalories = useMemo(
+    () =>
+      Math.round(
+        dayLogs.reduce((sum, log) => sum + (mealById.get(log.mealId)?.nutrition?.calories ?? 0), 0),
+      ),
+    [dayLogs, mealById],
+  );
 
-  const [step, setStep] = useState<Step>('category');
+  const [step, setStep] = useState<Step>('view');
   const [category, setCategory] = useState<MealCategory | null>(null);
   const [selectedMealId, setSelectedMealId] = useState<string | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<MealLog | null>(null);
   const [saving, setSaving] = useState(false);
 
   // Re-initialize whenever the dialog opens for a (possibly new) date.
   useEffect(() => {
     if (open) {
-      setStep('category');
-      setCategory(existingMeal?.category ?? null);
-      setSelectedMealId(existingLog?.mealId ?? null);
-      setConfirmDelete(false);
+      setStep(dateKey && (logs[dateKey]?.length ?? 0) > 0 ? 'view' : 'category');
+      setCategory(null);
+      setSelectedMealId(null);
+      setDeleteTarget(null);
       setSaving(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, dateKey]);
+
+  // If the last log is removed while viewing, fall through to the add flow.
+  const effectiveStep: Step = step === 'view' && dayLogs.length === 0 ? 'category' : step;
 
   const categoryMeals = useMemo(
     () => meals.filter((m) => m.category === category),
@@ -76,10 +96,17 @@ export function MealDialog({ open, dateKey, onClose }: MealDialogProps) {
   );
   const selectedMeal = selectedMealId ? mealById.get(selectedMealId) : undefined;
 
+  const showBack =
+    effectiveStep === 'meal' || (effectiveStep === 'category' && dayLogs.length > 0);
+
+  const handleBack = () => {
+    if (effectiveStep === 'meal') setStep('category');
+    else if (dayLogs.length > 0) setStep('view');
+  };
+
   const handlePickCategory = (picked: MealCategory) => {
     setCategory(picked);
-    if (existingMeal?.category !== picked) setSelectedMealId(null);
-    else setSelectedMealId(existingLog?.mealId ?? null);
+    setSelectedMealId(null);
     setStep('meal');
   };
 
@@ -89,73 +116,147 @@ export function MealDialog({ open, dateKey, onClose }: MealDialogProps) {
     try {
       await logMeal(dateKey, selectedMealId);
       setStep('success');
-      window.setTimeout(onClose, SUCCESS_CLOSE_DELAY_MS);
-    } catch {
+      window.setTimeout(() => {
+        setSaving(false);
+        setSelectedMealId(null);
+        setCategory(null);
+        setStep('view');
+      }, SUCCESS_TO_VIEW_DELAY_MS);
+    } catch (error) {
       setSaving(false);
-      showSnackbar("Couldn't save your meal. Please try again.", 'error');
+      showSnackbar(
+        error instanceof Error ? error.message : "Couldn't save your meal. Please try again.",
+        'error',
+      );
     }
   };
 
   const handleDelete = async () => {
-    if (!dateKey) return;
-    setConfirmDelete(false);
+    if (!dateKey || !deleteTarget) return;
+    const target = deleteTarget;
+    setDeleteTarget(null);
     try {
-      await deleteLog(dateKey);
+      await deleteLog(dateKey, target.id);
       showSnackbar('Meal log removed');
-      onClose();
     } catch {
       showSnackbar("Couldn't delete the log. Please try again.", 'error');
     }
+  };
+
+  const titles: Record<Step, string> = {
+    view: 'Meals for this day',
+    category: dayLogs.length > 0 ? 'Add another meal' : 'Log a meal',
+    meal: category ? `Pick a ${category.toLowerCase()}` : 'Pick a meal',
+    success: 'Meal logged',
   };
 
   return (
     <>
       <Dialog
         open={open}
-        onClose={step === 'success' ? undefined : onClose}
+        onClose={effectiveStep === 'success' ? undefined : onClose}
         fullWidth
         maxWidth="xs"
         aria-labelledby="meal-dialog-title"
+        PaperProps={{
+          sx: { maxHeight: 'calc(100% - 32px)', display: 'flex', flexDirection: 'column' },
+        }}
       >
-        {/* Title bar */}
-        <Box sx={{ display: 'flex', alignItems: 'center', px: 2.5, pt: 2, gap: 1 }}>
-          {step === 'meal' && (
-            <IconButton aria-label="Back to categories" size="small" onClick={() => setStep('category')}>
+        {/* Fixed title bar */}
+        <Box sx={{ display: 'flex', alignItems: 'center', px: 2.5, pt: 2, pb: 1, gap: 1, flexShrink: 0 }}>
+          {showBack && (
+            <IconButton aria-label="Back" size="small" onClick={handleBack}>
               <ArrowBackRoundedIcon fontSize="small" />
             </IconButton>
           )}
-          <Box sx={{ flexGrow: 1 }}>
-            <Typography id="meal-dialog-title" variant="h6">
-              {existingLog ? 'Edit meal' : 'Log a meal'}
+          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+            <Typography id="meal-dialog-title" variant="h6" noWrap>
+              {titles[effectiveStep]}
             </Typography>
             {dateKey && (
               <Typography variant="caption" color="text.secondary">
                 {formatWithWeekday(dateKey)}
+                {dayLogs.length > 0 &&
+                  ` · ${dayLogs.length} meal${dayLogs.length === 1 ? '' : 's'} · ${dayCalories} kcal`}
               </Typography>
             )}
           </Box>
-          {step !== 'success' && (
+          {effectiveStep !== 'success' && (
             <IconButton aria-label="Close dialog" size="small" onClick={onClose}>
               <CloseRoundedIcon fontSize="small" />
             </IconButton>
           )}
         </Box>
 
-        {/* Currently-logged banner (edit mode) */}
-        {existingMeal && step !== 'success' && (
-          <Box sx={{ px: 2.5, pt: 1 }}>
-            <Chip
-              label={`Logged: ${existingMeal.icon ?? getCategoryMeta(existingMeal.category).emoji} ${existingMeal.name}`}
-              size="small"
-              color="primary"
-              variant="outlined"
-            />
-          </Box>
-        )}
-
-        <DialogContent sx={{ overflow: 'hidden', px: 2.5, pb: 2.5 }}>
+        {/* Single scrollable body — nothing ever gets clipped */}
+        <DialogContent sx={{ overflowY: 'auto', px: 2.5, pb: 2.5, pt: 0.5 }}>
           <AnimatePresence mode="wait" initial={false}>
-            {step === 'category' && (
+            {effectiveStep === 'view' && (
+              <motion.div
+                key="view"
+                variants={stepVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.18 }}
+              >
+                <Paper variant="outlined" sx={{ overflow: 'hidden', mb: 2 }}>
+                  {dayLogs.map((log, index) => {
+                    const meal = mealById.get(log.mealId);
+                    const icon = meal ? (meal.icon ?? getCategoryMeta(meal.category).emoji) : '🍽️';
+                    return (
+                      <Box
+                        key={log.id}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1.5,
+                          px: 1.5,
+                          py: 1,
+                          borderBottom: index < dayLogs.length - 1 ? '1px solid' : 'none',
+                          borderColor: 'divider',
+                        }}
+                      >
+                        <span aria-hidden style={{ fontSize: 20 }}>
+                          {icon}
+                        </span>
+                        <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
+                            {meal?.name ?? 'Meal removed from catalog'}
+                          </Typography>
+                          {meal && (
+                            <Typography variant="caption" color="text.secondary">
+                              {meal.category} · {meal.nutrition?.calories ?? 0} kcal
+                            </Typography>
+                          )}
+                        </Box>
+                        <IconButton
+                          size="small"
+                          aria-label={`Remove ${meal?.name ?? 'this meal'} from this day`}
+                          onClick={() => setDeleteTarget(log)}
+                        >
+                          <DeleteOutlineRoundedIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    );
+                  })}
+                </Paper>
+                <Button
+                  variant="contained"
+                  fullWidth
+                  size="large"
+                  startIcon={<AddRoundedIcon />}
+                  onClick={() => setStep('category')}
+                >
+                  Add another meal
+                </Button>
+                <Button fullWidth sx={{ mt: 1 }} color="inherit" onClick={onClose}>
+                  Done
+                </Button>
+              </motion.div>
+            )}
+
+            {effectiveStep === 'category' && (
               <motion.div
                 key="category"
                 variants={stepVariants}
@@ -167,37 +268,39 @@ export function MealDialog({ open, dateKey, onClose }: MealDialogProps) {
                 <Typography variant="subtitle2" sx={{ mb: 1.5, color: 'text.secondary' }}>
                   What did you have?
                 </Typography>
-                <Box
-                  sx={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))',
-                    gap: 1.25,
-                  }}
-                >
+                {/* Vertical category list — no horizontal scrolling */}
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                   {categories.map((cat) => {
                     const meta = getCategoryMeta(cat);
                     return (
-                      <motion.div key={cat} whileHover={{ scale: 1.05, y: -3 }} whileTap={{ scale: 0.95 }}>
+                      <motion.div key={cat} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                         <ButtonBase
                           onClick={() => handlePickCategory(cat)}
                           aria-label={`Choose ${cat} — ${meta.description}`}
                           sx={{
                             width: '100%',
-                            flexDirection: 'column',
-                            gap: 0.75,
-                            py: 2.5,
-                            borderRadius: 5,
+                            justifyContent: 'flex-start',
+                            gap: 1.5,
+                            px: 2,
+                            py: 1.5,
+                            borderRadius: 4,
                             background: meta.gradient,
                             color: '#1C1B1F',
-                            boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.10)',
+                            textAlign: 'left',
                           }}
                         >
-                          <span aria-hidden style={{ fontSize: 38, lineHeight: 1 }}>
+                          <span aria-hidden style={{ fontSize: 28, lineHeight: 1 }}>
                             {meta.emoji}
                           </span>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
-                            {cat}
-                          </Typography>
+                          <Box>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
+                              {cat}
+                            </Typography>
+                            <Typography variant="caption" sx={{ opacity: 0.75 }}>
+                              {meta.description}
+                            </Typography>
+                          </Box>
                         </ButtonBase>
                       </motion.div>
                     );
@@ -206,7 +309,7 @@ export function MealDialog({ open, dateKey, onClose }: MealDialogProps) {
               </motion.div>
             )}
 
-            {step === 'meal' && category && (
+            {effectiveStep === 'meal' && category && (
               <motion.div
                 key="meal"
                 variants={stepVariants}
@@ -215,29 +318,19 @@ export function MealDialog({ open, dateKey, onClose }: MealDialogProps) {
                 exit="exit"
                 transition={{ duration: 0.18 }}
               >
-                <Typography variant="subtitle2" sx={{ mb: 1.5, color: 'text.secondary' }}>
-                  {getCategoryMeta(category).emoji} Pick your {category.toLowerCase()}
-                </Typography>
                 {categoryMeals.length === 0 ? (
                   <Typography variant="body2" color="text.secondary" sx={{ py: 3, textAlign: 'center' }}>
                     No {category.toLowerCase()} meals yet — add some from Manage Meals.
                   </Typography>
                 ) : (
-                  <Box
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 1fr',
-                      gap: 1,
-                      maxHeight: 208,
-                      overflowY: 'auto',
-                      pr: 0.5,
-                    }}
-                  >
+                  /* Vertical single-column meal list — the dialog body scrolls */
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                     {categoryMeals.map((meal) => (
                       <MealCard
                         key={meal.id}
                         meal={meal}
                         selected={selectedMealId === meal.id}
+                        logged={loggedMealIds.has(meal.id)}
                         onClick={() => setSelectedMealId(meal.id)}
                       />
                     ))}
@@ -253,32 +346,22 @@ export function MealDialog({ open, dateKey, onClose }: MealDialogProps) {
                   )}
                 </AnimatePresence>
 
-                <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-                  {existingLog && (
-                    <Button
-                      color="error"
-                      startIcon={<DeleteOutlineRoundedIcon />}
-                      onClick={() => setConfirmDelete(true)}
-                    >
-                      Delete
-                    </Button>
-                  )}
-                  <Button
-                    variant="contained"
-                    fullWidth
-                    size="large"
-                    disabled={!selectedMealId || saving}
-                    onClick={() => void handleSave()}
-                  >
-                    {existingLog ? 'Update' : 'Save'}
-                  </Button>
-                </Box>
+                <Button
+                  variant="contained"
+                  fullWidth
+                  size="large"
+                  sx={{ mt: 2 }}
+                  disabled={!selectedMealId || saving}
+                  onClick={() => void handleSave()}
+                >
+                  {saving ? 'Saving…' : 'Add meal'}
+                </Button>
               </motion.div>
             )}
 
-            {step === 'success' && (
+            {effectiveStep === 'success' && (
               <motion.div key="success" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <SuccessCheck message={existingLog ? 'Updated!' : 'Meal logged!'} />
+                <SuccessCheck message="Meal logged!" />
               </motion.div>
             )}
           </AnimatePresence>
@@ -286,16 +369,16 @@ export function MealDialog({ open, dateKey, onClose }: MealDialogProps) {
       </Dialog>
 
       <ConfirmDialog
-        open={confirmDelete}
+        open={deleteTarget !== null}
         title="Remove this meal log?"
         message={
           dateKey
-            ? `The meal logged on ${formatWithWeekday(dateKey)} will be removed. The meal itself stays in your catalog.`
+            ? `${mealById.get(deleteTarget?.mealId ?? '')?.name ?? 'This meal'} will be removed from ${formatWithWeekday(dateKey)}. The meal itself stays in your catalog.`
             : ''
         }
         confirmLabel="Remove"
         onConfirm={() => void handleDelete()}
-        onClose={() => setConfirmDelete(false)}
+        onClose={() => setDeleteTarget(null)}
       />
     </>
   );

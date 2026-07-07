@@ -32,6 +32,7 @@ import { googleTasksSyncService } from '../services/GoogleTasksSyncService';
 import { mealService, type MealInput } from '../services/MealService';
 import { storageService, type LogsByDate } from '../services/StorageService';
 import { themeService } from '../services/ThemeService';
+import { createId } from '../utils/id';
 
 interface AppDataValue {
   loading: boolean;
@@ -57,8 +58,9 @@ interface AppDataValue {
   saveEmail: (email: string) => Promise<void>;
   setThemeMode: (mode: ThemeMode) => Promise<void>;
 
+  /** Adds a log for the day (multiple meals per day are allowed). */
   logMeal: (date: string, mealId: string) => Promise<void>;
-  deleteLog: (date: string) => Promise<void>;
+  deleteLog: (date: string, logId: string) => Promise<void>;
 
   addMeal: (input: MealInput) => Promise<void>;
   updateMeal: (id: string, input: MealInput) => Promise<void>;
@@ -195,31 +197,39 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const logMeal = useCallback(
     async (date: string, mealId: string) => {
       if (!state.user) return;
+      const dayLogs = state.logs[date] ?? [];
+      if (dayLogs.some((l) => l.mealId === mealId)) {
+        const name = mealById.get(mealId)?.name ?? 'That meal';
+        throw new Error(`${name} is already logged for this day.`);
+      }
       const log: MealLog = {
+        id: createId('log'),
         email: state.user.email,
         date,
         mealId,
         loggedAt: new Date().toISOString(),
       };
       await storageService.saveMealLog(log);
-      setState((s) => ({ ...s, logs: { ...s.logs, [date]: log } }));
+      setState((s) => ({ ...s, logs: { ...s.logs, [date]: [...(s.logs[date] ?? []), log] } }));
       // Best-effort mirror to Google Tasks (no-op unless sync is enabled).
       void googleTasksSyncService.upsertLogTask(log, mealById.get(mealId));
     },
-    [state.user, mealById],
+    [state.user, state.logs, mealById],
   );
 
   const deleteLog = useCallback(
-    async (date: string) => {
+    async (date: string, logId: string) => {
       if (!state.user) return;
       const email = state.user.email;
-      await storageService.deleteMealLog(email, date);
+      await storageService.deleteMealLog(email, date, logId);
       setState((s) => {
         const logs = { ...s.logs };
-        delete logs[date];
+        const remaining = (logs[date] ?? []).filter((l) => l.id !== logId);
+        if (remaining.length > 0) logs[date] = remaining;
+        else delete logs[date];
         return { ...s, logs };
       });
-      void googleTasksSyncService.deleteLogTask(email, date);
+      void googleTasksSyncService.deleteLogTask(email, logId);
     },
     [state.user],
   );
