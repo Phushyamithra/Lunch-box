@@ -1,5 +1,7 @@
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import UploadFileRoundedIcon from '@mui/icons-material/UploadFileRounded';
 import {
+  Alert,
   Box,
   Button,
   Dialog,
@@ -10,11 +12,10 @@ import {
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useRef, useState } from 'react';
+import { IMPORT_ACCEPT } from '../../constants';
 import { useAppData } from '../../context/AppDataContext';
 import { useSnackbar } from '../../context/SnackbarContext';
-import type { ImportSummary } from '../../models';
-
-const ACCEPTED_EXTENSIONS = '.xlsx,.xls,.csv';
+import type { ImportResult } from '../../models';
 
 interface ImportButtonProps {
   variant?: 'outlined' | 'text' | 'contained';
@@ -23,14 +24,14 @@ interface ImportButtonProps {
 
 /**
  * Self-contained "Import meals" button: hidden file input, parsing,
- * validation, and a friendly summary dialog. Reused by Manage Meals
- * and Settings so the flow stays identical everywhere.
+ * validation, macro-workbook detection and a friendly summary dialog.
+ * Reused by Manage Meals and Settings so the flow stays identical.
  */
 export function ImportButton({ variant = 'outlined', fullWidth = false }: ImportButtonProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const { importFromFile } = useAppData();
   const { showSnackbar } = useSnackbar();
-  const [summary, setSummary] = useState<ImportSummary | null>(null);
+  const [result, setResult] = useState<ImportResult | null>(null);
   const [busy, setBusy] = useState(false);
 
   const handleFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,7 +40,7 @@ export function ImportButton({ variant = 'outlined', fullWidth = false }: Import
     if (!file) return;
     setBusy(true);
     try {
-      setSummary(await importFromFile(file));
+      setResult(await importFromFile(file));
     } catch (error) {
       showSnackbar(error instanceof Error ? error.message : 'Import failed.', 'error');
     } finally {
@@ -47,6 +48,7 @@ export function ImportButton({ variant = 'outlined', fullWidth = false }: Import
     }
   };
 
+  const summary = result?.summary;
   const rows: { count: number; label: string; emoji: string }[] = summary
     ? [
         { count: summary.imported, label: summary.imported === 1 ? 'meal imported' : 'meals imported', emoji: '✅' },
@@ -69,13 +71,13 @@ export function ImportButton({ variant = 'outlined', fullWidth = false }: Import
       <input
         ref={inputRef}
         type="file"
-        accept={ACCEPTED_EXTENSIONS}
+        accept={IMPORT_ACCEPT}
         hidden
         aria-label="Choose a spreadsheet to import"
         onChange={(e) => void handleFile(e)}
       />
 
-      <Dialog open={summary !== null} onClose={() => setSummary(null)} maxWidth="xs" fullWidth>
+      <Dialog open={result !== null} onClose={() => setResult(null)} maxWidth="xs" fullWidth>
         <DialogTitle>Import complete</DialogTitle>
         <DialogContent>
           {rows.map((row, i) => (
@@ -93,9 +95,19 @@ export function ImportButton({ variant = 'outlined', fullWidth = false }: Import
               </Box>
             </motion.div>
           ))}
+          {result?.hasMacros && (
+            <Alert
+              severity="info"
+              icon={<InfoOutlinedIcon fontSize="inherit" />}
+              sx={{ mt: 1.5, borderRadius: 3 }}
+            >
+              This workbook contains macros (VBA). Only the meal data was read — macros were
+              never executed, and the original file was preserved unchanged.
+            </Alert>
+          )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button variant="contained" onClick={() => setSummary(null)}>
+          <Button variant="contained" onClick={() => setResult(null)}>
             Done
           </Button>
         </DialogActions>

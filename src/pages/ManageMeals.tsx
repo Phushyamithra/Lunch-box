@@ -25,17 +25,17 @@ import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { ExportButton } from '../components/ImportExport/ExportButton';
 import { ImportButton } from '../components/ImportExport/ImportButton';
 import { MealFormDialog } from '../components/ManageMeals/MealFormDialog';
-import { CATEGORY_META } from '../constants';
+import { getCategoryMeta } from '../constants';
 import { useAppData } from '../context/AppDataContext';
 import { useSnackbar } from '../context/SnackbarContext';
 import { useNavigation } from '../context/NavigationContext';
-import { MEAL_CATEGORIES, type Meal, type MealCategory } from '../models';
+import type { Meal, MealCategory } from '../models';
 
 type CategoryFilter = MealCategory | 'All';
 
 /** Catalog management: search, filter, add, edit, delete, import, export. */
 export default function ManageMeals() {
-  const { meals, deleteMeal } = useAppData();
+  const { meals, categories, deleteMeal } = useAppData();
   const { navigate } = useNavigation();
   const { showSnackbar } = useSnackbar();
 
@@ -100,10 +100,10 @@ export default function ManageMeals() {
           aria-label="Search meals"
         />
         <Box sx={{ display: 'flex', gap: 0.75, overflowX: 'auto', pb: 0.25, flexWrap: 'nowrap' }}>
-          {(['All', ...MEAL_CATEGORIES] as CategoryFilter[]).map((cat) => (
+          {(['All', ...categories] as CategoryFilter[]).map((cat) => (
             <Chip
               key={cat}
-              label={cat === 'All' ? 'All' : `${CATEGORY_META[cat].emoji} ${CATEGORY_META[cat].plural}`}
+              label={cat === 'All' ? 'All' : `${getCategoryMeta(cat).emoji} ${getCategoryMeta(cat).plural}`}
               sx={{ flexShrink: 0 }}
               size="small"
               color={filter === cat ? 'primary' : 'default'}
@@ -134,7 +134,7 @@ export default function ManageMeals() {
           <List disablePadding>
             <AnimatePresence initial={false}>
               {filtered.map((meal) => {
-                const meta = CATEGORY_META[meal.category];
+                const meta = getCategoryMeta(meal.category);
                 return (
                   <motion.div
                     key={meal.id}
@@ -171,13 +171,14 @@ export default function ManageMeals() {
                     >
                       <ListItemAvatar>
                         <Avatar sx={{ bgcolor: alpha(meta.color, 0.2), fontSize: 18 }}>
-                          <span aria-hidden>{meta.emoji}</span>
+                          <span aria-hidden>{meal.icon ?? meta.emoji}</span>
                         </Avatar>
                       </ListItemAvatar>
                       <ListItemText
                         primary={meal.name}
-                        secondary={meal.category}
+                        secondary={`${meal.category} · ${meal.nutrition?.calories ?? 0} kcal · P ${meal.nutrition?.protein ?? 0}g`}
                         primaryTypographyProps={{ fontWeight: 600, noWrap: true }}
+                        sx={{ pr: 7 }}
                       />
                     </ListItem>
                   </motion.div>

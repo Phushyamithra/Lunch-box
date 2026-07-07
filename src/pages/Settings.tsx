@@ -19,11 +19,12 @@ import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { GoalStepper } from '../components/Goals/GoalStepper';
 import { ExportButton } from '../components/ImportExport/ExportButton';
 import { ImportButton } from '../components/ImportExport/ImportButton';
-import { APP_NAME, APP_TAGLINE, APP_VERSION, CATEGORY_META } from '../constants';
+import { GoogleTasksSection } from '../components/Sync/GoogleTasksSection';
+import { APP_NAME, APP_TAGLINE, APP_VERSION, getCategoryMeta } from '../constants';
 import { useAppData } from '../context/AppDataContext';
 import { useNavigation } from '../context/NavigationContext';
 import { useSnackbar } from '../context/SnackbarContext';
-import { MEAL_CATEGORIES, type ThemeMode } from '../models';
+import type { ThemeMode } from '../models';
 
 type PendingAction = 'clearLogs' | 'reset' | null;
 
@@ -41,11 +42,22 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export default function Settings() {
-  const { user, themeMode, setThemeMode, clearLogs, resetApp, goalSettings, updateGoalSettings } =
-    useAppData();
+  const {
+    user,
+    themeMode,
+    setThemeMode,
+    clearLogs,
+    resetApp,
+    goalSettings,
+    updateGoalSettings,
+    goalProgress,
+  } = useAppData();
   const { navigate } = useNavigation();
   const { showSnackbar } = useSnackbar();
   const [pending, setPending] = useState<PendingAction>(null);
+
+  // Union of catalog + configured categories, already ordered by GoalService.
+  const goalCategories = goalProgress.categories.map((c) => c.category);
 
   const handleConfirm = async () => {
     const action = pending;
@@ -105,12 +117,12 @@ export default function Settings() {
             min={1}
             onChange={(totalDays) => void updateGoalSettings({ ...goalSettings, totalDays })}
           />
-          {MEAL_CATEGORIES.map((category) => (
+          {goalCategories.map((category) => (
             <GoalStepper
               key={category}
               label={`${category} goal`}
-              emoji={CATEGORY_META[category].emoji}
-              value={goalSettings.categoryTargets[category]}
+              emoji={getCategoryMeta(category).emoji}
+              value={goalSettings.categoryTargets[category] ?? 0}
               min={0}
               onChange={(target) =>
                 void updateGoalSettings({
@@ -123,6 +135,10 @@ export default function Settings() {
           <Typography variant="caption" color="text.secondary">
             Set a category goal to 0 to disable it.
           </Typography>
+        </Section>
+
+        <Section title="Google Tasks Sync">
+          <GoogleTasksSection />
         </Section>
 
         <Section title="Meals">
@@ -190,7 +206,7 @@ export default function Settings() {
       <ConfirmDialog
         open={pending === 'reset'}
         title="Reset the application?"
-        message="This wipes everything — your email, meal catalog, logs and preferences. You'll start fresh. This can't be undone."
+        message="This wipes everything — your email, meal catalog, logs, goals and preferences. You'll start fresh. This can't be undone."
         confirmLabel="Reset everything"
         onConfirm={() => void handleConfirm()}
         onClose={() => setPending(null)}

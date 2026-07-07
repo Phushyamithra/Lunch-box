@@ -1,8 +1,8 @@
 import { Box, Button, Dialog, DialogContent, Typography } from '@mui/material';
 import { motion } from 'framer-motion';
-import { CATEGORY_META } from '../../constants';
+import { getCategoryMeta } from '../../constants';
 import { useAppData } from '../../context/AppDataContext';
-import { MEAL_CATEGORIES, type AchievementId, type MealCategory } from '../../models';
+import type { AchievementId } from '../../models';
 import { Confetti } from './Confetti';
 
 interface CelebrationContent {
@@ -65,19 +65,23 @@ export function CelebrationDialog() {
       };
     }
 
-    if (id === 'balance') {
+    if (id === 'balance' || id === 'nutrition_champion') {
       const completed = goalProgress.categories.filter((c) => c.enabled);
+      const champion = id === 'nutrition_champion';
       return {
         emoji: '🏆',
-        title: 'Meal Balance Goal Completed!',
+        title: champion ? 'Nutrition Champion!' : 'Meal Balance Goal Completed!',
         body: (
           <Box>
             <Typography variant="body2" sx={{ mb: 0.5 }}>
               You achieved your target of:
             </Typography>
+            {champion && (
+              <Typography variant="body2">✅ {goalSettings.totalDays} logged days</Typography>
+            )}
             {completed.map((c) => (
               <Typography key={c.category} variant="body2">
-                ✅ {c.target} {CATEGORY_META[c.category].plural}
+                ✅ {c.target} {getCategoryMeta(c.category).plural}
               </Typography>
             ))}
             <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 700 }}>
@@ -89,9 +93,9 @@ export function CelebrationDialog() {
     }
 
     // category_<name>
-    const category = MEAL_CATEGORIES.find((c) => id === `category_${c}`) as MealCategory;
-    const meta = CATEGORY_META[category];
-    const target = goalSettings.categoryTargets[category];
+    const category = id.slice('category_'.length);
+    const meta = getCategoryMeta(category);
+    const target = goalSettings.categoryTargets[category] ?? 0;
     return {
       emoji: meta.emoji,
       title: `${category} goal complete!`,

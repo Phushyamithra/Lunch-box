@@ -1,9 +1,9 @@
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
-import { ButtonBase, Typography, useTheme } from '@mui/material';
+import { Box, ButtonBase, Typography, useTheme } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { AnimatePresence, motion } from 'framer-motion';
 import { memo } from 'react';
-import { CATEGORY_META } from '../../constants';
+import { getCategoryMeta } from '../../constants';
 import type { Meal } from '../../models';
 
 interface MealCardProps {
@@ -15,19 +15,20 @@ interface MealCardProps {
 /** Selectable meal chip-card used in the logging dialog. */
 export const MealCard = memo(function MealCard({ meal, selected, onClick }: MealCardProps) {
   const theme = useTheme();
-  const meta = CATEGORY_META[meal.category];
+  const icon = meal.icon ?? getCategoryMeta(meal.category).emoji;
 
   return (
     <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.96 }}>
       <ButtonBase
         onClick={onClick}
         aria-pressed={selected}
+        aria-label={`${meal.name}, ${meal.nutrition?.calories ?? 0} kilocalories`}
         sx={{
           width: '100%',
           justifyContent: 'flex-start',
           gap: 1,
           px: 1.5,
-          py: 1.25,
+          py: 1,
           borderRadius: 3.5,
           border: '2px solid',
           borderColor: selected ? 'primary.main' : 'divider',
@@ -39,11 +40,16 @@ export const MealCard = memo(function MealCard({ meal, selected, onClick }: Meal
         }}
       >
         <span aria-hidden style={{ fontSize: 20 }}>
-          {meta.emoji}
+          {icon}
         </span>
-        <Typography variant="body2" sx={{ fontWeight: 600, flexGrow: 1 }} noWrap>
-          {meal.name}
-        </Typography>
+        <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+          <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
+            {meal.name}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {meal.nutrition?.calories ?? 0} kcal
+          </Typography>
+        </Box>
         <AnimatePresence>
           {selected && (
             <motion.span

@@ -1,5 +1,6 @@
 import ChevronLeftRoundedIcon from '@mui/icons-material/ChevronLeftRounded';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
+import InsightsRoundedIcon from '@mui/icons-material/InsightsRounded';
 import RestaurantMenuRoundedIcon from '@mui/icons-material/RestaurantMenuRounded';
 import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
 import { Box, IconButton, Tooltip, Typography } from '@mui/material';
@@ -22,7 +23,7 @@ export function Header({ month, onPrevMonth, onNextMonth, onGoToday }: HeaderPro
   return (
     <Box component="header" sx={{ px: 2, pt: 1.5, pb: 0.5 }}>
       {/* Row 1: brand + quick actions */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
         <Typography
           variant="h6"
           component="h1"
@@ -37,6 +38,11 @@ export function Header({ month, onPrevMonth, onNextMonth, onGoToday }: HeaderPro
           🥪 {APP_NAME}
         </Typography>
         <ThemeToggle />
+        <Tooltip title="Analytics">
+          <IconButton aria-label="Nutrition analytics" size="small" onClick={() => navigate('analytics')}>
+            <InsightsRoundedIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
         <Tooltip title="Manage meals">
           <IconButton aria-label="Manage meals" size="small" onClick={() => navigate('meals')}>
             <RestaurantMenuRoundedIcon fontSize="small" />

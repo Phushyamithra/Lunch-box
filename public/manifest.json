@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "LunchBox – Daily Meal Logger",
-  "version": "1.1.0",
-  "description": "Log your daily lunch, track meal goals with achievements, browse your history on a colorful calendar, and manage your meal catalog.",
+  "name": "LunchBox – Meal & Nutrition Tracker",
+  "version": "1.2.0",
+  "description": "Log daily meals with full nutrition info, track goals with achievements, view analytics, and sync logs to Google Tasks.",
   "action": {
     "default_popup": "index.html",
     "default_title": "LunchBox"
@@ -13,5 +13,10 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "permissions": ["storage"]
+  "permissions": ["storage", "identity"],
+  "host_permissions": ["https://tasks.googleapis.com/*"],
+  "oauth2": {
+    "client_id": "967011441472-19qnk57hjt0sc8kar00in1889jnbc413.apps.googleusercontent.com",
+    "scopes": ["https://www.googleapis.com/auth/tasks"]
+  }
 }

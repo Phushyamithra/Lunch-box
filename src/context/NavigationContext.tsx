@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 
-export type Page = 'dashboard' | 'meals' | 'settings';
+export type Page = 'dashboard' | 'meals' | 'settings' | 'analytics';
 
 interface NavigationValue {
   page: Page;
@@ -17,7 +17,7 @@ interface NavigationValue {
 const NavigationContext = createContext<NavigationValue | null>(null);
 
 /**
- * Tiny in-memory router — three pages don't warrant react-router, and a
+ * Tiny in-memory router — four pages don't warrant react-router, and a
  * MemoryRouter-style approach keeps the extension bundle lean. Swap for a
  * real router if the page count grows.
  */

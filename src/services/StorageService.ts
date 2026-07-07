@@ -4,6 +4,7 @@ import type {
   GoalSettings,
   Meal,
   MealLog,
+  SyncSettings,
   ThemeMode,
   UserProfile,
 } from '../models';
@@ -15,12 +16,16 @@ export type LogsByDate = Record<string, MealLog>;
 type LogsRoot = Record<string, LogsByDate>;
 /** email → achievements. Multi-user ready. */
 type AchievementsRoot = Record<string, AchievementMap>;
+/** email → (date → Google Task id). */
+type SyncTaskRoot = Record<string, Record<string, string>>;
+/** Preserved original workbooks (e.g. macro-enabled), base64 by name. */
+type WorkbookArchive = Record<string, { base64: string; storedAt: string }>;
 
 /**
  * Domain-level persistence facade. The UI never touches chrome.storage
  * directly — everything flows through this service, so replacing the
  * backing store means swapping the injected StorageAdapter only.
- * Business rules live in MealService / GoalService, not here.
+ * Business rules live in MealService / GoalService / sync services.
  */
 export class StorageService {
   constructor(private readonly adapter: StorageAdapter) {}
@@ -136,6 +141,41 @@ export class StorageService {
     await this.adapter.set(STORAGE_KEYS.achievements, root);
   }
 
+  // ---------- Google Tasks sync (persistence only) ----------
+
+  getSyncSettings(): Promise<SyncSettings | null> {
+    return this.adapter.get<SyncSettings>(STORAGE_KEYS.sync);
+  }
+
+  saveSyncSettings(settings: SyncSettings): Promise<void> {
+    return this.adapter.set(STORAGE_KEYS.sync, settings);
+  }
+
+  private async getSyncTaskRoot(): Promise<SyncTaskRoot> {
+    return (await this.adapter.get<SyncTaskRoot>(STORAGE_KEYS.syncTasks)) ?? {};
+  }
+
+  /** date → Google Task id map for one user. */
+  async getSyncTaskMap(email: string): Promise<Record<string, string>> {
+    return (await this.getSyncTaskRoot())[email] ?? {};
+  }
+
+  async saveSyncTaskMap(email: string, map: Record<string, string>): Promise<void> {
+    const root = await this.getSyncTaskRoot();
+    root[email] = map;
+    await this.adapter.set(STORAGE_KEYS.syncTasks, root);
+  }
+
+  // ---------- Original workbook archive ----------
+
+  /** Keeps an imported workbook verbatim (e.g. macro-enabled files). */
+  async saveOriginalWorkbook(name: string, base64: string): Promise<void> {
+    const archive =
+      (await this.adapter.get<WorkbookArchive>(STORAGE_KEYS.workbooks)) ?? {};
+    archive[name] = { base64, storedAt: new Date().toISOString() };
+    await this.adapter.set(STORAGE_KEYS.workbooks, archive);
+  }
+
   // ---------- Theme ----------
 
   getThemeMode(): Promise<ThemeMode | null> {
@@ -156,15 +196,15 @@ export class StorageService {
     return this.adapter.set(STORAGE_KEYS.seeded, true);
   }
 
-  async isSmoothiesSeeded(): Promise<boolean> {
-    return (await this.adapter.get<boolean>(STORAGE_KEYS.smoothiesSeeded)) === true;
+  async isWorkbookSeeded(): Promise<boolean> {
+    return (await this.adapter.get<boolean>(STORAGE_KEYS.workbookSeeded)) === true;
   }
 
-  markSmoothiesSeeded(): Promise<void> {
-    return this.adapter.set(STORAGE_KEYS.smoothiesSeeded, true);
+  markWorkbookSeeded(): Promise<void> {
+    return this.adapter.set(STORAGE_KEYS.workbookSeeded, true);
   }
 
-  /** Wipes everything — user, catalog, logs, goals, achievements, theme. */
+  /** Wipes everything — user, catalog, logs, goals, achievements, sync. */
   resetData(): Promise<void> {
     return this.adapter.clear();
   }

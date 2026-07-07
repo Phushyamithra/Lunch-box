@@ -1,13 +1,12 @@
-import { CATEGORY_META, DEFAULT_GOAL_SETTINGS } from '../constants';
-import {
-  MEAL_CATEGORIES,
-  type AchievementId,
-  type AchievementMap,
-  type CategoryGoalProgress,
-  type GoalProgress,
-  type GoalSettings,
-  type Meal,
-  type MealCategory,
+import { DEFAULT_GOAL_SETTINGS, getCategoryMeta, orderCategories } from '../constants';
+import type {
+  AchievementId,
+  AchievementMap,
+  CategoryGoalProgress,
+  GoalProgress,
+  GoalSettings,
+  Meal,
+  MealCategory,
 } from '../models';
 import { storageService, type LogsByDate, type StorageService } from './StorageService';
 
@@ -42,7 +41,10 @@ export class GoalService {
 
   // ---------- Progress ----------
 
-  /** Pure derivation from logs — cheap enough to recompute on every change. */
+  /**
+   * Pure derivation from logs. Categories come from the union of goal
+   * settings and the catalog, so new categories appear automatically.
+   */
   computeProgress(
     logs: LogsByDate,
     mealById: Map<string, Meal>,
@@ -50,18 +52,21 @@ export class GoalService {
   ): GoalProgress {
     const entries = Object.values(logs);
 
-    const counts = Object.fromEntries(MEAL_CATEGORIES.map((c) => [c, 0])) as Record<
-      MealCategory,
-      number
-    >;
+    const counts = new Map<MealCategory, number>();
     for (const log of entries) {
       const meal = mealById.get(log.mealId);
-      if (meal) counts[meal.category] += 1;
+      if (meal) counts.set(meal.category, (counts.get(meal.category) ?? 0) + 1);
     }
 
-    const categories: CategoryGoalProgress[] = MEAL_CATEGORIES.map((category) => {
+    const catalogCategories = [...new Set([...mealById.values()].map((m) => m.category))];
+    const allCategories = orderCategories([
+      ...Object.keys(settings.categoryTargets),
+      ...catalogCategories,
+    ]);
+
+    const categories: CategoryGoalProgress[] = allCategories.map((category) => {
       const target = settings.categoryTargets[category] ?? 0;
-      const count = counts[category];
+      const count = counts.get(category) ?? 0;
       const enabled = target > 0;
       return {
         category,
@@ -87,8 +92,10 @@ export class GoalService {
     const enabledCategories = categories.filter((c) => c.enabled);
     const balanceComplete =
       enabledCategories.length >= 2 && enabledCategories.every((c) => c.complete);
+    const championComplete =
+      days.complete && enabledCategories.length >= 1 && enabledCategories.every((c) => c.complete);
 
-    return { days, categories, balanceComplete };
+    return { days, categories, balanceComplete, championComplete };
   }
 
   // ---------- Achievements ----------
@@ -102,6 +109,7 @@ export class GoalService {
       if (cat.complete && !awarded[id]) earned.push(id);
     }
     if (progress.balanceComplete && !awarded.balance) earned.push('balance');
+    if (progress.championComplete && !awarded.nutrition_champion) earned.push('nutrition_champion');
     return earned;
   }
 
@@ -120,8 +128,8 @@ export class GoalService {
     const { days, categories } = progress;
     const enabled = categories.filter((c) => c.enabled);
 
-    if (days.complete && enabled.length > 0 && enabled.every((c) => c.complete)) {
-      return 'Every goal completed — amazing consistency! 🏆';
+    if (progress.championComplete) {
+      return 'Nutrition Champion — every goal completed! 🏆';
     }
 
     const oneAway = enabled.find((c) => !c.complete && c.remaining === 1);
@@ -135,7 +143,7 @@ export class GoalService {
 
     const almost = enabled.find((c) => !c.complete && c.remaining <= 3);
     if (almost) {
-      return `${almost.remaining} more ${CATEGORY_META[almost.category].plural.toLowerCase()} to go — almost there!`;
+      return `${almost.remaining} more ${getCategoryMeta(almost.category).plural.toLowerCase()} to go — almost there!`;
     }
 
     if (!days.complete && days.percent >= 50) {

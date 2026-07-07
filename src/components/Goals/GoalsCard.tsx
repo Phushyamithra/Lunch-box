@@ -1,20 +1,20 @@
 import EmojiEventsRoundedIcon from '@mui/icons-material/EmojiEventsRounded';
 import { Box, Chip, Divider, Paper, Typography } from '@mui/material';
 import { memo } from 'react';
-import { CATEGORY_META } from '../../constants';
+import { getCategoryMeta } from '../../constants';
 import { useAppData } from '../../context/AppDataContext';
 import { goalService } from '../../services/GoalService';
 import { ProgressBar } from './ProgressBar';
 import { ProgressRing } from './ProgressRing';
 
 /**
- * "Goals & Progress" dashboard card: circular 30-day progress, per-category
- * animated bars, remaining counts, badges and a dynamic motivational nudge.
- * All numbers are derived by GoalService — this component only renders.
+ * "Goals & Progress" dashboard card: circular days-goal progress,
+ * per-category animated bars, remaining counts, badges and a dynamic
+ * motivational nudge. All numbers are derived by GoalService.
  */
 export const GoalsCard = memo(function GoalsCard() {
   const { goalProgress, achievements } = useAppData();
-  const { days, categories, balanceComplete } = goalProgress;
+  const { days, categories, championComplete } = goalProgress;
   const enabledCategories = categories.filter((c) => c.enabled);
   const message = goalService.motivationalMessage(goalProgress);
 
@@ -24,14 +24,14 @@ export const GoalsCard = memo(function GoalsCard() {
         <Typography variant="subtitle2" sx={{ flexGrow: 1, color: 'text.secondary' }}>
           Goals & Progress
         </Typography>
-        {balanceComplete && (
+        {championComplete && (
           <Chip
             icon={<EmojiEventsRoundedIcon />}
-            label="Meal Balance"
+            label="Nutrition Champion"
             size="small"
             color="success"
             variant="outlined"
-            aria-label="Meal Balance goal completed"
+            aria-label="Nutrition Champion — all goals completed"
           />
         )}
       </Box>
@@ -63,7 +63,7 @@ export const GoalsCard = memo(function GoalsCard() {
       {enabledCategories.length > 0 && <Divider sx={{ my: 1.5 }} />}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
         {enabledCategories.map((cat) => {
-          const meta = CATEGORY_META[cat.category];
+          const meta = getCategoryMeta(cat.category);
           return (
             <Box key={cat.category}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.5 }}>

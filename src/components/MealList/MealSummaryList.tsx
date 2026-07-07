@@ -1,7 +1,7 @@
 import { Box, ButtonBase, Paper, Typography } from '@mui/material';
 import { motion } from 'framer-motion';
 import { memo, useMemo } from 'react';
-import { CATEGORY_META, RECENT_LOGS_LIMIT } from '../../constants';
+import { RECENT_LOGS_LIMIT, getCategoryMeta } from '../../constants';
 import type { Meal, MealLog } from '../../models';
 import { formatFriendly } from '../../utils/date';
 
@@ -45,7 +45,7 @@ export const MealSummaryList = memo(function MealSummaryList({
     <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
       {entries.map((log, index) => {
         const meal = mealById.get(log.mealId);
-        const emoji = meal ? CATEGORY_META[meal.category].emoji : '🍽️';
+        const icon = meal ? (meal.icon ?? getCategoryMeta(meal.category).emoji) : '🍽️';
         return (
           <motion.div
             key={log.date}
@@ -68,7 +68,7 @@ export const MealSummaryList = memo(function MealSummaryList({
               }}
             >
               <span aria-hidden style={{ fontSize: 22 }}>
-                {emoji}
+                {icon}
               </span>
               <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                 <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
@@ -76,6 +76,7 @@ export const MealSummaryList = memo(function MealSummaryList({
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
                   {formatFriendly(log.date)}
+                  {meal ? ` · ${meal.nutrition?.calories ?? 0} kcal` : ''}
                 </Typography>
               </Box>
             </ButtonBase>

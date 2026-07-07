@@ -1,7 +1,7 @@
-import type { GoalSettings, Meal, MealCategory } from '../models';
+import type { GoalSettings, MealCategory, Nutrition } from '../models';
 
 export const APP_NAME = 'LunchBox';
-export const APP_VERSION = '1.1.0';
+export const APP_VERSION = '1.2.0';
 export const APP_TAGLINE = 'Your daily lunch, logged with joy.';
 
 export const DATE_KEY_FORMAT = 'YYYY-MM-DD';
@@ -14,12 +14,15 @@ export const STORAGE_KEYS = {
   logs: 'lunchbox.logs',
   theme: 'lunchbox.theme',
   seeded: 'lunchbox.seeded',
-  smoothiesSeeded: 'lunchbox.seeded.smoothies',
+  workbookSeeded: 'lunchbox.seeded.workbook',
   goals: 'lunchbox.goals',
   achievements: 'lunchbox.achievements',
+  sync: 'lunchbox.sync',
+  syncTasks: 'lunchbox.sync.tasks',
+  workbooks: 'lunchbox.workbooks',
 } as const;
 
-interface CategoryMeta {
+export interface CategoryMeta {
   emoji: string;
   plural: string;
   /** Accent color used for badges / calendar fills / progress bars. */
@@ -29,7 +32,8 @@ interface CategoryMeta {
   description: string;
 }
 
-export const CATEGORY_META: Record<MealCategory, CategoryMeta> = {
+/** Rich metadata for categories we know about. */
+const KNOWN_CATEGORY_META: Record<string, CategoryMeta> = {
   Sandwich: {
     emoji: '🥪',
     plural: 'Sandwiches',
@@ -51,36 +55,66 @@ export const CATEGORY_META: Record<MealCategory, CategoryMeta> = {
     gradient: 'linear-gradient(135deg, #FBCFE8 0%, #EC4899 100%)',
     description: 'Cool, blended & fruity',
   },
+  Beverage: {
+    emoji: '🧃',
+    plural: 'Beverages',
+    color: '#38BDF8',
+    gradient: 'linear-gradient(135deg, #BAE6FD 0%, #38BDF8 100%)',
+    description: 'Sip something delicious',
+  },
 };
+
+/** Preferred display order for known categories (others follow, A→Z). */
+export const KNOWN_CATEGORY_ORDER = Object.keys(KNOWN_CATEGORY_META);
+
+/** Palette for auto-generated metadata of unknown categories. */
+const FALLBACK_COLORS = ['#8B5CF6', '#F97316', '#06B6D4', '#84CC16', '#F43F5E', '#A855F7'];
+
+/**
+ * Metadata for ANY category. Known ones (case-insensitive) get curated
+ * meta; unknown ones get a stable generated fallback, so future
+ * categories work with zero code changes.
+ */
+export function getCategoryMeta(category: MealCategory): CategoryMeta {
+  const known = Object.keys(KNOWN_CATEGORY_META).find(
+    (k) => k.toLowerCase() === category.trim().toLowerCase(),
+  );
+  if (known) return KNOWN_CATEGORY_META[known];
+
+  let hash = 0;
+  for (const ch of category) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+  const color = FALLBACK_COLORS[hash % FALLBACK_COLORS.length];
+  return {
+    emoji: '🍽️',
+    plural: category.endsWith('s') ? category : `${category}s`,
+    color,
+    gradient: `linear-gradient(135deg, ${color}55 0%, ${color} 100%)`,
+    description: 'Tasty & tracked',
+  };
+}
+
+/** Known categories first (curated order), then the rest alphabetically. */
+export function orderCategories(categories: MealCategory[]): MealCategory[] {
+  return [...new Set(categories)].sort((a, b) => {
+    const ia = KNOWN_CATEGORY_ORDER.indexOf(a);
+    const ib = KNOWN_CATEGORY_ORDER.indexOf(b);
+    if (ia !== -1 || ib !== -1) return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    return a.localeCompare(b);
+  });
+}
 
 export const WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'] as const;
 
-const BASE_MEALS: readonly Omit<Meal, 'createdAt'>[] = [
-  { id: 'meal_001', name: 'Paneer Sandwich', category: 'Sandwich' },
-  { id: 'meal_002', name: 'Club Sandwich', category: 'Sandwich' },
-  { id: 'meal_003', name: 'Veg Sandwich', category: 'Sandwich' },
-  { id: 'meal_004', name: 'Grilled Cheese', category: 'Sandwich' },
-  { id: 'meal_005', name: 'Caesar Salad', category: 'Salad' },
-  { id: 'meal_006', name: 'Greek Salad', category: 'Salad' },
-  { id: 'meal_007', name: 'Garden Salad', category: 'Salad' },
-  { id: 'meal_008', name: 'Pasta Salad', category: 'Salad' },
+/** Display metadata for the five tracked nutrients. */
+export const NUTRIENT_META: { key: keyof Nutrition; label: string; unit: string; emoji: string }[] = [
+  { key: 'calories', label: 'Calories', unit: 'kcal', emoji: '🔥' },
+  { key: 'protein', label: 'Protein', unit: 'g', emoji: '💪' },
+  { key: 'carbs', label: 'Carbs', unit: 'g', emoji: '🍞' },
+  { key: 'fiber', label: 'Fiber', unit: 'g', emoji: '🌾' },
+  { key: 'fat', label: 'Fat', unit: 'g', emoji: '🥑' },
 ];
 
-/** Seeded separately so existing installs (pre-Smoothie) get them once. */
-export const DEFAULT_SMOOTHIE_MEALS: readonly Omit<Meal, 'createdAt'>[] = [
-  { id: 'meal_009', name: 'Mango Smoothie', category: 'Smoothie' },
-  { id: 'meal_010', name: 'Banana Smoothie', category: 'Smoothie' },
-  { id: 'meal_011', name: 'Strawberry Smoothie', category: 'Smoothie' },
-  { id: 'meal_012', name: 'Mixed Berry Smoothie', category: 'Smoothie' },
-  { id: 'meal_013', name: 'Chocolate Protein Smoothie', category: 'Smoothie' },
-  { id: 'meal_014', name: 'Green Smoothie', category: 'Smoothie' },
-];
-
-/** Full starter catalog for fresh installs. */
-export const DEFAULT_MEALS: readonly Omit<Meal, 'createdAt'>[] = [
-  ...BASE_MEALS,
-  ...DEFAULT_SMOOTHIE_MEALS,
-];
+export const EMPTY_NUTRITION: Nutrition = { calories: 0, protein: 0, carbs: 0, fiber: 0, fat: 0 };
 
 export const DEFAULT_GOAL_SETTINGS: GoalSettings = {
   totalDays: 30,
@@ -92,3 +126,6 @@ export const GOAL_MAX_TARGET = 365;
 export const RECENT_LOGS_LIMIT = 10;
 export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const EXPORT_FILE_BASENAME = 'lunchbox-meals';
+export const IMPORT_ACCEPT = '.xlsx,.xls,.xlsm,.csv';
+/** Max size (bytes) of an original workbook we keep for future export. */
+export const MAX_STORED_WORKBOOK_BYTES = 3 * 1024 * 1024;

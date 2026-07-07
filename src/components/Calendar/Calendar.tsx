@@ -3,7 +3,7 @@ import { alpha } from '@mui/material/styles';
 import type { Dayjs } from 'dayjs';
 import { motion } from 'framer-motion';
 import { memo } from 'react';
-import { CATEGORY_META, WEEKDAY_LABELS } from '../../constants';
+import { WEEKDAY_LABELS, getCategoryMeta } from '../../constants';
 import type { Meal, MealLog } from '../../models';
 import { calendarDays, toDateKey, todayKey } from '../../utils/date';
 
@@ -18,7 +18,7 @@ interface CalendarProps {
 
 /**
  * Monthly grid. Logged days get a tonal category-colored fill plus the
- * category emoji; today is outlined in the primary color.
+ * meal's own icon; today is outlined in the primary color.
  */
 export const Calendar = memo(function Calendar({
   month,
@@ -60,7 +60,8 @@ export const Calendar = memo(function Calendar({
           const isToday = key === today;
           const log = logs[key];
           const meal = log ? mealById.get(log.mealId) : undefined;
-          const accent = meal ? CATEGORY_META[meal.category].color : theme.palette.primary.main;
+          const meta = meal ? getCategoryMeta(meal.category) : null;
+          const accent = meta?.color ?? theme.palette.primary.main;
           const isHighlighted = highlightDate === key;
 
           return (
@@ -116,7 +117,7 @@ export const Calendar = memo(function Calendar({
                   style={{ fontSize: 12, lineHeight: 1 }}
                   aria-hidden
                 >
-                  {meal ? CATEGORY_META[meal.category].emoji : '✅'}
+                  {meal ? (meal.icon ?? meta?.emoji) : '✅'}
                 </motion.span>
               )}
             </motion.button>

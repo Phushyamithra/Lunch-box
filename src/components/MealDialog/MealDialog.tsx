@@ -13,13 +13,14 @@ import {
 } from '@mui/material';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
-import { CATEGORY_META } from '../../constants';
+import { getCategoryMeta } from '../../constants';
 import { useAppData } from '../../context/AppDataContext';
 import { useSnackbar } from '../../context/SnackbarContext';
-import { MEAL_CATEGORIES, type MealCategory } from '../../models';
+import type { MealCategory } from '../../models';
 import { formatWithWeekday } from '../../utils/date';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { MealCard } from '../MealCard/MealCard';
+import { NutritionCard } from '../Nutrition/NutritionCard';
 import { SuccessCheck } from './SuccessCheck';
 
 type Step = 'category' | 'meal' | 'success';
@@ -40,11 +41,12 @@ const stepVariants = {
 };
 
 /**
- * Two-step logging flow: pick a category, pick a meal, save.
- * When the day already has a log it opens pre-selected and offers delete.
+ * Two-step logging flow: pick a category, pick a meal, save. Categories
+ * come from the live catalog, so new ones appear automatically. Selecting
+ * a meal reveals its nutrition card before saving.
  */
 export function MealDialog({ open, dateKey, onClose }: MealDialogProps) {
-  const { meals, mealById, logs, logMeal, deleteLog } = useAppData();
+  const { meals, mealById, categories, logs, logMeal, deleteLog } = useAppData();
   const { showSnackbar } = useSnackbar();
 
   const existingLog = dateKey ? (logs[dateKey] ?? null) : null;
@@ -72,6 +74,7 @@ export function MealDialog({ open, dateKey, onClose }: MealDialogProps) {
     () => meals.filter((m) => m.category === category),
     [meals, category],
   );
+  const selectedMeal = selectedMealId ? mealById.get(selectedMealId) : undefined;
 
   const handlePickCategory = (picked: MealCategory) => {
     setCategory(picked);
@@ -142,7 +145,7 @@ export function MealDialog({ open, dateKey, onClose }: MealDialogProps) {
         {existingMeal && step !== 'success' && (
           <Box sx={{ px: 2.5, pt: 1 }}>
             <Chip
-              label={`Logged: ${CATEGORY_META[existingMeal.category].emoji} ${existingMeal.name}`}
+              label={`Logged: ${existingMeal.icon ?? getCategoryMeta(existingMeal.category).emoji} ${existingMeal.name}`}
               size="small"
               color="primary"
               variant="outlined"
@@ -171,8 +174,8 @@ export function MealDialog({ open, dateKey, onClose }: MealDialogProps) {
                     gap: 1.25,
                   }}
                 >
-                  {MEAL_CATEGORIES.map((cat) => {
-                    const meta = CATEGORY_META[cat];
+                  {categories.map((cat) => {
+                    const meta = getCategoryMeta(cat);
                     return (
                       <motion.div key={cat} whileHover={{ scale: 1.05, y: -3 }} whileTap={{ scale: 0.95 }}>
                         <ButtonBase
@@ -213,7 +216,7 @@ export function MealDialog({ open, dateKey, onClose }: MealDialogProps) {
                 transition={{ duration: 0.18 }}
               >
                 <Typography variant="subtitle2" sx={{ mb: 1.5, color: 'text.secondary' }}>
-                  {CATEGORY_META[category].emoji} Pick your {category.toLowerCase()}
+                  {getCategoryMeta(category).emoji} Pick your {category.toLowerCase()}
                 </Typography>
                 {categoryMeals.length === 0 ? (
                   <Typography variant="body2" color="text.secondary" sx={{ py: 3, textAlign: 'center' }}>
@@ -225,7 +228,7 @@ export function MealDialog({ open, dateKey, onClose }: MealDialogProps) {
                       display: 'grid',
                       gridTemplateColumns: '1fr 1fr',
                       gap: 1,
-                      maxHeight: 264,
+                      maxHeight: 208,
                       overflowY: 'auto',
                       pr: 0.5,
                     }}
@@ -240,7 +243,17 @@ export function MealDialog({ open, dateKey, onClose }: MealDialogProps) {
                     ))}
                   </Box>
                 )}
-                <Box sx={{ display: 'flex', gap: 1, mt: 2.5 }}>
+
+                {/* Nutrition preview for the selected meal */}
+                <AnimatePresence mode="wait">
+                  {selectedMeal && (
+                    <Box sx={{ mt: 1.5 }}>
+                      <NutritionCard key={selectedMeal.id} meal={selectedMeal} />
+                    </Box>
+                  )}
+                </AnimatePresence>
+
+                <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
                   {existingLog && (
                     <Button
                       color="error"

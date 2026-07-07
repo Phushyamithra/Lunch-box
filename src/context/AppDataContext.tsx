@@ -8,14 +8,19 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { DEFAULT_GOAL_SETTINGS } from '../constants';
+import {
+  DEFAULT_GOAL_SETTINGS,
+  KNOWN_CATEGORY_ORDER,
+  MAX_STORED_WORKBOOK_BYTES,
+  orderCategories,
+} from '../constants';
 import type {
   AchievementId,
   AchievementMap,
   ExportFormat,
   GoalProgress,
   GoalSettings,
-  ImportSummary,
+  ImportResult,
   Meal,
   MealCategory,
   MealLog,
@@ -23,16 +28,18 @@ import type {
   UserProfile,
 } from '../models';
 import { goalService } from '../services/GoalService';
-import { mealService } from '../services/MealService';
+import { googleTasksSyncService } from '../services/GoogleTasksSyncService';
+import { mealService, type MealInput } from '../services/MealService';
 import { storageService, type LogsByDate } from '../services/StorageService';
 import { themeService } from '../services/ThemeService';
-import { createId } from '../utils/id';
 
 interface AppDataValue {
   loading: boolean;
   user: UserProfile | null;
   meals: Meal[];
   mealById: Map<string, Meal>;
+  /** Distinct catalog categories, known-first ordering. */
+  categories: MealCategory[];
   /** All logs for the current user, keyed by date (YYYY-MM-DD). */
   logs: LogsByDate;
   themeMode: ThemeMode;
@@ -53,11 +60,11 @@ interface AppDataValue {
   logMeal: (date: string, mealId: string) => Promise<void>;
   deleteLog: (date: string) => Promise<void>;
 
-  addMeal: (name: string, category: MealCategory) => Promise<void>;
-  updateMeal: (id: string, name: string, category: MealCategory) => Promise<void>;
+  addMeal: (input: MealInput) => Promise<void>;
+  updateMeal: (id: string, input: MealInput) => Promise<void>;
   deleteMeal: (id: string) => Promise<void>;
 
-  importFromFile: (file: File) => Promise<ImportSummary>;
+  importFromFile: (file: File) => Promise<ImportResult>;
   exportCatalog: (format: ExportFormat) => Promise<void>;
 
   clearLogs: () => Promise<void>;
@@ -89,7 +96,8 @@ const INITIAL_STATE: State = {
 /**
  * Single source of truth for app data. Holds an in-memory mirror of the
  * persisted state so every mutation updates the UI instantly, then writes
- * through the service layer.
+ * through the service layer. Google Tasks sync is fired best-effort after
+ * each log mutation — the extension remains the source of truth.
  */
 export function AppDataProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<State>(INITIAL_STATE);
@@ -127,6 +135,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }, [bootstrap]);
 
   const mealById = useMemo(() => new Map(state.meals.map((m) => [m.id, m])), [state.meals]);
+
+  const categories = useMemo(() => {
+    const found = orderCategories(state.meals.map((m) => m.category));
+    return found.length > 0 ? found : KNOWN_CATEGORY_ORDER;
+  }, [state.meals]);
 
   const goalProgress = useMemo(
     () => goalService.computeProgress(state.logs, mealById, state.goalSettings),
@@ -190,32 +203,31 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       };
       await storageService.saveMealLog(log);
       setState((s) => ({ ...s, logs: { ...s.logs, [date]: log } }));
+      // Best-effort mirror to Google Tasks (no-op unless sync is enabled).
+      void googleTasksSyncService.upsertLogTask(log, mealById.get(mealId));
     },
-    [state.user],
+    [state.user, mealById],
   );
 
   const deleteLog = useCallback(
     async (date: string) => {
       if (!state.user) return;
-      await storageService.deleteMealLog(state.user.email, date);
+      const email = state.user.email;
+      await storageService.deleteMealLog(email, date);
       setState((s) => {
         const logs = { ...s.logs };
         delete logs[date];
         return { ...s, logs };
       });
+      void googleTasksSyncService.deleteLogTask(email, date);
     },
     [state.user],
   );
 
   const addMeal = useCallback(
-    async (name: string, category: MealCategory) => {
-      mealService.validateNewMeal(name, category, state.meals);
-      const meal: Meal = {
-        id: createId('meal'),
-        name: name.trim(),
-        category,
-        createdAt: new Date().toISOString(),
-      };
+    async (input: MealInput) => {
+      mealService.validateNewMeal(input.name, input.category, state.meals);
+      const meal = mealService.createMeal(input);
       await storageService.saveMeal(meal);
       setState((s) => ({ ...s, meals: [...s.meals, meal] }));
     },
@@ -223,11 +235,16 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   );
 
   const updateMeal = useCallback(
-    async (id: string, name: string, category: MealCategory) => {
-      mealService.validateNewMeal(name, category, state.meals, id);
+    async (id: string, input: MealInput) => {
+      mealService.validateNewMeal(input.name, input.category, state.meals, id);
       const existing = state.meals.find((m) => m.id === id);
       if (!existing) throw new Error('Meal not found.');
-      const updated: Meal = { ...existing, name: name.trim(), category };
+      const updated: Meal = {
+        ...existing,
+        name: input.name.trim(),
+        category: input.category,
+        nutrition: mealService.sanitizeNutrition(input.nutrition),
+      };
       await storageService.updateMeal(updated);
       setState((s) => ({ ...s, meals: s.meals.map((m) => (m.id === id ? updated : m)) }));
     },
@@ -240,16 +257,24 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const importFromFile = useCallback(
-    async (file: File): Promise<ImportSummary> => {
+    async (file: File): Promise<ImportResult> => {
       // SheetJS is heavy — loaded on demand so popup startup stays fast.
-      const { parseSpreadsheet } = await import('../utils/spreadsheet');
-      const rows = await parseSpreadsheet(file);
-      const { meals: newMeals, summary } = mealService.buildImport(rows, state.meals);
+      const { parseSpreadsheet, fileToBase64 } = await import('../utils/spreadsheet');
+      const parsed = await parseSpreadsheet(file);
+      const { meals: newMeals, summary } = mealService.buildImport(parsed.rows, state.meals);
       if (newMeals.length > 0) {
         await storageService.importMeals(newMeals);
         setState((s) => ({ ...s, meals: [...s.meals, ...newMeals] }));
       }
-      return summary;
+      // Preserve macro-enabled workbooks verbatim (VBA is never executed).
+      if (parsed.hasMacros && file.size <= MAX_STORED_WORKBOOK_BYTES) {
+        try {
+          await storageService.saveOriginalWorkbook(file.name, await fileToBase64(file));
+        } catch (error) {
+          console.warn('Could not archive original workbook', error);
+        }
+      }
+      return { summary, hasMacros: parsed.hasMacros };
     },
     [state.meals],
   );
@@ -280,6 +305,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     () => ({
       ...state,
       mealById,
+      categories,
       goalProgress,
       pendingCelebrations,
       dismissCelebration,
@@ -299,6 +325,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     [
       state,
       mealById,
+      categories,
       goalProgress,
       pendingCelebrations,
       dismissCelebration,
