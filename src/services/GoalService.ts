@@ -49,6 +49,8 @@ export class GoalService {
     logs: LogsByDate,
     mealById: Map<string, Meal>,
     settings: GoalSettings,
+    /** Managed (enabled) category names; falls back to derived when empty. */
+    categoryNames: MealCategory[] = [],
   ): GoalProgress {
     const dayKeys = Object.keys(logs).filter((date) => (logs[date]?.length ?? 0) > 0);
     const entries = dayKeys.flatMap((date) => logs[date]);
@@ -59,11 +61,13 @@ export class GoalService {
       if (meal) counts.set(meal.category, (counts.get(meal.category) ?? 0) + 1);
     }
 
-    const catalogCategories = [...new Set([...mealById.values()].map((m) => m.category))];
-    const allCategories = orderCategories([
-      ...Object.keys(settings.categoryTargets),
-      ...catalogCategories,
-    ]);
+    const allCategories =
+      categoryNames.length > 0
+        ? categoryNames
+        : orderCategories([
+            ...Object.keys(settings.categoryTargets),
+            ...[...new Set([...mealById.values()].map((m) => m.category))],
+          ]);
 
     const categories: CategoryGoalProgress[] = allCategories.map((category) => {
       const target = settings.categoryTargets[category] ?? 0;

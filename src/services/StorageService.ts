@@ -1,6 +1,7 @@
 import { STORAGE_KEYS } from '../constants';
 import type {
   AchievementMap,
+  Category,
   GoalSettings,
   Meal,
   MealLog,
@@ -148,6 +149,24 @@ export class StorageService {
     const root = await this.getLogsRoot();
     delete root[email];
     await this.adapter.set(STORAGE_KEYS.logs, root);
+  }
+
+  // ---------- Categories ----------
+
+  async getCategories(): Promise<Category[]> {
+    return (await this.adapter.get<Category[]>(STORAGE_KEYS.categories)) ?? [];
+  }
+
+  setCategories(categories: Category[]): Promise<void> {
+    return this.adapter.set(STORAGE_KEYS.categories, categories);
+  }
+
+  async isCategoriesSeeded(): Promise<boolean> {
+    return (await this.adapter.get<boolean>(STORAGE_KEYS.categoriesSeeded)) === true;
+  }
+
+  markCategoriesSeeded(): Promise<void> {
+    return this.adapter.set(STORAGE_KEYS.categoriesSeeded, true);
   }
 
   // ---------- Goals & achievements (persistence only) ----------

@@ -1,5 +1,6 @@
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
+import CategoryRoundedIcon from '@mui/icons-material/CategoryRounded';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
@@ -75,6 +76,11 @@ export default function ManageMeals() {
         <Typography variant="h6" component="h1" sx={{ flexGrow: 1 }}>
           Manage Meals
         </Typography>
+        <Tooltip title="Manage categories">
+          <IconButton aria-label="Manage categories" size="small" onClick={() => navigate('categories')}>
+            <CategoryRoundedIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
         <Button size="small" variant="contained" startIcon={<AddRoundedIcon />} onClick={() => { setFormMeal(null); setFormOpen(true); }}>
           Add
         </Button>

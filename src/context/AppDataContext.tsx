@@ -17,6 +17,8 @@ import {
 import type {
   AchievementId,
   AchievementMap,
+  Category,
+  CategoryDeleteAction,
   ExportFormat,
   GoalProgress,
   GoalSettings,
@@ -27,6 +29,7 @@ import type {
   ThemeMode,
   UserProfile,
 } from '../models';
+import { categoryService, type CategoryInput } from '../services/CategoryService';
 import { goalService } from '../services/GoalService';
 import { googleTasksSyncService } from '../services/GoogleTasksSyncService';
 import { mealService, type MealInput } from '../services/MealService';
@@ -39,8 +42,18 @@ interface AppDataValue {
   user: UserProfile | null;
   meals: Meal[];
   mealById: Map<string, Meal>;
-  /** Distinct catalog categories, known-first ordering. */
+  /** All managed categories (ordered), including disabled ones. */
+  categoryList: Category[];
+  /** Names of categories offered when logging/creating meals + filters. */
   categories: MealCategory[];
+  /** Enabled category names only (log dialog + goals). */
+  enabledCategories: MealCategory[];
+
+  addCategory: (input: CategoryInput) => Promise<void>;
+  updateCategory: (id: string, input: CategoryInput) => Promise<void>;
+  toggleCategory: (id: string, enabled: boolean) => Promise<void>;
+  moveCategory: (id: string, direction: 'up' | 'down') => Promise<void>;
+  deleteCategory: (id: string, action: CategoryDeleteAction) => Promise<void>;
   /** All logs for the current user, keyed by date (YYYY-MM-DD). */
   logs: LogsByDate;
   themeMode: ThemeMode;
@@ -79,6 +92,7 @@ interface State {
   loading: boolean;
   user: UserProfile | null;
   meals: Meal[];
+  categoryList: Category[];
   logs: LogsByDate;
   themeMode: ThemeMode;
   goalSettings: GoalSettings;
@@ -89,6 +103,7 @@ const INITIAL_STATE: State = {
   loading: true,
   user: null,
   meals: [],
+  categoryList: [],
   logs: {},
   themeMode: 'system',
   goalSettings: DEFAULT_GOAL_SETTINGS,
@@ -119,13 +134,23 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         mealService.ensureSeeded(),
         goalService.loadSettings(),
       ]);
+      const categoryList = await categoryService.ensureSeeded(meals);
       const [logs, achievements] = user
         ? await Promise.all([
             storageService.getAllLogs(user.email),
             goalService.getAchievements(user.email),
           ])
         : [{}, {}];
-      setState({ loading: false, user, meals, logs, themeMode, goalSettings, achievements });
+      setState({
+        loading: false,
+        user,
+        meals,
+        categoryList,
+        logs,
+        themeMode,
+        goalSettings,
+        achievements,
+      });
     } catch (error) {
       console.error('Failed to load app data', error);
       setState((s) => ({ ...s, loading: false }));
@@ -138,14 +163,25 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const mealById = useMemo(() => new Map(state.meals.map((m) => [m.id, m])), [state.meals]);
 
+  const enabledCategories = useMemo(
+    () => state.categoryList.filter((c) => c.enabled).map((c) => c.name),
+    [state.categoryList],
+  );
+
+  // Managed categories first (their order), then any stray meal categories.
   const categories = useMemo(() => {
-    const found = orderCategories(state.meals.map((m) => m.category));
-    return found.length > 0 ? found : KNOWN_CATEGORY_ORDER;
-  }, [state.meals]);
+    const managed = state.categoryList.map((c) => c.name);
+    const managedSet = new Set(managed.map((n) => n.toLowerCase()));
+    const stray = orderCategories(
+      state.meals.map((m) => m.category).filter((n) => !managedSet.has(n.toLowerCase())),
+    );
+    const all = [...managed, ...stray];
+    return all.length > 0 ? all : KNOWN_CATEGORY_ORDER;
+  }, [state.categoryList, state.meals]);
 
   const goalProgress = useMemo(
-    () => goalService.computeProgress(state.logs, mealById, state.goalSettings),
-    [state.logs, mealById, state.goalSettings],
+    () => goalService.computeProgress(state.logs, mealById, state.goalSettings, enabledCategories),
+    [state.logs, mealById, state.goalSettings, enabledCategories],
   );
 
   // Award achievements whenever derived progress crosses a milestone.
@@ -175,6 +211,87 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     await goalService.saveSettings(settings);
     setState((s) => ({ ...s, goalSettings: settings }));
   }, []);
+
+  // ---------- Category management ----------
+
+  const addCategory = useCallback(
+    async (input: CategoryInput) => {
+      const categoryList = await categoryService.add(state.categoryList, input);
+      setState((s) => ({ ...s, categoryList }));
+    },
+    [state.categoryList],
+  );
+
+  const updateCategory = useCallback(
+    async (id: string, input: CategoryInput) => {
+      const { categories: categoryList, previousName } = await categoryService.update(
+        state.categoryList,
+        id,
+        input,
+      );
+      let meals = state.meals;
+      let goalSettings = state.goalSettings;
+      if (previousName) {
+        // Renames propagate: meals reference categories by name.
+        meals = state.meals.map((m) =>
+          m.category === previousName ? { ...m, category: input.name.trim() } : m,
+        );
+        await storageService.setMeals(meals);
+        const targets = { ...goalSettings.categoryTargets };
+        if (previousName in targets) {
+          targets[input.name.trim()] = targets[previousName];
+          delete targets[previousName];
+          goalSettings = { ...goalSettings, categoryTargets: targets };
+          await goalService.saveSettings(goalSettings);
+        }
+      }
+      setState((s) => ({ ...s, categoryList, meals, goalSettings }));
+    },
+    [state.categoryList, state.meals, state.goalSettings],
+  );
+
+  const toggleCategory = useCallback(
+    async (id: string, enabled: boolean) => {
+      const categoryList = await categoryService.setEnabled(state.categoryList, id, enabled);
+      setState((s) => ({ ...s, categoryList }));
+    },
+    [state.categoryList],
+  );
+
+  const moveCategory = useCallback(
+    async (id: string, direction: 'up' | 'down') => {
+      const categoryList = await categoryService.move(state.categoryList, id, direction);
+      setState((s) => ({ ...s, categoryList }));
+    },
+    [state.categoryList],
+  );
+
+  /** Deletion never silently drops meals: they move or are deleted explicitly. */
+  const deleteCategory = useCallback(
+    async (id: string, action: CategoryDeleteAction) => {
+      const category = state.categoryList.find((c) => c.id === id);
+      if (!category) return;
+
+      let meals: Meal[];
+      if (action.type === 'move') {
+        meals = state.meals.map((m) =>
+          m.category === category.name ? { ...m, category: action.targetCategoryName } : m,
+        );
+      } else {
+        meals = state.meals.filter((m) => m.category !== category.name);
+      }
+      await storageService.setMeals(meals);
+
+      const targets = { ...state.goalSettings.categoryTargets };
+      delete targets[category.name];
+      const goalSettings = { ...state.goalSettings, categoryTargets: targets };
+      await goalService.saveSettings(goalSettings);
+
+      const categoryList = await categoryService.remove(state.categoryList, id);
+      setState((s) => ({ ...s, meals, goalSettings, categoryList }));
+    },
+    [state.categoryList, state.meals, state.goalSettings],
+  );
 
   const saveEmail = useCallback(async (email: string) => {
     const user: UserProfile = {
@@ -238,10 +355,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     async (input: MealInput) => {
       mealService.validateNewMeal(input.name, input.category, state.meals);
       const meal = mealService.createMeal(input);
+      const categoryList = await categoryService.ensureCategory(state.categoryList, input.category);
       await storageService.saveMeal(meal);
-      setState((s) => ({ ...s, meals: [...s.meals, meal] }));
+      setState((s) => ({ ...s, meals: [...s.meals, meal], categoryList }));
     },
-    [state.meals],
+    [state.meals, state.categoryList],
   );
 
   const updateMeal = useCallback(
@@ -316,6 +434,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       ...state,
       mealById,
       categories,
+      enabledCategories,
+      addCategory,
+      updateCategory,
+      toggleCategory,
+      moveCategory,
+      deleteCategory,
       goalProgress,
       pendingCelebrations,
       dismissCelebration,
@@ -336,6 +460,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       state,
       mealById,
       categories,
+      enabledCategories,
+      addCategory,
+      updateCategory,
+      toggleCategory,
+      moveCategory,
+      deleteCategory,
       goalProgress,
       pendingCelebrations,
       dismissCelebration,

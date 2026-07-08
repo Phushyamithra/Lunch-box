@@ -12,6 +12,7 @@ import { createAppTheme } from './theme';
 // Secondary pages are lazy-loaded to keep popup startup snappy.
 const ManageMeals = lazy(() => import('./pages/ManageMeals'));
 const Settings = lazy(() => import('./pages/Settings'));
+const ManageCategories = lazy(() => import('./pages/ManageCategories'));
 const Analytics = lazy(() => import('./pages/Analytics'));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
 
@@ -26,6 +27,7 @@ function Splash() {
 const PAGES: Record<Page, React.ComponentType> = {
   dashboard: Dashboard,
   meals: ManageMeals,
+  categories: ManageCategories,
   settings: Settings,
   analytics: Analytics,
 };

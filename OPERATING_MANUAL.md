@@ -7,7 +7,7 @@
 
 ```yaml
 project: lunchbox-chrome-extension
-version: 1.3.0
+version: 1.4.0
 stack: [react18, typescript-strict, vite5, mui6, framer-motion, dayjs, sheetjs, manifest-v3]
 entry_points:
   app_page: index.html -> src/main.tsx        # opened in an app window, NOT a toolbar popup

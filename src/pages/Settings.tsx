@@ -1,4 +1,5 @@
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
+import CategoryRoundedIcon from '@mui/icons-material/CategoryRounded';
 import DarkModeRoundedIcon from '@mui/icons-material/DarkModeRounded';
 import DeleteSweepRoundedIcon from '@mui/icons-material/DeleteSweepRounded';
 import LightModeRoundedIcon from '@mui/icons-material/LightModeRounded';
@@ -149,6 +150,14 @@ export default function Settings() {
             onClick={() => navigate('meals')}
           >
             Manage meals
+          </Button>
+          <Button
+            variant="outlined"
+            fullWidth
+            startIcon={<CategoryRoundedIcon />}
+            onClick={() => navigate('categories')}
+          >
+            Manage categories
           </Button>
           <ImportButton fullWidth />
           <ExportButton fullWidth />

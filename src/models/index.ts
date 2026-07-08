@@ -70,6 +70,30 @@ export interface ImportResult {
 
 export type ExportFormat = 'xlsx' | 'csv';
 
+// ---------- Categories ----------
+
+/**
+ * User-manageable meal category. `name` is the canonical key referenced
+ * by meals (open string), so renames must propagate to the catalog.
+ */
+export interface Category {
+  id: string;
+  name: string;
+  /** Emoji from the built-in icon library. */
+  icon: string;
+  color: string;
+  /** Display position (ascending). */
+  order: number;
+  /** Disabled categories are hidden from logging and goals; data is kept. */
+  enabled: boolean;
+  createdAt: string;
+}
+
+/** What to do with a deleted category's meals — never silently deleted. */
+export type CategoryDeleteAction =
+  | { type: 'move'; targetCategoryName: string }
+  | { type: 'deleteMeals' };
+
 // ---------- Goals & achievements ----------
 
 /** User-configurable goal targets. A category target of 0 disables it. */

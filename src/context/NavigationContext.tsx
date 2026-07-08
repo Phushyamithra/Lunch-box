@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 
-export type Page = 'dashboard' | 'meals' | 'settings' | 'analytics';
+export type Page = 'dashboard' | 'meals' | 'categories' | 'settings' | 'analytics';
 
 interface NavigationValue {
   page: Page;

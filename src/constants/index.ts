@@ -1,7 +1,7 @@
 import type { GoalSettings, MealCategory, Nutrition } from '../models';
 
 export const APP_NAME = 'LunchBox';
-export const APP_VERSION = '1.3.0';
+export const APP_VERSION = '1.4.0';
 export const APP_TAGLINE = 'Your daily lunch, logged with joy.';
 
 export const DATE_KEY_FORMAT = 'YYYY-MM-DD';
@@ -21,6 +21,8 @@ export const STORAGE_KEYS = {
   syncTasks: 'lunchbox.sync.tasks',
   syncToken: 'lunchbox.sync.token',
   workbooks: 'lunchbox.workbooks',
+  categories: 'lunchbox.categories',
+  categoriesSeeded: 'lunchbox.seeded.categories',
 } as const;
 
 export interface CategoryMeta {
@@ -72,15 +74,45 @@ export const KNOWN_CATEGORY_ORDER = Object.keys(KNOWN_CATEGORY_META);
 const FALLBACK_COLORS = ['#8B5CF6', '#F97316', '#06B6D4', '#84CC16', '#F43F5E', '#A855F7'];
 
 /**
- * Metadata for ANY category. Known ones (case-insensitive) get curated
- * meta; unknown ones get a stable generated fallback, so future
+ * User-managed categories override the static metadata below.
+ * CategoryService registers {icon, color} per category name at bootstrap
+ * and after every category mutation, so ALL components pick up custom
+ * icons/colors through the same getCategoryMeta call — no prop changes.
+ */
+const categoryOverrides = new Map<string, { icon: string; color: string }>();
+
+export function registerCategoryOverrides(
+  categories: { name: string; icon: string; color: string }[],
+): void {
+  categoryOverrides.clear();
+  for (const c of categories) {
+    categoryOverrides.set(c.name.trim().toLowerCase(), { icon: c.icon, color: c.color });
+  }
+}
+
+const toGradient = (color: string): string =>
+  `linear-gradient(135deg, ${color}55 0%, ${color} 100%)`;
+
+/**
+ * Metadata for ANY category: user overrides (Manage Categories) first,
+ * then curated known meta, then a stable generated fallback — so new
  * categories work with zero code changes.
  */
 export function getCategoryMeta(category: MealCategory): CategoryMeta {
-  const known = Object.keys(KNOWN_CATEGORY_META).find(
-    (k) => k.toLowerCase() === category.trim().toLowerCase(),
-  );
-  if (known) return KNOWN_CATEGORY_META[known];
+  const key = category.trim().toLowerCase();
+  const known = Object.keys(KNOWN_CATEGORY_META).find((k) => k.toLowerCase() === key);
+  const base = known ? KNOWN_CATEGORY_META[known] : null;
+  const override = categoryOverrides.get(key);
+  if (override) {
+    return {
+      emoji: override.icon,
+      plural: base?.plural ?? (category.endsWith('s') ? category : `${category}s`),
+      color: override.color,
+      gradient: toGradient(override.color),
+      description: base?.description ?? 'Tasty & tracked',
+    };
+  }
+  if (base) return base;
 
   let hash = 0;
   for (const ch of category) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
@@ -123,6 +155,12 @@ export const DEFAULT_GOAL_SETTINGS: GoalSettings = {
 };
 
 export const GOAL_MAX_TARGET = 365;
+
+/** Preset accent colors offered in the category editor. */
+export const CATEGORY_COLOR_PALETTE = [
+  '#F59E0B', '#22C55E', '#EC4899', '#38BDF8', '#8B5CF6',
+  '#F97316', '#06B6D4', '#84CC16', '#F43F5E', '#A855F7',
+] as const;
 
 export const RECENT_LOGS_LIMIT = 10;
 export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

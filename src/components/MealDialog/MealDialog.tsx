@@ -53,7 +53,7 @@ const stepVariants = {
  * return to the day overview to add more or finish.
  */
 export function MealDialog({ open, dateKey, onClose }: MealDialogProps) {
-  const { meals, mealById, categories, logs, logMeal, deleteLog } = useAppData();
+  const { meals, mealById, enabledCategories: categories, logs, logMeal, deleteLog } = useAppData();
   const { showSnackbar } = useSnackbar();
 
   const dayLogs: MealLog[] = useMemo(

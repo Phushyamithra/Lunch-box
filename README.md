@@ -13,7 +13,11 @@ A production build is already included in `dist/`.
 3. Click **Load unpacked** and select the `dist/` folder.
 4. Click the LunchBox toolbar icon — the app opens as a **centered application window** (560×800, reused/focused if already open) instead of a toolbar popup. Enter your email on first launch and start logging.
 
-The extension ID is pinned via the manifest `key` to `gghekejecnlabppaolhgkgpljilnjbnp`, so OAuth configuration never breaks when the extension is reloaded or moved. See `OPERATING_MANUAL.md` for architecture, sync setup and troubleshooting.
+The extension ID is pinned via the manifest `key` to `gghekejecnlabppaolhgkgpljilnjbnp`, so OAuth configuration never breaks when the extension is reloaded or moved.
+
+**Documentation:** [`OPERATING_MANUAL.md`](OPERATING_MANUAL.md) (machine-readable quick reference) · [`docs/OPERATIONS_MANUAL.md`](docs/OPERATIONS_MANUAL.md) (maintainer handbook) · [`docs/DEVELOPER_GUIDE.md`](docs/DEVELOPER_GUIDE.md) · [`docs/PRODUCTION_SETUP.md`](docs/PRODUCTION_SETUP.md) · [`docs/CHROME_WEBSTORE_PUBLISHING.md`](docs/CHROME_WEBSTORE_PUBLISHING.md) · [`docs/SHARING_AND_DISTRIBUTION.md`](docs/SHARING_AND_DISTRIBUTION.md) · [`docs/MOBILE_APP_ROADMAP.md`](docs/MOBILE_APP_ROADMAP.md)
+
+**New in v1.4.0:** fully custom categories — Manage Categories screen (add/edit/reorder/disable/delete with meal migration), searchable emoji icon picker, per-category colors, and goals for any category you create.
 
 ## Development
 

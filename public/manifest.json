@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "LunchBox \u2013 Meal & Nutrition Tracker",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Log daily meals with full nutrition info, track goals with achievements, view analytics, and sync logs to Google Tasks.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnixde+BLKKjJHH6bPqHcus8hpMotIgkks46RM7VYtcD4Q3MBJQbTSDORdyS8NcZKyVz9ynlFBL3l8Fsvn1oSYoFgji7zH/OWSOJR3mw23+op4t4Juh+Lp3pqefuC/JkD2huP2DapuRna0ZNE61SmIIw02Lcx6ZnvEbWhCJBVaCW9mGOmDDAAy9GAPdAjVljcyE6d2s2tHVIpyooUrGeLW9htJz8JLnsHCHL4WQkYpHzzPw6KPJLQyTQ9e1zuUCfUtzvvzt/egu5m90jQT0c6VhF2cOxwin2Ujvg9JL1joUNrX0KThn8KLtx5VGlb89yplg/d3TVWUUBQWgSsIOshfQIDAQAB",
   "action": {
