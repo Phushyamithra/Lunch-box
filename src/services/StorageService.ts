@@ -9,10 +9,10 @@ import type {
   ThemeMode,
   UserProfile,
 } from '../models';
+import { normalizeUserLogs, type LogsByDate } from '../core/logs';
 import { createStorageAdapter, type StorageAdapter } from './storage';
 
-/** date-key → logs for that day, for a single user. */
-export type LogsByDate = Record<string, MealLog[]>;
+export type { LogsByDate } from '../core/logs';
 /** email → LogsByDate. Multi-user ready. */
 type LogsRoot = Record<string, LogsByDate>;
 /** email → achievements. Multi-user ready. */
@@ -83,25 +83,9 @@ export class StorageService {
     return (await this.adapter.get<LogsRoot>(STORAGE_KEYS.logs)) ?? {};
   }
 
-  /**
-   * Migrates legacy shape (one log object per date) to arrays on read.
-   * Legacy logs get id = date, which also matches the old sync-task map.
-   */
+  /** Migrates legacy shape (one log object per date) on read — see core/logs. */
   private normalizeUserLogs(raw: unknown): LogsByDate {
-    const result: LogsByDate = {};
-    if (!raw || typeof raw !== 'object') return result;
-    for (const [date, value] of Object.entries(raw as Record<string, unknown>)) {
-      if (Array.isArray(value)) {
-        result[date] = (value as (MealLog & { id?: string })[]).map((log) => ({
-          ...log,
-          id: log.id ?? date,
-        }));
-      } else if (value && typeof value === 'object') {
-        const legacy = value as Omit<MealLog, 'id'> & { id?: string };
-        result[date] = [{ ...legacy, id: legacy.id ?? date }];
-      }
-    }
-    return result;
+    return normalizeUserLogs(raw);
   }
 
   async getAllLogs(email: string): Promise<LogsByDate> {

@@ -12,9 +12,13 @@ import { supabase } from './lib/supabase';
 import Home from './pages/Home';
 import { MODULES, ModulePlaceholder } from './pages/ModulePlaceholder';
 import { SetupRequired } from './pages/SetupRequired';
+import { FoodProvider } from './food/FoodContext';
+import { SnackbarProvider } from './layout/Snackbar';
 import { SettingsProvider, useSettings } from './settings/SettingsContext';
 
 const Settings = lazy(() => import('./pages/Settings'));
+const FoodPage = lazy(() => import('./food/FoodPage'));
+const ImportPage = lazy(() => import('./food/ImportPage'));
 
 /** Tracker design system (cream, peach, rose, charcoal), dark by default. */
 function Themed({ mode, children }: { mode: ThemeMode; children: ReactNode }) {
@@ -38,25 +42,30 @@ function Splash() {
   );
 }
 
-function SignedInApp() {
+function SignedInApp({ client }: { client: SupabaseClient }) {
   const { settings } = useSettings();
   return (
     <Themed mode={settings.themeMode}>
-      <BrowserRouter>
-        <Suspense fallback={<Splash />}>
-          <Routes>
-            <Route element={<AppShell />}>
-              <Route index element={<Home />} />
-              <Route path="food" element={<ModulePlaceholder module={MODULES.food} />} />
-              <Route path="fitness" element={<ModulePlaceholder module={MODULES.fitness} />} />
-              <Route path="finance" element={<ModulePlaceholder module={MODULES.finance} />} />
-              <Route path="goals" element={<ModulePlaceholder module={MODULES.goals} />} />
-              <Route path="settings" element={<Settings />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Route>
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
+      <SnackbarProvider>
+        <FoodProvider client={client}>
+          <BrowserRouter>
+            <Suspense fallback={<Splash />}>
+              <Routes>
+                <Route element={<AppShell />}>
+                  <Route index element={<Home />} />
+                  <Route path="food" element={<FoodPage />} />
+                  <Route path="food/import" element={<ImportPage client={client} />} />
+                  <Route path="fitness" element={<ModulePlaceholder module={MODULES.fitness} />} />
+                  <Route path="finance" element={<ModulePlaceholder module={MODULES.finance} />} />
+                  <Route path="goals" element={<ModulePlaceholder module={MODULES.goals} />} />
+                  <Route path="settings" element={<Settings />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Route>
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </FoodProvider>
+      </SnackbarProvider>
     </Themed>
   );
 }
@@ -80,7 +89,7 @@ function AuthGate({ client }: { client: SupabaseClient }) {
   return (
     // Keyed by user so signing in as someone else never reuses state.
     <SettingsProvider key={session.user.id} client={client} userId={session.user.id}>
-      <SignedInApp />
+      <SignedInApp client={client} />
     </SettingsProvider>
   );
 }

@@ -12,8 +12,9 @@ generator (workbox) fails on Node 19 with
 
 1. Sign in at https://supabase.com and create a project on the free tier.
    Pick a region near you (for example Mumbai, `ap-south-1`).
-2. Open **SQL Editor**, paste `supabase/migrations/0001_app_settings.sql`,
-   and run it.
+2. Open **SQL Editor** and run each file in `supabase/migrations/`, in
+   number order (`0001_…`, then `0002_…`, and so on). Each file runs once.
+   New phases add new files; run only the ones you haven't run yet.
 3. Open **Authentication → URL Configuration**:
    - **Site URL:** your Vercel production URL (after step 3 below).
    - **Redirect URLs:** add `http://localhost:5174/**`, your production URL

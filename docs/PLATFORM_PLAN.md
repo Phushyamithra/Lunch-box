@@ -47,8 +47,16 @@ Living record of the audit, the decisions taken, and phase status.
   creating the Supabase project and Vercel deployment (your accounts), and
   a real two-device sign-in test. Moving shared services into `core` is
   deferred to phase 2, when the food services move to Supabase.
-- [ ] **Phase 2 — Food.** Supabase schema, backup import, item caps and
-  order periods with override history, shared milestone cycles.
+- [~] **Phase 2 — Food.**
+  - [x] 2a: `0002_food.sql` (categories, meals, meal_logs, food_settings,
+    import_runs; RLS plus same-owner triggers). Extension backup import
+    (preview, then confirm; idempotent through legacy ids; deleted meals kept
+    as archived placeholders; Google Task ids preserved). Food page: log by
+    search and tap, per-day view, undo, soft delete, week strip, catalog
+    nutrition estimates, legacy goal progress. Shared logic moved into
+    `src/core` (goals, logs, backup format).
+  - [ ] 2b: meal catalog editing, per-order item caps with override
+    history, milestone cycles (needs the cap answers).
 - [ ] **Phase 3 — Fitness.**
 - [ ] **Phase 4 — Finance** (encrypted sync).
 - [ ] **Phase 5 — Home dashboard, polish, PWA install/offline.**
