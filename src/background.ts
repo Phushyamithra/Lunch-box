@@ -47,20 +47,32 @@ async function computePosition(): Promise<{ left?: number; top?: number }> {
   return {};
 }
 
+async function createAppWindow(position: { left?: number; top?: number }) {
+  const options: chrome.windows.CreateData = {
+    url: chrome.runtime.getURL('index.html'),
+    type: 'popup',
+    width: APP_WINDOW_WIDTH,
+    height: APP_WINDOW_HEIGHT,
+    focused: true,
+  };
+  try {
+    // Centered over the current browser window — but that window may sit on
+    // a monitor that no longer exists (laptop undocked), making the computed
+    // bounds invalid ("Bounds must be at least 50% within visible screen
+    // space"). If Chrome rejects the position, retry and let it auto-place.
+    return await chrome.windows.create({ ...options, ...position });
+  } catch {
+    return chrome.windows.create(options);
+  }
+}
+
 chrome.action.onClicked.addListener(() => {
   void (async () => {
     const existingId = await getStoredWindowId();
     if (existingId !== undefined && (await focusExisting(existingId))) return;
 
     const position = await computePosition();
-    const appWindow = await chrome.windows.create({
-      url: chrome.runtime.getURL('index.html'),
-      type: 'popup',
-      width: APP_WINDOW_WIDTH,
-      height: APP_WINDOW_HEIGHT,
-      focused: true,
-      ...position,
-    });
+    const appWindow = await createAppWindow(position);
     if (appWindow.id !== undefined) {
       await chrome.storage.session.set({ [WINDOW_ID_KEY]: appWindow.id });
     }
