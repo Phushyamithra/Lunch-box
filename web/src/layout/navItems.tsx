@@ -16,11 +16,11 @@ export interface NavItem {
 
 /** Primary destinations — bottom bar on phones, side rail on laptops. */
 export const NAV_ITEMS: NavItem[] = [
-  { path: '/', label: 'Home', icon: <HomeRoundedIcon />, tint: { from: '#FFF3B0', to: '#F0BE6E', ink: '#540B0E' } },
-  { path: '/food', label: 'Food', icon: <RestaurantRoundedIcon />, tint: { from: '#E09F3E', to: '#C98330', ink: '#540B0E' } },
+  { path: '/', label: 'Home', icon: <HomeRoundedIcon />, tint: { from: '#FFF3B0', to: '#F0BE6E', ink: '#1F3A41' } },
+  { path: '/food', label: 'Food', icon: <RestaurantRoundedIcon />, tint: { from: '#F0BE6E', to: '#E09F3E', ink: '#1F3A41' } },
   { path: '/fitness', label: 'Fitness', icon: <FitnessCenterRoundedIcon />, tint: { from: '#9E2A2B', to: '#540B0E', ink: '#FFF3B0' } },
   { path: '/finance', label: 'Finance', icon: <AccountBalanceWalletRoundedIcon />, tint: { from: '#4A7A86', to: '#335C67', ink: '#FFF3B0' } },
-  { path: '/goals', label: 'Goals', icon: <EmojiEventsRoundedIcon />, tint: { from: '#335C67', to: '#540B0E', ink: '#FFF3B0' } },
+  { path: '/goals', label: 'Goals', icon: <EmojiEventsRoundedIcon />, tint: { from: '#335C67', to: '#1F3A41', ink: '#F0BE6E' } },
 ];
 
 /**

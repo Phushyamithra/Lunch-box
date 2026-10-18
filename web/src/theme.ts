@@ -2,68 +2,71 @@ import { alpha, createTheme, type Theme } from '@mui/material/styles';
 import type { ResolvedThemeMode } from '../../src/models';
 
 /**
- * Tracker palette: slate teal, butter cream, amber, brick and maroon, worn
- * two ways — iOS-style frosted glass for surfaces, and Material You tonal
- * "pop" for actions (pill buttons, tonal containers, pill nav indicators).
+ * Tracker palette. Major colours: slate teal, butter and amber. Minor
+ * accents: brick and maroon (errors, the Fitness tile). Worn two ways —
+ * iOS-style frosted glass for surfaces, and Material You tonal "pop" for
+ * actions (pill buttons, tonal containers, pill nav indicators).
  *
  * Contrast is WCAG AA, checked against the worst case of each glass layer
- * over the background glow: body text ≥ 12:1, secondary text ≥ 6:1,
- * text on the amber CTA ≥ 6.4:1.
+ * over the background glow: body text ≥ 10:1, secondary text ≥ 5.8:1,
+ * text on the amber CTA ≥ 5.3:1.
  */
 export const PALETTE = {
   teal: '#335C67',
-  cream: '#FFF3B0',
+  butter: '#FFF3B0',
   amber: '#E09F3E',
   brick: '#9E2A2B',
   maroon: '#540B0E',
   // Derived tints/shades of the five above.
-  creamLight: '#FFF8D4', // light-mode page
+  butterLight: '#FFF8D4', // light-mode page
   amberLight: '#F0BE6E',
-  amberDeep: '#C98330',
-  night: '#1C0809', // dark-mode page (maroon, deepened)
-  surface: '#2E1416', // dark-mode glass base
-  /** Text on light fills (cream, amber, the CTA gradient). */
-  ink: '#540B0E',
+  amberDeep: '#9A6A1F', // amber that reads on butter (4.5:1+)
+  tealDeep: '#1F3A41', // light-mode text; text on amber/butter fills
+  tealLight: '#4A7A86',
+  night: '#0E1C20', // dark-mode page (teal, deepened)
+  surface: '#1A3238', // dark-mode glass base
+  /** Text on light fills (butter, amber, the CTA gradient). */
+  ink: '#1F3A41',
 } as const;
 
-/** Primary call-to-action fill; maroon text passes on every stop. */
+/** Primary call-to-action fill; deep-teal text passes on every stop. */
 export const CTA_GRADIENT = `linear-gradient(135deg, ${PALETTE.amberLight} 0%, ${PALETTE.amber} 100%)`;
 
 export function createTrackerTheme(mode: ResolvedThemeMode): Theme {
   const dark = mode === 'dark';
   const glassFill = dark ? alpha(PALETTE.surface, 0.7) : alpha('#FFFFFF', 0.6);
-  const glassBorder = dark ? alpha(PALETTE.cream, 0.1) : alpha('#FFFFFF', 0.8);
+  const glassBorder = dark ? alpha(PALETTE.butter, 0.1) : alpha('#FFFFFF', 0.8);
   const glassShadow = dark
     ? '0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,243,176,0.06)'
-    : '0 8px 32px rgba(84,11,14,0.08), inset 0 1px 0 rgba(255,255,255,0.9)';
-  const tonal = dark ? alpha(PALETTE.brick, 0.45) : '#FBE3BC';
-  const onTonal = dark ? PALETTE.cream : PALETTE.maroon;
+    : '0 8px 32px rgba(31,58,65,0.1), inset 0 1px 0 rgba(255,255,255,0.9)';
+  const tonal = dark ? '#2A4C55' : '#D5E5E7'; // teal containers
+  const onTonal = dark ? PALETTE.butter : PALETTE.tealDeep;
 
   const theme = createTheme({
     palette: dark
       ? {
           mode,
-          primary: { main: PALETTE.amber, contrastText: PALETTE.maroon },
-          secondary: { main: '#E07A6E', contrastText: PALETTE.night },
+          primary: { main: PALETTE.amber, contrastText: PALETTE.ink },
+          secondary: { main: PALETTE.amber, contrastText: PALETTE.ink },
           error: { main: '#F2A7A0' },
           warning: { main: PALETTE.amberLight },
           success: { main: '#9CC5A1' },
           info: { main: '#8FB8C2' },
           background: { default: PALETTE.night, paper: PALETTE.surface },
-          text: { primary: PALETTE.cream, secondary: '#BBAC7E' },
-          divider: alpha(PALETTE.cream, 0.1),
+          text: { primary: PALETTE.butter, secondary: '#B2AE82' },
+          divider: alpha(PALETTE.butter, 0.1),
         }
       : {
           mode,
-          primary: { main: PALETTE.teal, contrastText: PALETTE.cream },
-          secondary: { main: PALETTE.brick, contrastText: '#FFFFFF' },
+          primary: { main: PALETTE.teal, contrastText: PALETTE.butter },
+          secondary: { main: PALETTE.amberDeep, contrastText: '#FFFFFF' },
           error: { main: PALETTE.brick },
-          warning: { main: '#8A5A12' },
+          warning: { main: PALETTE.amberDeep },
           success: { main: '#3E6B4A' },
           info: { main: PALETTE.teal },
-          background: { default: PALETTE.creamLight, paper: '#FFFBEA' },
-          text: { primary: PALETTE.maroon, secondary: PALETTE.teal },
-          divider: alpha(PALETTE.maroon, 0.1),
+          background: { default: PALETTE.butterLight, paper: '#FFFBEA' },
+          text: { primary: PALETTE.tealDeep, secondary: PALETTE.teal },
+          divider: alpha(PALETTE.tealDeep, 0.1),
         },
     shape: { borderRadius: 14 },
     typography: {
@@ -91,12 +94,12 @@ export function createTrackerTheme(mode: ResolvedThemeMode): Theme {
             zIndex: -1,
             pointerEvents: 'none',
             background: dark
-              ? `radial-gradient(60vmax 45vmax at 0% 0%, ${alpha(PALETTE.teal, 0.45)}, transparent 60%),
-                 radial-gradient(55vmax 40vmax at 100% 100%, ${alpha(PALETTE.brick, 0.35)}, transparent 60%),
+              ? `radial-gradient(60vmax 45vmax at 0% 0%, ${alpha(PALETTE.teal, 0.55)}, transparent 60%),
+                 radial-gradient(55vmax 40vmax at 100% 100%, ${alpha(PALETTE.amber, 0.18)}, transparent 60%),
                  ${PALETTE.night}`
-              : `radial-gradient(60vmax 45vmax at 0% 0%, ${alpha(PALETTE.amber, 0.38)}, transparent 60%),
-                 radial-gradient(55vmax 40vmax at 100% 100%, ${alpha(PALETTE.teal, 0.2)}, transparent 60%),
-                 ${PALETTE.creamLight}`,
+              : `radial-gradient(60vmax 45vmax at 0% 0%, ${alpha(PALETTE.amber, 0.32)}, transparent 60%),
+                 radial-gradient(55vmax 40vmax at 100% 100%, ${alpha(PALETTE.teal, 0.25)}, transparent 60%),
+                 ${PALETTE.butterLight}`,
           },
           body: { backgroundColor: 'transparent' },
         },
@@ -133,7 +136,7 @@ export function createTrackerTheme(mode: ResolvedThemeMode): Theme {
       MuiAppBar: {
         styleOverrides: {
           root: {
-            backgroundColor: dark ? alpha(PALETTE.night, 0.55) : alpha(PALETTE.creamLight, 0.55),
+            backgroundColor: dark ? alpha(PALETTE.night, 0.55) : alpha(PALETTE.butterLight, 0.55),
             borderRadius: 0,
           },
         },
@@ -144,10 +147,10 @@ export function createTrackerTheme(mode: ResolvedThemeMode): Theme {
           root: { borderRadius: 999, paddingInline: 20 },
           containedPrimary: {
             background: CTA_GRADIENT,
-            color: PALETTE.maroon,
+            color: PALETTE.ink,
             boxShadow: `0 6px 18px ${alpha(PALETTE.amber, dark ? 0.25 : 0.45)}`,
             '&:hover': { background: CTA_GRADIENT, filter: 'brightness(1.04)' },
-            '&.Mui-disabled': { background: alpha(PALETTE.amber, 0.35), color: alpha(PALETTE.maroon, 0.6) },
+            '&.Mui-disabled': { background: alpha(PALETTE.amber, 0.35), color: alpha(PALETTE.ink, 0.6) },
           },
         },
       },
@@ -182,7 +185,7 @@ export function createTrackerTheme(mode: ResolvedThemeMode): Theme {
       },
       MuiLinearProgress: {
         styleOverrides: {
-          root: { height: 10, borderRadius: 999, backgroundColor: alpha(dark ? PALETTE.cream : PALETTE.maroon, 0.1) },
+          root: { height: 10, borderRadius: 999, backgroundColor: alpha(dark ? PALETTE.butter : PALETTE.tealDeep, 0.1) },
           bar: { borderRadius: 999 },
           barColorSecondary: { background: CTA_GRADIENT },
         },

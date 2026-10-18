@@ -122,7 +122,7 @@ export function MonthCalendar({ month, selected, logsByDate, colorForMeal, onMon
                       height: 6,
                       borderRadius: '50%',
                       bgcolor: colorForMeal(log.mealId),
-                      boxShadow: `0 0 0 1px ${isSelected ? 'rgba(84,11,14,0.35)' : 'rgba(255,255,255,0.5)'}`,
+                      boxShadow: `0 0 0 1px ${isSelected ? 'rgba(31,58,65,0.35)' : 'rgba(255,255,255,0.5)'}`,
                     }}
                   />
                 ))}
