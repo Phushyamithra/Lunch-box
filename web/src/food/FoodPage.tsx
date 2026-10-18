@@ -1,6 +1,4 @@
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
-import ChevronLeftRoundedIcon from '@mui/icons-material/ChevronLeftRounded';
-import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import UploadFileRoundedIcon from '@mui/icons-material/UploadFileRounded';
 import {
@@ -16,16 +14,26 @@ import {
   Paper,
   Stack,
   Typography,
+  useTheme,
 } from '@mui/material';
 import dayjs from 'dayjs';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { computeGoalProgress } from '../../../src/core/goals';
 import { useSnackbar } from '../layout/Snackbar';
 import { useFood } from './FoodContext';
 import type { LogRow, MealRow } from './foodApi';
-import { parseGoalSettings, toCoreMeals, toLogsByDate, todayKey, totalNutrition, weekOf, DATE_KEY } from './foodModel';
+import {
+  DATE_KEY,
+  MONTH_KEY,
+  parseGoalSettings,
+  toCoreMeals,
+  toLogsByDate,
+  todayKey,
+  totalNutrition,
+} from './foodModel';
 import { MealPicker } from './MealPicker';
+import { MonthCalendar } from './MonthCalendar';
 
 function Card({ title, aside, children }: { title: string; aside?: ReactNode; children: ReactNode }) {
   return (
@@ -49,10 +57,12 @@ function dateLabel(key: string): string {
 }
 
 export default function FoodPage() {
+  const theme = useTheme();
   const { loading, error, data, mealById, reload, logMeal, removeLog, restoreLog } = useFood();
   const showToast = useSnackbar();
   const navigate = useNavigate();
   const [date, setDate] = useState(todayKey);
+  const [month, setMonth] = useState(() => dayjs().format(MONTH_KEY));
   const [picking, setPicking] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -62,7 +72,6 @@ export default function FoodPage() {
     [data.logs, date],
   );
   const totals = useMemo(() => totalNutrition(dayLogs, mealById), [dayLogs, mealById]);
-  const week = useMemo(() => weekOf(date), [date]);
   const logsByDate = useMemo(() => toLogsByDate(data.logs), [data.logs]);
   const progress = useMemo(() => {
     const enabledNames = data.categories.filter((c) => c.enabled).map((c) => c.name);
@@ -73,6 +82,13 @@ export default function FoodPage() {
       enabledNames,
     );
   }, [logsByDate, data.meals, data.categories, data.settings]);
+  const colorForMeal = useCallback(
+    (mealId: string) => {
+      const meal = mealById.get(mealId);
+      return (meal && categoryById.get(meal.category_id)?.color) || theme.palette.secondary.main;
+    },
+    [mealById, categoryById, theme.palette.secondary.main],
+  );
 
   if (loading && data.meals.length === 0) {
     return (
@@ -130,122 +146,136 @@ export default function FoodPage() {
     }
   };
 
-  const isToday = date === todayKey();
+  const selectDate = (key: string) => {
+    setDate(key);
+    setMonth(key.slice(0, 7));
+  };
 
   return (
-    <Stack spacing={2} sx={{ maxWidth: 720 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <IconButton aria-label="Previous day" onClick={() => setDate(dayjs(date).subtract(1, 'day').format(DATE_KEY))} size="large">
-          <ChevronLeftRoundedIcon />
-        </IconButton>
-        <Typography variant="h6" component="p" sx={{ flexGrow: 1, textAlign: 'center' }}>
-          {dateLabel(date)}
-        </Typography>
-        <IconButton
-          aria-label="Next day"
-          disabled={isToday}
-          onClick={() => setDate(dayjs(date).add(1, 'day').format(DATE_KEY))}
+    <Box
+      sx={{
+        display: 'grid',
+        gap: 2,
+        gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1.1fr) minmax(0, 1fr)' },
+        alignItems: 'start',
+      }}
+    >
+      <Stack spacing={2}>
+        <MonthCalendar
+          month={month}
+          selected={date}
+          logsByDate={logsByDate}
+          colorForMeal={colorForMeal}
+          onMonthChange={setMonth}
+          onSelect={selectDate}
+        />
+        <Button
+          variant="contained"
           size="large"
+          startIcon={<AddRoundedIcon />}
+          onClick={() => setPicking(true)}
+          disabled={busy}
+          sx={{ minHeight: 56, fontSize: 16 }}
         >
-          <ChevronRightRoundedIcon />
-        </IconButton>
-      </Box>
+          {busy ? 'Saving…' : `Log a meal · ${dateLabel(date)}`}
+        </Button>
+      </Stack>
 
-      <Button variant="contained" size="large" startIcon={<AddRoundedIcon />} onClick={() => setPicking(true)} disabled={busy} sx={{ minHeight: 52 }}>
-        {busy ? 'Saving…' : 'Log a meal'}
-      </Button>
+      <Stack spacing={2}>
+        <Card
+          title={dateLabel(date) === dayjs(date).format('ddd D MMM') ? dateLabel(date) : `${dateLabel(date)} · ${dayjs(date).format('D MMM')}`}
+          aside={
+            <Typography color="text.secondary">
+              {dayLogs.length} meal{dayLogs.length === 1 ? '' : 's'}
+            </Typography>
+          }
+        >
+          {dayLogs.length === 0 ? (
+            <Typography color="text.secondary">Nothing logged for this day.</Typography>
+          ) : (
+            <List disablePadding>
+              {dayLogs.map((log) => {
+                const meal = mealById.get(log.meal_id);
+                const category = meal ? categoryById.get(meal.category_id) : undefined;
+                return (
+                  <ListItem
+                    key={log.id}
+                    disableGutters
+                    sx={{ gap: 1.5 }}
+                    secondaryAction={
+                      <IconButton edge="end" aria-label={`Remove ${meal?.name ?? 'meal'}`} onClick={() => void handleRemove(log)} size="large">
+                        <DeleteOutlineRoundedIcon />
+                      </IconButton>
+                    }
+                  >
+                    <Box
+                      aria-hidden
+                      sx={{
+                        fontSize: 22,
+                        width: 42,
+                        height: 42,
+                        flexShrink: 0,
+                        display: 'grid',
+                        placeItems: 'center',
+                        borderRadius: '13px',
+                        bgcolor: theme.tracker.tonal,
+                        boxShadow: `inset 0 0 0 1.5px ${category?.color ?? 'transparent'}55`,
+                      }}
+                    >
+                      {meal?.icon ?? category?.icon}
+                    </Box>
+                    <ListItemText
+                      primary={meal?.name ?? 'Unknown meal'}
+                      primaryTypographyProps={{ fontWeight: 600 }}
+                      secondary={`${category?.name ?? ''} · ${Math.round(meal?.calories ?? 0)} kcal`}
+                    />
+                  </ListItem>
+                );
+              })}
+            </List>
+          )}
+          {dayLogs.length > 0 && (
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1, mt: 1.5 }}>
+              {[
+                ['kcal', totals.calories],
+                ['protein', totals.protein],
+                ['carbs', totals.carbs],
+                ['fat', totals.fat],
+              ].map(([label, value]) => (
+                <Box key={label} sx={{ textAlign: 'center', py: 1, borderRadius: '12px', bgcolor: 'action.hover' }}>
+                  <Typography variant="subtitle1" component="div">
+                    {Math.round(Number(value))}
+                    {label === 'kcal' ? '' : ' g'}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {label}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          )}
+          {dayLogs.length > 0 && (
+            <Typography variant="caption" color="text.secondary" component="p" sx={{ mt: 1 }}>
+              Estimated from catalog nutrition values.
+            </Typography>
+          )}
+        </Card>
 
-      <Card title={`Meals · ${dateLabel(date)}`} aside={<Typography color="text.secondary">{dayLogs.length}</Typography>}>
-        {dayLogs.length === 0 ? (
-          <Typography color="text.secondary">Nothing logged for this day.</Typography>
-        ) : (
-          <List disablePadding>
-            {dayLogs.map((log) => {
-              const meal = mealById.get(log.meal_id);
-              const category = meal ? categoryById.get(meal.category_id) : undefined;
-              return (
-                <ListItem
-                  key={log.id}
-                  disableGutters
-                  secondaryAction={
-                    <IconButton edge="end" aria-label={`Remove ${meal?.name ?? 'meal'}`} onClick={() => void handleRemove(log)} size="large">
-                      <DeleteOutlineRoundedIcon />
-                    </IconButton>
-                  }
-                >
-                  <Box aria-hidden sx={{ fontSize: 24, width: 40, textAlign: 'center' }}>
-                    {meal?.icon ?? category?.icon}
-                  </Box>
-                  <ListItemText
-                    primary={meal?.name ?? 'Unknown meal'}
-                    secondary={`${category?.name ?? ''} · ${Math.round(meal?.calories ?? 0)} kcal`}
-                  />
-                </ListItem>
-              );
-            })}
-          </List>
-        )}
-        {dayLogs.length > 0 && (
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Estimated from catalog values: {Math.round(totals.calories)} kcal · {Math.round(totals.protein)} g protein ·{' '}
-            {Math.round(totals.carbs)} g carbs · {Math.round(totals.fat)} g fat
-          </Typography>
-        )}
-      </Card>
+        <Card title="Goals" aside={<Typography variant="caption" color="text.secondary">all time · from LunchBox</Typography>}>
+          <Stack spacing={1.5}>
+            <ProgressRow label="Days with a logged meal" count={progress.days.count} target={progress.days.target} />
+            {progress.categories
+              .filter((c) => c.enabled)
+              .map((c) => (
+                <ProgressRow key={c.category} label={c.category} count={c.count} target={c.target} />
+              ))}
+          </Stack>
+        </Card>
 
-      <Card title="This week">
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 0.75 }}>
-          {week.map((key) => {
-            const count = logsByDate[key]?.length ?? 0;
-            const selected = key === date;
-            const future = key > todayKey();
-            return (
-              <Box
-                key={key}
-                component="button"
-                disabled={future}
-                onClick={() => setDate(key)}
-                aria-label={`${dayjs(key).format('dddd D MMMM')}: ${count} meal${count === 1 ? '' : 's'}`}
-                aria-pressed={selected}
-                sx={{
-                  border: 1,
-                  borderColor: selected ? 'secondary.main' : 'divider',
-                  borderRadius: 1.5,
-                  bgcolor: count > 0 ? 'action.selected' : 'transparent',
-                  color: 'text.primary',
-                  font: 'inherit',
-                  py: 1,
-                  minHeight: 56,
-                  cursor: future ? 'default' : 'pointer',
-                  opacity: future ? 0.4 : 1,
-                }}
-              >
-                <Typography variant="caption" color="text.secondary" component="div">
-                  {dayjs(key).format('dd')}
-                </Typography>
-                <Typography variant="subtitle1" component="div">
-                  {future ? '' : count}
-                </Typography>
-              </Box>
-            );
-          })}
-        </Box>
-      </Card>
-
-      <Card title="Goals" aside={<Typography variant="caption" color="text.secondary">all time · from LunchBox</Typography>}>
-        <Stack spacing={1.5}>
-          <ProgressRow label="Days with a logged meal" count={progress.days.count} target={progress.days.target} />
-          {progress.categories
-            .filter((c) => c.enabled)
-            .map((c) => (
-              <ProgressRow key={c.category} label={c.category} count={c.count} target={c.target} />
-            ))}
-        </Stack>
-      </Card>
-
-      <Button startIcon={<UploadFileRoundedIcon />} onClick={() => navigate('/food/import')} sx={{ alignSelf: 'flex-start' }}>
-        Import from LunchBox backup
-      </Button>
+        <Button startIcon={<UploadFileRoundedIcon />} onClick={() => navigate('/food/import')} sx={{ alignSelf: 'flex-start' }}>
+          Import from LunchBox backup
+        </Button>
+      </Stack>
 
       <MealPicker
         open={picking}
@@ -255,7 +285,7 @@ export default function FoodPage() {
         onClose={() => setPicking(false)}
         onPick={(meal) => void handlePick(meal)}
       />
-    </Stack>
+    </Box>
   );
 }
 
@@ -264,7 +294,9 @@ function ProgressRow({ label, count, target }: { label: string; count: number; t
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-        <Typography variant="body2">{label}</Typography>
+        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+          {label}
+        </Typography>
         <Typography variant="body2" color="text.secondary">
           {count} / {target}
           {count >= target ? ' · done' : ''}
@@ -275,7 +307,6 @@ function ProgressRow({ label, count, target }: { label: string; count: number; t
         value={percent}
         color={count >= target ? 'success' : 'secondary'}
         aria-label={`${label}: ${count} of ${target}`}
-        sx={{ height: 8, borderRadius: 4 }}
       />
     </Box>
   );

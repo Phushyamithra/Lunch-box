@@ -66,6 +66,21 @@ export function weekOf(dateKey: string): string[] {
   return Array.from({ length: 7 }, (_, i) => monday.add(i, 'day').format(DATE_KEY));
 }
 
+export const MONTH_KEY = 'YYYY-MM';
+
+/**
+ * Monday-first calendar grid for a month (`YYYY-MM`): whole weeks of
+ * date keys, with null for the padding days outside the month.
+ */
+export function monthGrid(monthKey: string): (string | null)[][] {
+  const first = dayjs(`${monthKey}-01`);
+  const lead = (first.day() + 6) % 7; // Monday = 0
+  const cells: (string | null)[] = Array.from({ length: lead }, () => null);
+  for (let d = 0; d < first.daysInMonth(); d += 1) cells.push(first.add(d, 'day').format(DATE_KEY));
+  while (cells.length % 7 !== 0) cells.push(null);
+  return Array.from({ length: cells.length / 7 }, (_, w) => cells.slice(w * 7, w * 7 + 7));
+}
+
 /** Stored goal settings merged over defaults (mirrors the extension). */
 export function parseGoalSettings(raw: unknown): GoalSettings {
   const stored = raw && typeof raw === 'object' ? (raw as Partial<GoalSettings>) : {};

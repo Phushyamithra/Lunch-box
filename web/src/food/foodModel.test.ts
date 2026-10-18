@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CategoryRow, LogRow, MealRow } from './foodApi';
-import { parseGoalSettings, toCoreMeals, toLogsByDate, totalNutrition, weekOf } from './foodModel';
+import { monthGrid, parseGoalSettings, toCoreMeals, toLogsByDate, totalNutrition, weekOf } from './foodModel';
 
 const meal = (id: string, calories: number, protein: number): MealRow => ({
   id,
@@ -33,6 +33,17 @@ describe('foodModel', () => {
       '2026-10-12', '2026-10-13', '2026-10-14', '2026-10-15', '2026-10-16', '2026-10-17', '2026-10-18',
     ]);
     expect(weekOf('2026-10-12')[0]).toBe('2026-10-12');
+  });
+
+  it('monthGrid builds Monday-first weeks with padding outside the month', () => {
+    const oct = monthGrid('2026-10'); // 1 Oct 2026 is a Thursday
+    expect(oct[0]).toEqual([null, null, null, '2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04']);
+    expect(oct.flat().filter(Boolean)).toHaveLength(31);
+    expect(oct.every((week) => week.length === 7)).toBe(true);
+    expect(oct[oct.length - 1]).toEqual(['2026-10-26', '2026-10-27', '2026-10-28', '2026-10-29', '2026-10-30', '2026-10-31', null]);
+    // February 2027 starts on a Monday and fills exactly four weeks.
+    expect(monthGrid('2027-02')).toHaveLength(4);
+    expect(monthGrid('2028-02').flat().filter(Boolean)).toHaveLength(29); // leap year
   });
 
   it('groups only live consumption logs by date', () => {

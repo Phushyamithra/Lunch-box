@@ -2,6 +2,7 @@ import { Box, Chip, Paper, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useFood } from '../food/FoodContext';
 import { todayKey } from '../food/foodModel';
+import { GlassIcon } from '../layout/GlassIcon';
 import { NAV_ITEMS } from '../layout/navItems';
 import { MODULES } from './ModulePlaceholder';
 
@@ -44,13 +45,17 @@ export default function Home() {
               cursor: 'pointer',
               color: 'inherit',
               font: 'inherit',
-              bgcolor: 'background.paper',
               minHeight: 120,
-              '&:hover, &:focus-visible': { borderColor: 'primary.main' },
+              transition: 'transform 150ms ease',
+              '&:hover, &:focus-visible': { transform: 'translateY(-2px)' },
+              '&:active': { transform: 'scale(0.98)' },
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-              {NAV_ITEMS.find((item) => item.path === path)?.icon}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+              {(() => {
+                const item = NAV_ITEMS.find((n) => n.path === path);
+                return item ? <GlassIcon icon={item.icon} tint={item.tint} /> : null;
+              })()}
               <Typography variant="subtitle1" sx={{ fontWeight: 700, flexGrow: 1 }}>
                 {module.title}
               </Typography>
