@@ -1,10 +1,13 @@
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
+import FlagRoundedIcon from '@mui/icons-material/FlagRounded';
+import MenuBookRoundedIcon from '@mui/icons-material/MenuBookRounded';
 import UploadFileRoundedIcon from '@mui/icons-material/UploadFileRounded';
 import {
   Alert,
   Box,
   Button,
+  Chip,
   CircularProgress,
   IconButton,
   LinearProgress,
@@ -13,6 +16,7 @@ import {
   ListItemText,
   Paper,
   Stack,
+  Tooltip,
   Typography,
   useTheme,
 } from '@mui/material';
@@ -21,7 +25,7 @@ import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { computeGoalProgress } from '../../../src/core/goals';
 import { useSnackbar } from '../layout/Snackbar';
-import { useFood } from './FoodContext';
+import { LimitError, useFood } from './FoodContext';
 import type { LogRow, MealRow } from './foodApi';
 import {
   DATE_KEY,
@@ -32,7 +36,10 @@ import {
   todayKey,
   totalNutrition,
 } from './foodModel';
+import { LimitDialog } from './LimitDialog';
+import { MealFormDialog } from './MealFormDialog';
 import { MealPicker } from './MealPicker';
+import { quotaProgress, type LogCheck } from './plans';
 import { MonthCalendar } from './MonthCalendar';
 
 function Card({ title, aside, children }: { title: string; aside?: ReactNode; children: ReactNode }) {
@@ -58,13 +65,16 @@ function dateLabel(key: string): string {
 
 export default function FoodPage() {
   const theme = useTheme();
-  const { loading, error, data, mealById, reload, logMeal, removeLog, restoreLog } = useFood();
+  const { loading, error, data, mealById, check, reload, logMeal, removeLog, restoreLog, addMeal } =
+    useFood();
   const showToast = useSnackbar();
   const navigate = useNavigate();
   const [date, setDate] = useState(todayKey);
   const [month, setMonth] = useState(() => dayjs().format(MONTH_KEY));
   const [picking, setPicking] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [limit, setLimit] = useState<{ meal: MealRow; result: Extract<LogCheck, { kind: 'blocked' }> } | null>(null);
+  const [adding, setAdding] = useState(false);
 
   const categoryById = useMemo(() => new Map(data.categories.map((c) => [c.id, c])), [data.categories]);
   const dayLogs = useMemo(
@@ -118,19 +128,32 @@ export default function FoodPage() {
     );
   }
 
-  const handlePick = async (meal: MealRow) => {
-    setPicking(false);
+  const saveLog = async (meal: MealRow, override?: { reason: string | null }) => {
     setBusy(true);
     try {
-      const row = await logMeal(meal.id, date);
-      showToast(`Logged ${meal.name}`, {
-        action: { label: 'Undo', run: () => void removeLog(row).catch(() => showToast('Undo failed.', { severity: 'error' })) },
-      });
+      const { row, completedPlan } = await logMeal(meal.id, date, override);
+      if (completedPlan) {
+        showToast(`🎉 ${completedPlan.name} complete — every quota is used up`, {
+          action: { label: 'View', run: () => navigate('/food/plan') },
+        });
+      } else {
+        showToast(override ? `Logged ${meal.name} (over the limit, recorded)` : `Logged ${meal.name}`, {
+          severity: override ? 'info' : 'success',
+          action: { label: 'Undo', run: () => void removeLog(row).catch(() => showToast('Undo failed.', { severity: 'error' })) },
+        });
+      }
+      setLimit(null);
     } catch (e) {
-      showToast(`Not saved: ${e instanceof Error ? e.message : 'unknown error'}`, { severity: 'error' });
+      if (e instanceof LimitError) setLimit({ meal, result: e.result });
+      else showToast(`Not saved: ${e instanceof Error ? e.message : 'unknown error'}`, { severity: 'error' });
     } finally {
       setBusy(false);
     }
+  };
+
+  const handlePick = (meal: MealRow) => {
+    setPicking(false);
+    void saveLog(meal);
   };
 
   const handleRemove = async (log: LogRow) => {
@@ -182,6 +205,7 @@ export default function FoodPage() {
       </Stack>
 
       <Stack spacing={2}>
+        <PlanCard />
         <Card
           title={dateLabel(date) === dayjs(date).format('ddd D MMM') ? dateLabel(date) : `${dateLabel(date)} · ${dayjs(date).format('D MMM')}`}
           aside={
@@ -229,6 +253,11 @@ export default function FoodPage() {
                       primaryTypographyProps={{ fontWeight: 600 }}
                       secondary={`${category?.name ?? ''} · ${Math.round(meal?.calories ?? 0)} kcal`}
                     />
+                    {log.cap_override && (
+                      <Tooltip title={log.override_reason ? `Override: ${log.override_reason}` : 'Logged past a limit'}>
+                        <Chip size="small" color="warning" label="Over limit" sx={{ mr: 1 }} />
+                      </Tooltip>
+                    )}
                   </ListItem>
                 );
               })}
@@ -272,9 +301,14 @@ export default function FoodPage() {
           </Stack>
         </Card>
 
-        <Button startIcon={<UploadFileRoundedIcon />} onClick={() => navigate('/food/import')} sx={{ alignSelf: 'flex-start' }}>
-          Import from LunchBox backup
-        </Button>
+        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+          <Button startIcon={<MenuBookRoundedIcon />} onClick={() => navigate('/food/meals')}>
+            Manage meals
+          </Button>
+          <Button startIcon={<UploadFileRoundedIcon />} onClick={() => navigate('/food/import')}>
+            Import from LunchBox
+          </Button>
+        </Stack>
       </Stack>
 
       <MealPicker
@@ -282,10 +316,75 @@ export default function FoodPage() {
         dateLabel={dateLabel(date)}
         meals={data.meals}
         categories={data.categories}
+        check={(mealId) => check(mealId, date)}
         onClose={() => setPicking(false)}
-        onPick={(meal) => void handlePick(meal)}
+        onPick={handlePick}
+        onAddMeal={() => {
+          setPicking(false);
+          setAdding(true);
+        }}
+      />
+      <LimitDialog
+        open={Boolean(limit)}
+        mealName={limit?.meal.name ?? ''}
+        categoryName={(limit && categoryById.get(limit.meal.category_id)?.name) ?? ''}
+        result={limit?.result ?? null}
+        busy={busy}
+        onCancel={() => setLimit(null)}
+        onOverride={(reason) => limit && void saveLog(limit.meal, { reason })}
+      />
+      <MealFormDialog
+        open={adding}
+        categories={data.categories}
+        existing={data.meals}
+        onClose={() => setAdding(false)}
+        onSave={async (input) => {
+          const meal = await addMeal(input);
+          showToast(`Added ${meal.name}`, { action: { label: 'Log it', run: () => void saveLog(meal) } });
+        }}
       />
     </Box>
+  );
+}
+
+/** Active plan at a glance, or a prompt to set one up. */
+function PlanCard() {
+  const navigate = useNavigate();
+  const { data, activePlan, categoryOf } = useFood();
+  if (!activePlan) {
+    return (
+      <Card title="Meal plan">
+        <Typography color="text.secondary" sx={{ mb: 1.5 }}>
+          Set up the meals you've ordered, like 20 salads and 20 sandwiches, with a cap per item.
+        </Typography>
+        <Button variant="outlined" startIcon={<FlagRoundedIcon />} onClick={() => navigate('/food/plan')}>
+          Set up a plan
+        </Button>
+      </Card>
+    );
+  }
+  const categoryById = new Map(data.categories.map((c) => [c.id, c]));
+  const quotas = quotaProgress(activePlan, data.logs, categoryOf);
+  return (
+    <Card
+      title={activePlan.plan.name}
+      aside={
+        <Button size="small" onClick={() => navigate('/food/plan')}>
+          Plan & caps
+        </Button>
+      }
+    >
+      <Stack spacing={1.5}>
+        {quotas.map((q) => (
+          <ProgressRow
+            key={q.categoryId}
+            label={`${categoryById.get(q.categoryId)?.icon ?? ''} ${categoryById.get(q.categoryId)?.name ?? ''}`}
+            count={q.used}
+            target={q.quantity}
+          />
+        ))}
+      </Stack>
+    </Card>
   );
 }
 

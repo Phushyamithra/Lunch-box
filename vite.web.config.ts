@@ -41,6 +41,10 @@ export default defineConfig({
     drop: ['debugger'],
     pure: ['console.debug'],
   },
+  // Scan every source file at startup, including lazy routes, so the dev
+  // server never discovers a new dependency mid-session (that forces a
+  // re-bundle and briefly loads two copies of React: "Invalid hook call").
+  optimizeDeps: { entries: ['src/**/*.tsx'] },
   server: { port: 5174, strictPort: true },
   preview: { port: 4174, strictPort: true },
   build: {

@@ -47,7 +47,7 @@ Living record of the audit, the decisions taken, and phase status.
   creating the Supabase project and Vercel deployment (your accounts), and
   a real two-device sign-in test. Moving shared services into `core` is
   deferred to phase 2, when the food services move to Supabase.
-- [~] **Phase 2 — Food.**
+- [x] **Phase 2 — Food.**
   - [x] 2a: `0002_food.sql` (categories, meals, meal_logs, food_settings,
     import_runs; RLS plus same-owner triggers). Extension backup import
     (preview, then confirm; idempotent through legacy ids; deleted meals kept
@@ -55,8 +55,18 @@ Living record of the audit, the decisions taken, and phase status.
     search and tap, per-day view, undo, soft delete, week strip, catalog
     nutrition estimates, legacy goal progress. Shared logic moved into
     `src/core` (goals, logs, backup format).
-  - [ ] 2b: meal catalog editing, per-order item caps with override
-    history, milestone cycles (needs the cap answers).
+  - [x] 2b: `0003_meal_plans.sql`. A meal plan holds a quota per category
+    (for example 20 salads and 20 sandwiches) plus a cap per item (one
+    default, editable per item). Logging is the order and the meal in one
+    tap. Logging past a cap or quota is blocked unless you override it,
+    and every override is stored with an optional reason and shown as
+    "Over limit". The plan completes by itself when every quota is met, or
+    by force; undoing the final log reopens an automatic completion. Past
+    plans stay in history, and counts are always derived from the logs.
+    Also: a meal catalog to add, edit and archive meals, and a month
+    calendar.
+  - [ ] Shared milestone system (Goals module): plan completions and goal
+    cycles in one history.
 - [ ] **Phase 3 — Fitness.**
 - [ ] **Phase 4 — Finance** (encrypted sync).
 - [ ] **Phase 5 — Home dashboard, polish, PWA install/offline.**

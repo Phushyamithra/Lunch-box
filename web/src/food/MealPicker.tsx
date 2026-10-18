@@ -1,7 +1,9 @@
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
+import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import {
   Box,
+  Button,
   Chip,
   Dialog,
   DialogContent,
@@ -18,19 +20,24 @@ import {
   useTheme,
 } from '@mui/material';
 import { useMemo, useState } from 'react';
+import { capColor, capLabel } from './capLabels';
 import type { CategoryRow, MealRow } from './foodApi';
+import type { LogCheck } from './plans';
 
 interface MealPickerProps {
   open: boolean;
   dateLabel: string;
   meals: MealRow[];
   categories: CategoryRow[];
+  /** Plan/cap status of logging this meal on the chosen day. */
+  check: (mealId: string) => LogCheck;
   onClose: () => void;
   onPick: (meal: MealRow) => void;
+  onAddMeal: () => void;
 }
 
 /** Fast search-and-tap meal chooser; full screen on phones. */
-export function MealPicker({ open, dateLabel, meals, categories, onClose, onPick }: MealPickerProps) {
+export function MealPicker({ open, dateLabel, meals, categories, check, onClose, onPick, onAddMeal }: MealPickerProps) {
   const theme = useTheme();
   const phone = useMediaQuery(theme.breakpoints.down('sm'));
   const [query, setQuery] = useState('');
@@ -124,12 +131,26 @@ export function MealPicker({ open, dateLabel, meals, categories, onClose, onPick
                     primary={meal.name}
                     secondary={`${category?.name ?? ''} · ${Math.round(meal.calories)} kcal · ${Math.round(meal.protein)} g protein`}
                   />
+                  <PlanChip result={check(meal.id)} />
                 </ListItemButton>
               );
             })}
           </List>
         )}
+        <Button startIcon={<AddRoundedIcon />} onClick={onAddMeal} sx={{ mt: 1 }}>
+          Add a meal that isn't listed
+        </Button>
       </DialogContent>
     </Dialog>
   );
+}
+
+/** Cap/quota state shown beside each meal while a plan is active. */
+function PlanChip({ result }: { result: LogCheck }) {
+  if (result.kind === 'outside') return null;
+  if (result.kind === 'blocked' && result.reason === 'category_quota') {
+    return <Chip size="small" color="warning" label="Quota used up" />;
+  }
+  if (result.usage.status === 'uncapped') return null;
+  return <Chip size="small" color={capColor(result.usage.status)} label={capLabel(result.usage)} />;
 }

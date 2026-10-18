@@ -24,6 +24,9 @@ const log = (id: string, mealId: string, date: string, extra: Partial<LogRow> = 
   kind: 'consumed',
   source: 'manual',
   deleted_at: null,
+  plan_id: null,
+  cap_override: false,
+  override_reason: null,
   ...extra,
 });
 

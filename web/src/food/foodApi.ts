@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ImportPlan } from './importPlan';
+import type { ItemCapRow, PlanRow, QuotaRow } from './plans';
 
 export interface CategoryRow {
   id: string;
@@ -34,6 +35,9 @@ export interface LogRow {
   kind: 'consumed' | 'ordered';
   source: 'manual' | 'extension_import';
   deleted_at: string | null;
+  plan_id: string | null;
+  cap_override: boolean;
+  override_reason: string | null;
 }
 
 export interface FoodSettingsRow {
@@ -62,40 +66,52 @@ export interface FoodData {
   meals: MealRow[];
   logs: LogRow[];
   settings: FoodSettingsRow | null;
+  plans: PlanRow[];
+  quotas: QuotaRow[];
+  caps: ItemCapRow[];
 }
 
+const LOG_COLUMNS = 'id, meal_id, log_date, logged_at, kind, source, deleted_at, plan_id, cap_override, override_reason';
+const MEAL_COLUMNS = 'id, legacy_id, category_id, name, icon, calories, protein, carbs, fiber, fat, notes, archived_at';
+const PLAN_COLUMNS = 'id, name, started_on, default_item_cap, completed_at, completion, created_at';
+
 export async function loadFoodData(client: SupabaseClient): Promise<FoodData> {
-  const [categories, meals, logs, settings] = await Promise.all([
+  const [categories, meals, logs, settings, plans, quotas, caps] = await Promise.all([
     fetchAll<CategoryRow>((from, to) =>
       client.from('food_categories').select('id, legacy_id, name, icon, color, sort_order, enabled').order('sort_order').range(from, to),
     ),
-    fetchAll<MealRow>((from, to) =>
-      client
-        .from('meals')
-        .select('id, legacy_id, category_id, name, icon, calories, protein, carbs, fiber, fat, notes, archived_at')
-        .order('name')
-        .range(from, to),
-    ),
+    fetchAll<MealRow>((from, to) => client.from('meals').select(MEAL_COLUMNS).order('name').range(from, to)),
     fetchAll<LogRow>((from, to) =>
-      client
-        .from('meal_logs')
-        .select('id, meal_id, log_date, logged_at, kind, source, deleted_at')
-        .is('deleted_at', null)
-        .order('logged_at')
-        .range(from, to),
+      client.from('meal_logs').select(LOG_COLUMNS).is('deleted_at', null).order('logged_at').range(from, to),
     ),
     client.from('food_settings').select('goal_settings, legacy_achievements').maybeSingle(),
+    fetchAll<PlanRow>((from, to) => client.from('meal_plans').select(PLAN_COLUMNS).order('created_at').range(from, to)),
+    fetchAll<QuotaRow>((from, to) => client.from('meal_plan_quotas').select('id, plan_id, category_id, quantity').range(from, to)),
+    fetchAll<ItemCapRow>((from, to) => client.from('meal_plan_item_caps').select('id, plan_id, meal_id, cap').range(from, to)),
   ]);
   if (settings.error) throw new Error(settings.error.message);
-  return { categories, meals, logs, settings: settings.data as FoodSettingsRow | null };
+  return { categories, meals, logs, settings: settings.data as FoodSettingsRow | null, plans, quotas, caps };
 }
 
-const LOG_COLUMNS = 'id, meal_id, log_date, logged_at, kind, source, deleted_at';
+export interface NewLog {
+  mealId: string;
+  logDate: string;
+  planId: string | null;
+  /** Set only when the user explicitly authorised logging past a limit. */
+  override?: { reason: string | null };
+}
 
-export async function insertLog(client: SupabaseClient, mealId: string, logDate: string): Promise<LogRow> {
+export async function insertLog(client: SupabaseClient, input: NewLog): Promise<LogRow> {
   const { data, error } = await client
     .from('meal_logs')
-    .insert({ meal_id: mealId, log_date: logDate, logged_at: new Date().toISOString() })
+    .insert({
+      meal_id: input.mealId,
+      log_date: input.logDate,
+      logged_at: new Date().toISOString(),
+      plan_id: input.planId,
+      cap_override: Boolean(input.override),
+      override_reason: input.override?.reason?.trim() || null,
+    })
     .select(LOG_COLUMNS)
     .single();
   if (error) throw new Error(error.message);
@@ -109,6 +125,147 @@ export async function setLogDeleted(client: SupabaseClient, id: string, deleted:
     .update({ deleted_at: deleted ? new Date().toISOString() : null })
     .eq('id', id);
   if (error) throw new Error(error.message);
+}
+
+// ---------- Meal catalog ----------
+
+export interface MealInput {
+  name: string;
+  categoryId: string;
+  icon: string | null;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fiber: number;
+  fat: number;
+  notes: string | null;
+}
+
+const mealPayload = (m: MealInput) => ({
+  name: m.name.trim(),
+  category_id: m.categoryId,
+  icon: m.icon?.trim() || null,
+  calories: m.calories,
+  protein: m.protein,
+  carbs: m.carbs,
+  fiber: m.fiber,
+  fat: m.fat,
+  notes: m.notes?.trim() || null,
+  updated_at: new Date().toISOString(),
+});
+
+export async function insertMeal(client: SupabaseClient, input: MealInput): Promise<MealRow> {
+  const { data, error } = await client.from('meals').insert(mealPayload(input)).select(MEAL_COLUMNS).single();
+  if (error) throw new Error(error.message);
+  return data as MealRow;
+}
+
+export async function updateMeal(client: SupabaseClient, id: string, input: MealInput): Promise<MealRow> {
+  const { data, error } = await client.from('meals').update(mealPayload(input)).eq('id', id).select(MEAL_COLUMNS).single();
+  if (error) throw new Error(error.message);
+  return data as MealRow;
+}
+
+/** Archive hides a meal from logging; its history stays. */
+export async function setMealArchived(client: SupabaseClient, id: string, archived: boolean): Promise<MealRow> {
+  const { data, error } = await client
+    .from('meals')
+    .update({ archived_at: archived ? new Date().toISOString() : null, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select(MEAL_COLUMNS)
+    .single();
+  if (error) throw new Error(error.message);
+  return data as MealRow;
+}
+
+// ---------- Meal plans ----------
+
+export interface NewPlan {
+  name: string;
+  startedOn: string;
+  defaultItemCap: number | null;
+  quotas: { categoryId: string; quantity: number }[];
+  caps: { mealId: string; cap: number }[];
+}
+
+export async function createPlan(
+  client: SupabaseClient,
+  input: NewPlan,
+): Promise<{ plan: PlanRow; quotas: QuotaRow[]; caps: ItemCapRow[] }> {
+  const { data: plan, error } = await client
+    .from('meal_plans')
+    .insert({ name: input.name.trim(), started_on: input.startedOn, default_item_cap: input.defaultItemCap })
+    .select(PLAN_COLUMNS)
+    .single();
+  if (error) {
+    throw new Error(
+      error.message.includes('meal_plans_one_active')
+        ? 'Another plan is still active. Complete it first.'
+        : error.message,
+    );
+  }
+  const planId = (plan as PlanRow).id;
+  const { data: quotas, error: quotaError } = await client
+    .from('meal_plan_quotas')
+    .insert(input.quotas.map((q) => ({ plan_id: planId, category_id: q.categoryId, quantity: q.quantity })))
+    .select('id, plan_id, category_id, quantity');
+  if (quotaError) {
+    // Don't leave a half-made plan active.
+    await client.from('meal_plans').update({ completed_at: new Date().toISOString(), completion: 'forced' }).eq('id', planId);
+    throw new Error(quotaError.message);
+  }
+  let caps: ItemCapRow[] = [];
+  if (input.caps.length > 0) {
+    const { data, error: capError } = await client
+      .from('meal_plan_item_caps')
+      .insert(input.caps.map((c) => ({ plan_id: planId, meal_id: c.mealId, cap: c.cap })))
+      .select('id, plan_id, meal_id, cap');
+    if (capError) throw new Error(capError.message);
+    caps = (data ?? []) as ItemCapRow[];
+  }
+  return { plan: plan as PlanRow, quotas: (quotas ?? []) as QuotaRow[], caps };
+}
+
+export async function updatePlan(
+  client: SupabaseClient,
+  planId: string,
+  patch: Partial<Pick<PlanRow, 'name' | 'default_item_cap' | 'completed_at' | 'completion'>>,
+): Promise<PlanRow> {
+  const { data, error } = await client.from('meal_plans').update(patch).eq('id', planId).select(PLAN_COLUMNS).single();
+  if (error) throw new Error(error.message);
+  return data as PlanRow;
+}
+
+export async function setQuota(client: SupabaseClient, quota: QuotaRow, quantity: number): Promise<QuotaRow> {
+  const { data, error } = await client
+    .from('meal_plan_quotas')
+    .update({ quantity })
+    .eq('id', quota.id)
+    .select('id, plan_id, category_id, quantity')
+    .single();
+  if (error) throw new Error(error.message);
+  return data as QuotaRow;
+}
+
+/** Sets an item's own cap, or (cap = null) returns it to the plan default. */
+export async function setItemCap(
+  client: SupabaseClient,
+  planId: string,
+  mealId: string,
+  cap: number | null,
+): Promise<ItemCapRow | null> {
+  if (cap === null) {
+    const { error } = await client.from('meal_plan_item_caps').delete().eq('plan_id', planId).eq('meal_id', mealId);
+    if (error) throw new Error(error.message);
+    return null;
+  }
+  const { data, error } = await client
+    .from('meal_plan_item_caps')
+    .upsert({ plan_id: planId, meal_id: mealId, cap }, { onConflict: 'plan_id,meal_id' })
+    .select('id, plan_id, meal_id, cap')
+    .single();
+  if (error) throw new Error(error.message);
+  return data as ItemCapRow;
 }
 
 // ---------- Import ----------
