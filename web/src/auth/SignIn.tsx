@@ -6,10 +6,10 @@ import { describeAuthError, useAuth } from './AuthContext';
 type Step = 'email' | 'sent';
 
 /**
- * Passwordless sign-in. The email contains a link (opens the app signed
- * in) and, when the Supabase template includes it, a 6-digit code — the
- * code is the reliable path for an installed PWA on a phone, where the
- * link may open in a different browser.
+ * Passwordless sign-in. The email contains a link that opens the app
+ * signed in. Supabase only allows editing the email template (to add a
+ * 6-digit {{ .Token }} code) once custom SMTP is set up, so the code box
+ * is an optional extra rather than the main path.
  */
 export function SignIn() {
   const { sendMagicLink, verifyCode } = useAuth();
@@ -77,10 +77,13 @@ export function SignIn() {
         ) : (
           <Stack component="form" spacing={2} onSubmit={handleVerify} noValidate>
             <Alert severity="success">
-              Sent to {email}. Open the link on this device, or type the code from the email.
+              Sent to {email}. Open the link in that email on this device to sign in.
             </Alert>
+            <Typography variant="body2" color="text.secondary">
+              If the email also shows a 6-digit code, you can type it here instead.
+            </Typography>
             <TextField
-              label="Code from the email"
+              label="Code from the email (optional)"
               inputMode="numeric"
               autoComplete="one-time-code"
               value={code}

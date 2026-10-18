@@ -19,10 +19,15 @@ generator (workbox) fails on Node 19 with
    - **Redirect URLs:** add `http://localhost:5174/**`, your production URL
      followed by `/**`, and `https://*-<your-vercel-team>.vercel.app/**`
      for preview deployments.
-4. Optional, recommended for the phone: in **Authentication → Email
-   Templates → Magic Link**, add `Your code: {{ .Token }}` to the body. You
-   can then type the 6-digit code into the installed app, which avoids the
-   link opening in a different browser.
+4. Skip the email template. Supabase locks template editing until custom
+   SMTP is configured, and the default email's link is enough. Request the
+   link on the device you want to sign in on, and open it there. On Android,
+   a link opened in Chrome also signs in the installed app, because they
+   share storage. The built-in email sender allows only a few emails per
+   hour, so request links sparingly. (Optional later: set up custom SMTP,
+   for example Gmail with an app password, then add
+   `Your code: {{ .Token }}` to the Magic Link template to enable the
+   6-digit code box.)
 5. After your first successful sign-in, turn off **Authentication →
    Providers → Email → Allow new users to sign up**. The app is single-user;
    Row Level Security already limits every row to its owner.
