@@ -39,9 +39,14 @@ Living record of the audit, the decisions taken, and phase status.
   backup in Settings → Backup; Vitest with characterization tests of the
   existing behavior (goal counting, legacy-log migration, log upserts,
   catalog import, Tasks sync dedupe, backup/validation).
-- [ ] **Phase 1 — Foundation.** Extract `core` (models, services); PWA shell
-  with shared navigation and dark-by-default theme; Supabase project and
-  magic-link auth; Vercel preview.
+- [x] **Phase 1 — Foundation (code).** `web/` PWA reusing the extension's
+  theme and models; bottom nav (phone) and side rail (laptop); dark by
+  default; Supabase magic link plus 6-digit code sign-in; `app_settings`
+  table with RLS and last-write-wins sync; installable, with an offline
+  app shell; `vercel.json`. See `docs/WEB_APP_SETUP.md`. **Not yet done:**
+  creating the Supabase project and Vercel deployment (your accounts), and
+  a real two-device sign-in test. Moving shared services into `core` is
+  deferred to phase 2, when the food services move to Supabase.
 - [ ] **Phase 2 — Food.** Supabase schema, backup import, item caps and
   order periods with override history, shared milestone cycles.
 - [ ] **Phase 3 — Fitness.**

@@ -4,3 +4,5 @@ dist/
 .DS_Store
 keys/
 *.pem
+dist-web/
+.env*.local
