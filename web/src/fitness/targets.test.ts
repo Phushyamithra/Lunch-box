@@ -13,6 +13,10 @@ const good = {
   carbs_target_g: '295',
   waist_interval_days: '14',
   phase_months: '9',
+  steps_target: '10000',
+  cardio_per_week: '3',
+  rest_compound_sec: '150',
+  rest_isolation_sec: '75',
 };
 
 describe('validateTargets', () => {
@@ -26,5 +30,6 @@ describe('validateTargets', () => {
     expect(validateTargets({ ...good, gain_low_kg_month: '0.8' })).toMatch(/review below/);
     expect(validateTargets({ ...good, kcal_target: 'lots' })).toMatch(/Calories/);
     expect(validateTargets({ ...good, waist_interval_days: '0' })).toMatch(/Waist/);
+    expect(validateTargets({ ...good, rest_compound_sec: '5' })).toMatch(/Rest/);
   });
 });

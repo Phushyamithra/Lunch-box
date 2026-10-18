@@ -6,3 +6,6 @@ keys/
 *.pem
 dist-web/
 .env*.local
+
+# Personal reference files (imported into the app, never committed)
+00_Daily_Reference_*.md

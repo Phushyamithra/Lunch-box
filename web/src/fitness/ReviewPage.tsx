@@ -20,7 +20,7 @@ export default function ReviewPage() {
     const first = `${month}-01`;
     const last = dayjs(first).endOf('month').format(KEY);
     const asOf = last < today ? addDays(last, 1) : today; // judge the month as it stood at its end
-    const allWeeks = weeklyAverages(data.weighIns, data.away, asOf);
+    const allWeeks = weeklyAverages(data.weighIns, data.away, asOf, data.settings.weigh_time);
     const weeks = allWeeks.filter((w) => w.weekStart >= dayjs(first).subtract(6, 'day').format(KEY) && w.weekStart <= last);
     const verdict = assessGain(gainRate(allWeeks, data.away, asOf), data.settings);
     const sufficient = weeks.filter((w) => w.sufficient && w.average !== null && addDays(w.weekStart, 6) < asOf);

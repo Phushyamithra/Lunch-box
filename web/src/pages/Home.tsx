@@ -30,7 +30,7 @@ export default function Home() {
     if (path === '/food') return { chip: food.loading ? 'Loading' : 'Import needed' };
     if (path === '/fitness' && fitness.data) {
       const d = fitness.data;
-      const week = [...weeklyAverages(d.weighIns, d.away, today)].reverse().find((w) => w.average !== null);
+      const week = [...weeklyAverages(d.weighIns, d.away, today, d.settings.weigh_time)].reverse().find((w) => w.average !== null);
       const training = weekAdherence(weekStart(today), d.sessions, d.away);
       const weight = week ? `${week.average?.toFixed(1)} kg weekly avg` : 'No weigh-ins yet';
       return { chip: 'This week', text: `${weight} · ${training.completed}/${training.eligible} sessions` };

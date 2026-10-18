@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { AwayPeriod, DietDay, KeyLiftGroup, Session, SetRow, Waist, WeighIn } from './rules';
+import type { ParsedFinisher, ParsedReference } from './referenceImport';
+import type { AwayPeriod, DietDay, KeyLiftGroup, Preset, Session, SetRow, Waist, WeighIn, WeighTime } from './rules';
 
 export interface FitnessSettings {
   gain_target_kg_month: number;
@@ -17,6 +18,13 @@ export interface FitnessSettings {
   phase_start: string;
   phase_months: number;
   key_lifts: KeyLiftGroup[];
+  weigh_time: WeighTime;
+  steps_target: number;
+  cardio_per_week: number;
+  rest_compound_sec: number;
+  rest_isolation_sec: number;
+  day_focus: Record<string, string>;
+  finishers: ParsedFinisher[];
 }
 
 export interface WeighInRow extends WeighIn {
@@ -46,6 +54,10 @@ export interface SlotRow {
 }
 export interface SessionRow extends Session {
   notes: string | null;
+  cardio_done: boolean;
+}
+export interface PresetRow extends Preset {
+  id: string;
 }
 export interface WorkoutSetRow extends SetRow {
   id: string;
@@ -63,6 +75,7 @@ export interface FitnessData {
   slots: SlotRow[];
   sessions: SessionRow[];
   sets: WorkoutSetRow[];
+  presets: PresetRow[];
 }
 
 const NUMERIC_SETTINGS: (keyof FitnessSettings)[] = [
@@ -78,14 +91,22 @@ const NUMERIC_SETTINGS: (keyof FitnessSettings)[] = [
   'waist_interval_days',
   'rotation_offset',
   'phase_months',
+  'steps_target',
+  'cardio_per_week',
+  'rest_compound_sec',
+  'rest_isolation_sec',
 ];
-const SETTINGS_COLUMNS = [...NUMERIC_SETTINGS, 'rotation_start', 'phase_start', 'key_lifts'].join(', ');
+const SETTINGS_COLUMNS = [...NUMERIC_SETTINGS, 'rotation_start', 'phase_start', 'key_lifts', 'weigh_time', 'day_focus', 'finishers'].join(', ');
+const SESSION_COLUMNS = 'id, day, variant_index, completed, slots_completed, notes, cardio_done';
 
 /** Postgres numerics can arrive as strings; normalise once at the edge. */
 function normaliseSettings(raw: Record<string, unknown>): FitnessSettings {
   const out = { ...raw } as Record<string, unknown>;
   for (const k of NUMERIC_SETTINGS) out[k] = Number(raw[k]);
   out.key_lifts = Array.isArray(raw.key_lifts) ? raw.key_lifts : [];
+  out.finishers = Array.isArray(raw.finishers) ? raw.finishers : [];
+  out.day_focus = raw.day_focus && typeof raw.day_focus === 'object' ? raw.day_focus : {};
+  out.weigh_time = typeof raw.weigh_time === 'string' ? raw.weigh_time : 'morning';
   return out as unknown as FitnessSettings;
 }
 const num = <T extends object>(rows: T[], keys: (keyof T)[]): T[] =>
@@ -117,7 +138,7 @@ export async function loadFitness(client: SupabaseClient): Promise<FitnessData> 
     if (created.error) throw new Error(created.error.message);
     settings = created.data;
   }
-  const [weighIns, waists, away, diet, steps, slots, sessions, sets] = await Promise.all([
+  const [weighIns, waists, away, diet, steps, slots, sessions, sets, presets] = await Promise.all([
     fetchAll<WeighInRow>((f, t) =>
       client.from('weigh_ins').select('id, day, measured_at, time_of_day, weight_kg, notes, deleted_at').is('deleted_at', null).order('measured_at').range(f, t),
     ),
@@ -129,11 +150,12 @@ export async function loadFitness(client: SupabaseClient): Promise<FitnessData> 
     fetchAll<StepRow>((f, t) => client.from('step_counts').select('id, day, steps, source').order('day').range(f, t)),
     fetchAll<SlotRow>((f, t) => client.from('program_slots').select('id, weekday, slot, label, default_sets, variants').range(f, t)),
     fetchAll<SessionRow>((f, t) =>
-      client.from('workout_sessions').select('id, day, variant_index, completed, slots_completed, notes').order('day').range(f, t),
+      client.from('workout_sessions').select(SESSION_COLUMNS).order('day').range(f, t),
     ),
     fetchAll<WorkoutSetRow>((f, t) =>
       client.from('workout_sets').select('id, session_id, slot, exercise, set_number, reps, weight_kg, notes').range(f, t),
     ),
+    fetchAll<PresetRow>((f, t) => client.from('exercise_presets').select('id, exercise, weight_kg, reps').range(f, t)),
   ]);
   return {
     settings: normaliseSettings(settings as unknown as Record<string, unknown>),
@@ -145,6 +167,7 @@ export async function loadFitness(client: SupabaseClient): Promise<FitnessData> 
     slots,
     sessions,
     sets: num(sets, ['weight_kg']),
+    presets: num(presets, ['weight_kg']),
   };
 }
 
@@ -230,13 +253,13 @@ export async function upsertSlot(
 
 export async function upsertSession(
   client: SupabaseClient,
-  input: { day: string; variant_index: number; completed: boolean; slots_completed: number; notes?: string | null },
+  input: { day: string; variant_index: number; completed: boolean; slots_completed: number; cardio_done: boolean; notes?: string | null },
 ): Promise<SessionRow> {
   return check(
     await client
       .from('workout_sessions')
       .upsert({ ...input, updated_at: new Date().toISOString() }, { onConflict: 'user_id,day' })
-      .select('id, day, variant_index, completed, slots_completed, notes')
+      .select(SESSION_COLUMNS)
       .single(),
   ) as SessionRow;
 }
@@ -253,4 +276,47 @@ export async function addSet(
 export async function deleteSet(client: SupabaseClient, id: string): Promise<void> {
   const { error } = await client.from('workout_sets').delete().eq('id', id);
   if (error) throw new Error(error.message);
+}
+
+/** Remembers the latest weight × reps for an exercise (pre-fills next time). */
+export async function upsertPreset(client: SupabaseClient, exercise: string, weight_kg: number, reps: number): Promise<PresetRow> {
+  const row = check(
+    await client
+      .from('exercise_presets')
+      .upsert({ exercise: exercise.trim(), weight_kg, reps, updated_at: new Date().toISOString() }, { onConflict: 'user_id,exercise_key' })
+      .select('id, exercise, weight_kg, reps')
+      .single(),
+  ) as PresetRow;
+  return { ...row, weight_kg: Number(row.weight_kg) };
+}
+export async function deletePreset(client: SupabaseClient, id: string): Promise<void> {
+  const { error } = await client.from('exercise_presets').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
+/**
+ * Writes a parsed reference file: every program slot (upsert, so re-importing
+ * just updates), plus day focus, finishers, key lifts and snapshot targets.
+ * Logged sessions and sets are never touched.
+ */
+export async function importReference(
+  client: SupabaseClient,
+  parsed: ParsedReference,
+  keyLifts: KeyLiftGroup[],
+): Promise<{ slots: SlotRow[]; settings: FitnessSettings }> {
+  const now = new Date().toISOString();
+  const { data, error } = await client
+    .from('program_slots')
+    .upsert(
+      parsed.slots.map((s) => ({ weekday: s.weekday, slot: s.slot, label: s.label, default_sets: s.sets, variants: s.variants, updated_at: now })),
+      { onConflict: 'user_id,weekday,slot' },
+    )
+    .select('id, weekday, slot, label, default_sets, variants');
+  if (error) throw new Error(error.message);
+  const patch: Partial<FitnessSettings> = { day_focus: parsed.dayFocus, finishers: parsed.finishers, key_lifts: keyLifts };
+  if (parsed.baselineDate) patch.phase_start = parsed.baselineDate;
+  if (parsed.stepsTarget !== null) patch.steps_target = parsed.stepsTarget;
+  if (parsed.phaseMonths !== null) patch.phase_months = parsed.phaseMonths;
+  const settings = await saveSettings(client, patch);
+  return { slots: (data ?? []) as SlotRow[], settings };
 }

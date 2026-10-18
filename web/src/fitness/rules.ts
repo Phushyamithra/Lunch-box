@@ -102,11 +102,19 @@ export interface WeekAverage {
 
 export const MIN_DAYS_PER_WEEK = 3;
 
-/** One value per day: the mean of that day's live, non-away weigh-ins. */
-export function dailyWeights(weighIns: WeighIn[], periods: AwayPeriod[]): Map<string, number> {
+/** Which weigh-ins feed trends: one time of day (default morning) or any. */
+export type WeighTime = WeighIn['time_of_day'] | 'any';
+const countsFor = (w: WeighIn, time: WeighTime) => time === 'any' || w.time_of_day === time;
+
+/**
+ * One value per day: the mean of that day's live, non-away weigh-ins at
+ * the trend time. Morning and evening differ by 0.5–1 kg, so mixing them
+ * would add noise; only the chosen time of day counts.
+ */
+export function dailyWeights(weighIns: WeighIn[], periods: AwayPeriod[], time: WeighTime = 'any'): Map<string, number> {
   const sums = new Map<string, { total: number; n: number }>();
   for (const w of weighIns) {
-    if (w.deleted_at || isAway(w.day, periods)) continue;
+    if (w.deleted_at || isAway(w.day, periods) || !countsFor(w, time)) continue;
     const s = sums.get(w.day) ?? { total: 0, n: 0 };
     s.total += Number(w.weight_kg);
     s.n += 1;
@@ -116,9 +124,14 @@ export function dailyWeights(weighIns: WeighIn[], periods: AwayPeriod[]): Map<st
 }
 
 /** Weekly averages from the first weighed week to `today`'s week. */
-export function weeklyAverages(weighIns: WeighIn[], periods: AwayPeriod[], today: string): WeekAverage[] {
-  const daily = dailyWeights(weighIns, periods);
-  const live = weighIns.filter((w) => !w.deleted_at).map((w) => w.day).sort();
+export function weeklyAverages(
+  weighIns: WeighIn[],
+  periods: AwayPeriod[],
+  today: string,
+  time: WeighTime = 'any',
+): WeekAverage[] {
+  const daily = dailyWeights(weighIns, periods, time);
+  const live = weighIns.filter((w) => !w.deleted_at && countsFor(w, time)).map((w) => w.day).sort();
   if (live.length === 0) return [];
   const weeks: WeekAverage[] = [];
   for (let start = weekStart(live[0]); start <= weekStart(today); start = addDays(start, 7)) {
@@ -182,15 +195,23 @@ export function assessGain(rate: GainRate | null, s: GainSettings): GainVerdict 
   }
   const r = rate.kgPerMonth;
   if (r > s.gain_high_kg_month) {
-    return { kind: 'fast', rate, message: 'Gaining faster than planned. Consider about 100 kcal/day less, reducing fat first.' };
+    return {
+      kind: 'fast',
+      rate,
+      message: 'Gaining faster than planned. At your monthly review, consider about 100 kcal/day less, cutting fat first.',
+    };
   }
   if (r < s.gain_low_kg_month) {
     if (rate.spanWeeks >= 4) {
-      return { kind: 'slow', rate, message: 'Gaining slower than planned over a full month. Consider about 100 kcal/day more, adding carbohydrates.' };
+      return {
+        kind: 'slow',
+        rate,
+        message: 'Gaining slower than planned over a full month. At your monthly review, consider about 100 kcal/day more, as carbohydrates.',
+      };
     }
     return { kind: 'slow_early', rate, message: 'Slow so far, but less than a month of data. Give it a full month before changing intake.' };
   }
-  return { kind: 'on_track', rate, message: `On track for about ${s.gain_target_kg_month} kg/month.` };
+  return { kind: 'on_track', rate, message: `On track for about ${s.gain_target_kg_month} kg/month. Change nothing.` };
 }
 
 // ---------- Waist ----------
@@ -225,8 +246,9 @@ export function waistSummary(entries: Waist[], periods: AwayPeriod[], intervalDa
 export type CompositionSignal = 'favourable' | 'review' | 'neutral' | 'insufficient';
 
 /**
- * Indicative only: rising weight with a stable waist reads as favourable;
- * rising weight with a rising waist is flagged for review.
+ * Indicative only: rising weight with a steady waist (within ~1 cm) reads
+ * as lean gain; a waist rising more than that alongside weight is flagged
+ * (the reference suggests pulling back 100–150 kcal).
  */
 export function compositionSignal(trend: Waist[], rate: GainRate | null): { signal: CompositionSignal; waistDelta: number | null } {
   if (trend.length < 2 || !rate) return { signal: 'insufficient', waistDelta: null };
@@ -234,9 +256,8 @@ export function compositionSignal(trend: Waist[], rate: GainRate | null): { sign
   const earlier = [...trend].reverse().find((w) => daysBetween(w.day, latest.day) >= 21) ?? trend[0];
   const waistDelta = Number(latest.waist_cm) - Number(earlier.waist_cm);
   if (rate.kgPerMonth <= 0) return { signal: 'neutral', waistDelta };
-  if (waistDelta >= 1) return { signal: 'review', waistDelta };
-  if (Math.abs(waistDelta) < 0.5) return { signal: 'favourable', waistDelta };
-  return { signal: 'neutral', waistDelta };
+  if (waistDelta > 1) return { signal: 'review', waistDelta };
+  return { signal: 'favourable', waistDelta };
 }
 
 // ---------- Program rotation ----------
@@ -329,4 +350,82 @@ export function liftSeries(group: KeyLiftGroup, sets: SetRow[], sessions: Sessio
     series.set(name, byDay);
   }
   return new Map([...series].map(([name, byDay]) => [name, [...byDay.values()].sort((a, b) => a.day.localeCompare(b.day))]));
+}
+
+// ---------- Baseline ----------
+
+/** First weigh-in at the trend time on or after the phase start. */
+export function baselineWeight(weighIns: WeighIn[], phaseStart: string, time: WeighTime = 'any'): WeighIn | null {
+  return (
+    weighIns
+      .filter((w) => !w.deleted_at && w.day >= phaseStart && countsFor(w, time))
+      .sort((a, b) => a.day.localeCompare(b.day))[0] ?? null
+  );
+}
+
+// ---------- Set suggestions ----------
+
+export interface Preset {
+  exercise: string;
+  weight_kg: number;
+  reps: number;
+}
+export interface Suggestion {
+  weight: number;
+  reps: number;
+  /** Where the numbers came from, shown as a hint. */
+  from: 'last' | 'preset' | 'previous_set' | 'none';
+  lastDay?: string;
+}
+
+const sameExercise = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+
+/**
+ * Pre-fill for a set row: the same set number from the most recent earlier
+ * session of this exercise; else the set just logged today; else the
+ * saved preset; else empty. Always editable before logging.
+ */
+export function suggestSet(
+  exercise: string,
+  setNumber: number,
+  today: string,
+  sets: SetRow[],
+  sessions: Session[],
+  presets: Preset[],
+): Suggestion {
+  const dayOf = new Map(sessions.map((s) => [s.id, s.day]));
+  const mine = sets.filter((x) => sameExercise(x.exercise, exercise));
+  const earlier = mine.filter((x) => (dayOf.get(x.session_id) ?? '') < today);
+  if (earlier.length) {
+    const days = earlier.map((x) => dayOf.get(x.session_id) as string).sort();
+    const lastDay = days[days.length - 1];
+    const thatDay = earlier.filter((x) => dayOf.get(x.session_id) === lastDay).sort((a, b) => a.set_number - b.set_number);
+    const match = thatDay.find((x) => x.set_number === setNumber) ?? thatDay[thatDay.length - 1];
+    return { weight: Number(match.weight_kg), reps: match.reps, from: 'last', lastDay };
+  }
+  const todays = mine.filter((x) => dayOf.get(x.session_id) === today).sort((a, b) => a.set_number - b.set_number);
+  if (todays.length) {
+    const prev = todays[todays.length - 1];
+    return { weight: Number(prev.weight_kg), reps: prev.reps, from: 'previous_set' };
+  }
+  const preset = presets.find((p) => sameExercise(p.exercise, exercise));
+  if (preset) return { weight: Number(preset.weight_kg), reps: preset.reps, from: 'preset' };
+  return { weight: 0, reps: 8, from: 'none' };
+}
+
+/** Compounds (the first heavy slots) rest longer than isolation work. */
+export function isCompoundSlot(slot: number, sets: number): boolean {
+  return slot <= 3 && sets >= 3;
+}
+
+/** Logged vs planned working sets for a day (finisher sets not counted). */
+export function setProgress(plannedSets: number[], loggedBySlot: Map<number, number>): { logged: number; planned: number; slotsDone: number } {
+  let logged = 0;
+  let slotsDone = 0;
+  plannedSets.forEach((planned, i) => {
+    const n = Math.min(planned, loggedBySlot.get(i + 1) ?? 0);
+    logged += n;
+    if (planned > 0 && n >= planned) slotsDone += 1;
+  });
+  return { logged, planned: plannedSets.reduce((a, b) => a + b, 0), slotsDone };
 }

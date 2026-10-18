@@ -10,7 +10,7 @@ import type { FitnessSettings } from './fitnessApi';
 import { trendsResumeOn, type AwayPeriod, type KeyLiftGroup } from './rules';
 import { Card } from './ui';
 
-type NumKey = Exclude<keyof FitnessSettings, 'rotation_start' | 'phase_start' | 'key_lifts' | 'rotation_offset'>;
+type NumKey = Exclude<keyof FitnessSettings, 'rotation_start' | 'phase_start' | 'key_lifts' | 'rotation_offset' | 'weigh_time' | 'day_focus' | 'finishers'>;
 const FIELDS: { key: NumKey; label: string; step?: string }[] = [
   { key: 'gain_target_kg_month', label: 'Target gain (kg/month)', step: '0.05' },
   { key: 'gain_high_kg_month', label: 'Review above (kg/month)', step: '0.05' },
@@ -23,6 +23,10 @@ const FIELDS: { key: NumKey; label: string; step?: string }[] = [
   { key: 'carbs_target_g', label: 'Carbs (g)' },
   { key: 'waist_interval_days', label: 'Waist check every (days)' },
   { key: 'phase_months', label: 'Phase length (months)' },
+  { key: 'steps_target', label: 'Steps per day' },
+  { key: 'cardio_per_week', label: 'Cardio sessions / week' },
+  { key: 'rest_compound_sec', label: 'Rest, compounds (sec)' },
+  { key: 'rest_isolation_sec', label: 'Rest, isolation (sec)' },
 ];
 
 /** Validates the targets form; returns an error or the numeric patch. */
@@ -38,6 +42,9 @@ export function validateTargets(form: Record<string, string>): string | Partial<
   if (out.gain_low_kg_month > out.gain_high_kg_month) return 'The "review below" rate must be lower than "review above".';
   if (out.waist_interval_days < 1 || out.waist_interval_days > 90) return 'Waist interval must be 1–90 days.';
   if (out.phase_months < 1 || out.phase_months > 24) return 'Phase length must be 1–24 months.';
+  if (out.rest_compound_sec < 15 || out.rest_compound_sec > 600 || out.rest_isolation_sec < 15 || out.rest_isolation_sec > 600) {
+    return 'Rest times must be 15–600 seconds.';
+  }
   return out as Partial<FitnessSettings>;
 }
 
@@ -62,6 +69,7 @@ function Targets({ settings }: { settings: FitnessSettings }) {
     ...Object.fromEntries(FIELDS.map((f) => [f.key, String(settings[f.key])])),
     phase_start: settings.phase_start,
     rotation_start: settings.rotation_start,
+    weigh_time: settings.weigh_time,
   });
   const [form, setForm] = useState<Record<string, string>>(initial);
   const [error, setError] = useState<string | null>(null);
@@ -74,7 +82,7 @@ function Targets({ settings }: { settings: FitnessSettings }) {
     if (!dayjs(form.phase_start).isValid() || !dayjs(form.rotation_start).isValid()) return setError('Enter valid dates.');
     setError(null);
     try {
-      await saveSettings({ ...result, phase_start: form.phase_start, rotation_start: form.rotation_start });
+      await saveSettings({ ...result, phase_start: form.phase_start, rotation_start: form.rotation_start, weigh_time: form.weigh_time as FitnessSettings['weigh_time'] });
       toast('Targets saved. History is unchanged.');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Not saved.');
@@ -96,6 +104,11 @@ function Targets({ settings }: { settings: FitnessSettings }) {
             />
           ))}
           <TextField size="small" type="date" label="Phase started" value={form.phase_start} onChange={(e) => setForm({ ...form, phase_start: e.target.value })} InputLabelProps={{ shrink: true }} />
+          <TextField size="small" select label="Trend uses weigh-ins from" value={form.weigh_time} onChange={(e) => setForm({ ...form, weigh_time: e.target.value })} SelectProps={{ native: true }} sx={{ gridColumn: '1 / -1' }}>
+            <option value="morning">Mornings only (recommended)</option>
+            <option value="evening">Evenings only</option>
+            <option value="any">Any time of day</option>
+          </TextField>
           <TextField size="small" type="date" label="V1 week starts" value={form.rotation_start} onChange={(e) => setForm({ ...form, rotation_start: e.target.value })} InputLabelProps={{ shrink: true }} />
         </Box>
         <Typography variant="caption" color="text.secondary">

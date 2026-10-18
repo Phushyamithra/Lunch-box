@@ -16,6 +16,7 @@ import { useFitness } from './FitnessContext';
 import {
   addDays,
   assessGain,
+  baselineWeight,
   compositionSignal,
   dailyWeights,
   dietSummary,
@@ -39,7 +40,8 @@ export default function DashboardPage() {
 
   const derived = useMemo(() => {
     if (!data) return null;
-    const weeks = weeklyAverages(data.weighIns, data.away, today);
+    const weeks = weeklyAverages(data.weighIns, data.away, today, data.settings.weigh_time);
+    const baseline = baselineWeight(data.weighIns, data.settings.phase_start, data.settings.weigh_time);
     const rate = gainRate(weeks, data.away, today);
     const verdict = assessGain(rate, data.settings);
     const waist = waistSummary(data.waists, data.away, data.settings.waist_interval_days, today);
@@ -51,11 +53,11 @@ export default function DashboardPage() {
     const steps7 = data.steps.filter((s) => s.day > addDays(today, -7));
     const lastAway = [...data.away].filter((p) => p.ends_on < today).sort((a, b) => b.ends_on.localeCompare(a.ends_on))[0];
     const daily = dailyWeights(data.weighIns, []); // all days, away included, for the faint dots
-    return { weeks, rate, verdict, waist, composition, adherence, diet7, diet30, steps7, lastAway, daily };
+    return { weeks, rate, verdict, waist, composition, adherence, diet7, diet30, steps7, lastAway, daily, baseline };
   }, [data, today]);
 
   if (!data || !derived) return null;
-  const { weeks, rate, verdict, waist, composition, adherence, diet7, diet30, steps7, lastAway, daily } = derived;
+  const { weeks, rate, verdict, waist, composition, adherence, diet7, diet30, steps7, lastAway, daily, baseline } = derived;
   const latestWeek = [...weeks].reverse().find((w) => w.average !== null);
   const variant = variantIndexFor(today, data.settings.rotation_start, data.settings.rotation_offset);
   const phaseWeeks = Math.max(0, Math.floor(dayjs(today).diff(dayjs(data.settings.phase_start), 'day') / 7));
@@ -68,13 +70,18 @@ export default function DashboardPage() {
   return (
     <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: '1.4fr 1fr' }, alignItems: 'start' }}>
       <Stack spacing={2}>
-        <Card title="Body weight" aside={<Chip size="small" label="weekly average" />}>
+        <Card title="Body weight" aside={<Chip size="small" label={data.settings.weigh_time === 'any' ? 'weekly average' : `weekly ${data.settings.weigh_time} average`} />}>
           <Stack spacing={2}>
             <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
               <Metric
                 value={kg(latestWeek?.average)}
                 unit="kg"
                 caption={latestWeek ? `week of ${dayjs(latestWeek.weekStart).format('D MMM')} · ${latestWeek.days} day${latestWeek.days === 1 ? '' : 's'}` : 'no weigh-ins yet'}
+              />
+              <Metric
+                value={baseline && latestWeek?.average != null ? signed(latestWeek.average - Number(baseline.weight_kg), 1) : '–'}
+                unit="kg"
+                caption={baseline ? `since baseline ${kg(Number(baseline.weight_kg))} kg (${dayjs(baseline.day).format('D MMM')})` : `no ${data.settings.weigh_time === 'any' ? '' : data.settings.weigh_time + ' '}weigh-in since ${dayjs(data.settings.phase_start).format('D MMM')}`}
               />
               <Metric
                 value={rate ? signed(rate.kgPerMonth) : '–'}

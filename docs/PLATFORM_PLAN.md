@@ -82,7 +82,15 @@ Living record of the audit, the decisions taken, and phase status.
     exact exercise
 
   Screens: Today, Dashboard (Recharts), Training, Program, Review, Targets
-  & away. Steps are manual entry: the Google Fit APIs are closed to new
+  & away.
+  - Effortless logging (`0006_fitness_logging.sql`): Program → import the
+    Daily Reference markdown (6 days × 5 slots × V1–V7 default/fallback,
+    set counts, finishers, day focus, baseline date, steps target, key
+    lifts derived from your exercise names). Today shows every exercise as
+    pre-filled set rows (last time → previous set → starting-weight preset);
+    ± nudges, one tap to log, rest timer (compound vs isolation), automatic
+    slot/session progress, finishers, cardio toggle. Trends use morning
+    weigh-ins only; change measured from the baseline. Steps are manual entry: the Google Fit APIs are closed to new
   developers and shut down in 2026, and Health Connect is on-device only.
 - [ ] **Phase 4 — Finance** (encrypted sync).
 - [ ] **Phase 5 — Home dashboard, polish, PWA install/offline.**

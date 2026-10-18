@@ -6,6 +6,7 @@ import { useSnackbar } from '../layout/Snackbar';
 import { useFitness } from './FitnessContext';
 import type { SlotRow } from './fitnessApi';
 import { isoWeekday, variantIndexFor, weekStart } from './rules';
+import { FinishersCard, ImportReferenceCard, PresetsCard } from './ProgramExtras';
 import { Card } from './ui';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -31,6 +32,7 @@ export default function ProgramPage() {
 
   return (
     <Stack spacing={2} sx={{ maxWidth: 820 }}>
+      <ImportReferenceCard data={data} />
       <Card title="Weekly rotation" aside={<Chip color="secondary" label={`This week: V${current + 1}`} />}>
         <Typography color="text.secondary" variant="body2" sx={{ mb: 1.5 }}>
           The whole program moves to the next variant every Monday: V1 → V7, then back to V1. Started the week of{' '}
@@ -52,10 +54,17 @@ export default function ProgramPage() {
           <Tab key={d} label={d} value={i} sx={{ minWidth: 0, textTransform: 'none', fontWeight: 600 }} />
         ))}
       </Tabs>
+      {data.settings.day_focus[String(weekday)] && (
+        <Typography variant="h6" component="h2">
+          {data.settings.day_focus[String(weekday)]}
+        </Typography>
+      )}
       {[1, 2, 3, 4, 5].map((slot) => (
         <SlotEditor key={`${weekday}-${slot}`} weekday={weekday} slot={slot} row={data.slots.find((s) => s.weekday === weekday && s.slot === slot)} current={current} />
       ))}
+      <FinishersCard data={data} weekday={weekday} />
       <Alert severity="info">Sunday is the rest day.</Alert>
+      <PresetsCard data={data} />
     </Stack>
   );
 }
@@ -107,6 +116,7 @@ function SlotEditor({ weekday, slot, row, current }: { weekday: number; slot: nu
               key={i}
               size="small"
               label={`V${i + 1}${i === current ? ' · this week' : ''}`}
+              placeholder="Default / Fallback"
               value={v}
               color={i === current ? 'secondary' : undefined}
               focused={i === current ? true : undefined}

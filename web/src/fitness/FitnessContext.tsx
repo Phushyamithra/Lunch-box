@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import * as api from './fitnessApi';
 import type { FitnessData, FitnessSettings, SessionRow, SlotRow, WorkoutSetRow } from './fitnessApi';
+import { deriveKeyLifts, type ParsedReference } from './referenceImport';
 import type { AwayPeriod, DietDay, WeighIn } from './rules';
 
 interface FitnessValue {
@@ -19,9 +20,20 @@ interface FitnessValue {
   saveAway: (input: { starts_on: string; ends_on: string; label: string | null }, id?: string) => Promise<void>;
   removeAway: (id: string) => Promise<void>;
   saveSlot: (input: Omit<SlotRow, 'id'>) => Promise<void>;
-  saveSession: (input: { day: string; variant_index: number; completed: boolean; slots_completed: number }) => Promise<SessionRow>;
-  addSet: (input: Omit<WorkoutSetRow, 'id' | 'notes'>) => Promise<void>;
+  saveSession: (input: {
+    day: string;
+    variant_index: number;
+    completed: boolean;
+    slots_completed: number;
+    cardio_done: boolean;
+  }) => Promise<SessionRow>;
+  /** Logs a set and remembers its weight × reps as the exercise preset. */
+  addSet: (input: Omit<WorkoutSetRow, 'id' | 'notes'>) => Promise<WorkoutSetRow>;
   removeSet: (id: string) => Promise<void>;
+  savePreset: (exercise: string, weight: number, reps: number) => Promise<void>;
+  removePreset: (id: string) => Promise<void>;
+  /** Loads the program, finishers and targets from a parsed reference file. */
+  importProgram: (parsed: ParsedReference) => Promise<void>;
 }
 
 const FitnessContext = createContext<FitnessValue | null>(null);
@@ -115,6 +127,28 @@ export function FitnessProvider({ client, children }: { client: SupabaseClient; 
       async addSet(input) {
         const row = await api.addSet(client, input);
         patch((d) => ({ ...d, sets: [...d.sets, row] }));
+        // Best effort: a failed preset update never blocks logging.
+        api
+          .upsertPreset(client, input.exercise, input.weight_kg, input.reps)
+          .then((preset) => patch((d) => ({ ...d, presets: upsertBy(d.presets, preset, (p) => p.id === preset.id) })))
+          .catch(() => undefined);
+        return row;
+      },
+      async savePreset(exercise, weight, reps) {
+        const preset = await api.upsertPreset(client, exercise, weight, reps);
+        patch((d) => ({ ...d, presets: upsertBy(d.presets, preset, (p) => p.id === preset.id) }));
+      },
+      async removePreset(id) {
+        await api.deletePreset(client, id);
+        patch((d) => ({ ...d, presets: d.presets.filter((p) => p.id !== id) }));
+      },
+      async importProgram(parsed) {
+        const { slots, settings } = await api.importReference(client, parsed, deriveKeyLifts(parsed.slots));
+        patch((d) => ({
+          ...d,
+          settings,
+          slots: [...d.slots.filter((s) => !slots.some((n) => n.weekday === s.weekday && n.slot === s.slot)), ...slots],
+        }));
       },
       async removeSet(id) {
         await api.deleteSet(client, id);
