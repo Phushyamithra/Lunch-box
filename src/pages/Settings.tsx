@@ -16,6 +16,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
+import { BackupButton } from '../components/Backup/BackupButton';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { GoalStepper } from '../components/Goals/GoalStepper';
 import { ExportButton } from '../components/ImportExport/ExportButton';
@@ -161,6 +162,10 @@ export default function Settings() {
           </Button>
           <ImportButton fullWidth />
           <ExportButton fullWidth />
+        </Section>
+
+        <Section title="Backup">
+          <BackupButton />
         </Section>
 
         <Section title="Danger zone">

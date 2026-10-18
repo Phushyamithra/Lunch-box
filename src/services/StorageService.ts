@@ -274,5 +274,8 @@ export class StorageService {
   }
 }
 
+/** The runtime adapter, shared with BackupService for raw key access. */
+export const storageAdapter = createStorageAdapter();
+
 /** App-wide singleton, wired to the best available adapter. */
-export const storageService = new StorageService(createStorageAdapter());
+export const storageService = new StorageService(storageAdapter);
