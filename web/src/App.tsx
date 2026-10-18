@@ -12,6 +12,8 @@ import { supabase } from './lib/supabase';
 import Home from './pages/Home';
 import { MODULES, ModulePlaceholder } from './pages/ModulePlaceholder';
 import { SetupRequired } from './pages/SetupRequired';
+import { FitnessProvider } from './fitness/FitnessContext';
+import { FitnessLayout } from './fitness/ui';
 import { FoodProvider } from './food/FoodContext';
 import { SnackbarProvider } from './layout/Snackbar';
 import { SettingsProvider, useSettings } from './settings/SettingsContext';
@@ -22,6 +24,12 @@ const ImportPage = lazy(() => import('./food/ImportPage'));
 const PlanPage = lazy(() => import('./food/PlanPage'));
 const MealsPage = lazy(() => import('./food/MealsPage'));
 const CategoriesPage = lazy(() => import('./food/CategoriesPage'));
+const FitnessToday = lazy(() => import('./fitness/TodayPage'));
+const FitnessDashboard = lazy(() => import('./fitness/DashboardPage'));
+const FitnessTraining = lazy(() => import('./fitness/TrainingPage'));
+const FitnessProgram = lazy(() => import('./fitness/ProgramPage'));
+const FitnessReview = lazy(() => import('./fitness/ReviewPage'));
+const FitnessSettings = lazy(() => import('./fitness/FitnessSettingsPage'));
 
 /** Tracker design system (cream, peach, rose, charcoal), dark by default. */
 function Themed({ mode, children }: { mode: ThemeMode; children: ReactNode }) {
@@ -51,25 +59,37 @@ function SignedInApp({ client }: { client: SupabaseClient }) {
     <Themed mode={settings.themeMode}>
       <SnackbarProvider>
         <FoodProvider client={client}>
-          <BrowserRouter>
-            <Suspense fallback={<Splash />}>
-              <Routes>
-                <Route element={<AppShell />}>
-                  <Route index element={<Home />} />
-                  <Route path="food" element={<FoodPage />} />
-                  <Route path="food/import" element={<ImportPage client={client} />} />
-                  <Route path="food/plan" element={<PlanPage />} />
-                  <Route path="food/meals" element={<MealsPage />} />
-                  <Route path="food/categories" element={<CategoriesPage />} />
-                  <Route path="fitness" element={<ModulePlaceholder module={MODULES.fitness} />} />
-                  <Route path="finance" element={<ModulePlaceholder module={MODULES.finance} />} />
-                  <Route path="goals" element={<ModulePlaceholder module={MODULES.goals} />} />
-                  <Route path="settings" element={<Settings />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Route>
-              </Routes>
-            </Suspense>
-          </BrowserRouter>
+          <FitnessProvider client={client}>
+            <BrowserRouter>
+              <Suspense fallback={<Splash />}>
+                <Routes>
+                  <Route element={<AppShell />}>
+                    <Route index element={<Home />} />
+                    <Route path="food" element={<FoodPage />} />
+                    <Route path="food/import" element={<ImportPage client={client} />} />
+                    <Route path="food/plan" element={<PlanPage />} />
+                    <Route path="food/meals" element={<MealsPage />} />
+                    <Route path="food/categories" element={<CategoriesPage />} />
+                    <Route path="fitness" element={<FitnessLayout />}>
+                      <Route index element={<FitnessToday />} />
+                      <Route path="dashboard" element={<FitnessDashboard />} />
+                      <Route path="training" element={<FitnessTraining />} />
+                      <Route path="program" element={<FitnessProgram />} />
+                      <Route path="review" element={<FitnessReview />} />
+                      <Route path="settings" element={<FitnessSettings />} />
+                    </Route>
+                    <Route
+                      path="finance"
+                      element={<ModulePlaceholder module={MODULES.finance} />}
+                    />
+                    <Route path="goals" element={<ModulePlaceholder module={MODULES.goals} />} />
+                    <Route path="settings" element={<Settings />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Route>
+                </Routes>
+              </Suspense>
+            </BrowserRouter>
+          </FitnessProvider>
         </FoodProvider>
       </SnackbarProvider>
     </Themed>

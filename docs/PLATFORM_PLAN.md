@@ -67,7 +67,23 @@ Living record of the audit, the decisions taken, and phase status.
     calendar.
   - [ ] Shared milestone system (Goals module): plan completions and goal
     cycles in one history.
-- [ ] **Phase 3 — Fitness.**
+- [x] **Phase 3 — Fitness.** `0005_fitness.sql` (9 tables, RLS, set
+  ownership trigger; checked in PGlite). Rules in `web/src/fitness/rules.ts`
+  with 19 tests:
+  - weekly averages of daily means; a week counts with 3 or more weighed days
+  - gain rate from about 4 weeks of weekly averages; current week excluded
+  - verdicts: on track, fast (−100 kcal, fat first), slow after a full
+    month (+100 kcal, carbs), or slow so far (wait)
+  - away periods excluded from trends and adherence, labelled, with the
+    date full-week trends resume
+  - waist: baseline, 14-day reminder, composition signal (indicative)
+  - weekly V1–V7 rotation with manual shift; adherence out of 6 minus away
+    days; event days kept apart in diet adherence; key lifts tracked per
+    exact exercise
+
+  Screens: Today, Dashboard (Recharts), Training, Program, Review, Targets
+  & away. Steps are manual entry: the Google Fit APIs are closed to new
+  developers and shut down in 2026, and Health Connect is on-device only.
 - [ ] **Phase 4 — Finance** (encrypted sync).
 - [ ] **Phase 5 — Home dashboard, polish, PWA install/offline.**
 

@@ -1,5 +1,7 @@
 import { Box, Chip, Paper, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { useFitness } from '../fitness/FitnessContext';
+import { weekAdherence, weeklyAverages, weekStart } from '../fitness/rules';
 import { useFood } from '../food/FoodContext';
 import { todayKey } from '../food/foodModel';
 import { GlassIcon } from '../layout/GlassIcon';
@@ -17,6 +19,7 @@ const CARDS = [
 export default function Home() {
   const navigate = useNavigate();
   const food = useFood();
+  const fitness = useFitness();
   const today = todayKey();
   const mealsToday = food.data.logs.filter((l) => l.log_date === today && l.kind === 'consumed').length;
   /** Live status for modules that exist; the rest are not built yet. */
@@ -25,6 +28,13 @@ export default function Home() {
       return { chip: 'Today', text: `${mealsToday} meal${mealsToday === 1 ? '' : 's'} logged today` };
     }
     if (path === '/food') return { chip: food.loading ? 'Loading' : 'Import needed' };
+    if (path === '/fitness' && fitness.data) {
+      const d = fitness.data;
+      const week = [...weeklyAverages(d.weighIns, d.away, today)].reverse().find((w) => w.average !== null);
+      const training = weekAdherence(weekStart(today), d.sessions, d.away);
+      const weight = week ? `${week.average?.toFixed(1)} kg weekly avg` : 'No weigh-ins yet';
+      return { chip: 'This week', text: `${weight} · ${training.completed}/${training.eligible} sessions` };
+    }
     return { chip: 'Not set up' };
   };
   return (
