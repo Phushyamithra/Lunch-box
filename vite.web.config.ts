@@ -57,6 +57,8 @@ export default defineConfig({
           if (!id.includes('node_modules')) return undefined;
           if (id.includes('@mui') || id.includes('@emotion')) return 'mui';
           if (id.includes('@supabase')) return 'supabase';
+          // Charts load only with the screens that use them.
+          if (id.includes('recharts') || id.includes('/d3-') || id.includes('victory-vendor')) return 'charts';
           return 'vendor';
         },
       },
