@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
 interface Toast {
   key: number;
   message: string;
-  severity: 'success' | 'error' | 'info';
+  severity: 'success' | 'error' | 'info' | 'warning';
   action?: { label: string; run: () => void };
 }
 
