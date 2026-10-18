@@ -27,7 +27,7 @@ import { GlassIcon, type IconTint } from './GlassIcon';
 import { NAV_ITEMS, activeNavPath } from './navItems';
 
 const RAIL_WIDTH = 232;
-const APP_TINT: IconTint = { from: '#FFBF9B', to: '#B46060', ink: '#2E2C2B' };
+const APP_TINT: IconTint = { from: '#F0BE6E', to: '#E09F3E', ink: '#540B0E' };
 
 const SYNC_LABELS: Record<SyncState, { label: string; icon: ReactElement }> = {
   loading: { label: 'Connecting…', icon: <CloudSyncRoundedIcon fontSize="small" /> },

@@ -16,11 +16,11 @@ export interface NavItem {
 
 /** Primary destinations — bottom bar on phones, side rail on laptops. */
 export const NAV_ITEMS: NavItem[] = [
-  { path: '/', label: 'Home', icon: <HomeRoundedIcon />, tint: { from: '#FFF4E0', to: '#FFBF9B', ink: '#2E2C2B' } },
-  { path: '/food', label: 'Food', icon: <RestaurantRoundedIcon />, tint: { from: '#FFBF9B', to: '#E89A86', ink: '#2E2C2B' } },
-  { path: '/fitness', label: 'Fitness', icon: <FitnessCenterRoundedIcon />, tint: { from: '#B46060', to: '#8F4545', ink: '#FFFFFF' } },
-  { path: '/finance', label: 'Finance', icon: <AccountBalanceWalletRoundedIcon />, tint: { from: '#6B6B6B', to: '#4D4D4D', ink: '#FFF4E0' } },
-  { path: '/goals', label: 'Goals', icon: <EmojiEventsRoundedIcon />, tint: { from: '#FFE3D3', to: '#E89A86', ink: '#2E2C2B' } },
+  { path: '/', label: 'Home', icon: <HomeRoundedIcon />, tint: { from: '#FFF3B0', to: '#F0BE6E', ink: '#540B0E' } },
+  { path: '/food', label: 'Food', icon: <RestaurantRoundedIcon />, tint: { from: '#E09F3E', to: '#C98330', ink: '#540B0E' } },
+  { path: '/fitness', label: 'Fitness', icon: <FitnessCenterRoundedIcon />, tint: { from: '#9E2A2B', to: '#540B0E', ink: '#FFF3B0' } },
+  { path: '/finance', label: 'Finance', icon: <AccountBalanceWalletRoundedIcon />, tint: { from: '#4A7A86', to: '#335C67', ink: '#FFF3B0' } },
+  { path: '/goals', label: 'Goals', icon: <EmojiEventsRoundedIcon />, tint: { from: '#335C67', to: '#540B0E', ink: '#FFF3B0' } },
 ];
 
 /**
