@@ -29,7 +29,7 @@ interface SettingsValue {
 }
 
 const SettingsContext = createContext<SettingsValue | null>(null);
-const CACHE_KEY = 'lunchbox.web.settings';
+const CACHE_KEY = 'tracker.settings';
 
 function readCache(userId: string): CachedSettings | null {
   try {

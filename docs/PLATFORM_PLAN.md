@@ -39,8 +39,8 @@ Living record of the audit, the decisions taken, and phase status.
   backup in Settings → Backup; Vitest with characterization tests of the
   existing behavior (goal counting, legacy-log migration, log upserts,
   catalog import, Tasks sync dedupe, backup/validation).
-- [x] **Phase 1 — Foundation (code).** `web/` PWA reusing the extension's
-  theme and models; bottom nav (phone) and side rail (laptop); dark by
+- [x] **Phase 1 — Foundation (code).** `web/` PWA named **Tracker** (own calm palette: cream, peach, rose, charcoal; shares the extension's
+  models); bottom nav (phone) and side rail (laptop); dark by
   default; Supabase magic link plus 6-digit code sign-in; `app_settings`
   table with RLS and last-write-wins sync; installable, with an offline
   app shell; `vercel.json`. See `docs/WEB_APP_SETUP.md`. **Not yet done:**

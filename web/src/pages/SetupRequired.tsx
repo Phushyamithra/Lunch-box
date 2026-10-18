@@ -6,7 +6,7 @@ export function SetupRequired() {
     <Box sx={{ minHeight: '100%', display: 'grid', placeItems: 'center', p: 2 }}>
       <Paper variant="outlined" sx={{ p: 3, maxWidth: 480 }}>
         <Typography variant="h5" component="h1" gutterBottom>
-          🍱 LunchBox needs setup
+          Tracker needs setup
         </Typography>
         <Alert severity="warning" sx={{ mb: 2 }}>
           This build is not connected to Supabase.

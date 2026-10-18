@@ -1,6 +1,6 @@
 # WEB_APP_SETUP.md — Supabase, local development and Vercel
 
-The web app (PWA) lives in `web/` and shares `src/` (theme, models) with
+The web app (PWA), named **Tracker**, lives in `web/` and shares `src/` (models) with
 the Chrome extension. The extension build (`npm run build`) is unchanged.
 
 **Node 20 or newer is required** for the web build. The service-worker

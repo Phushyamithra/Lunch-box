@@ -4,7 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { lazy, Suspense, useMemo, type ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import type { ThemeMode } from '../../src/models';
-import { createAppTheme } from '../../src/theme';
+import { createTrackerTheme } from './theme';
 import { AuthProvider, useAuth } from './auth/AuthContext';
 import { SignIn } from './auth/SignIn';
 import { AppShell } from './layout/AppShell';
@@ -16,11 +16,11 @@ import { SettingsProvider, useSettings } from './settings/SettingsContext';
 
 const Settings = lazy(() => import('./pages/Settings'));
 
-/** Shared design system: the extension's Material You theme, dark by default. */
+/** Tracker design system (cream, peach, rose, charcoal), dark by default. */
 function Themed({ mode, children }: { mode: ThemeMode; children: ReactNode }) {
   const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
   const resolved = mode === 'system' ? (prefersDark ? 'dark' : 'light') : mode;
-  const theme = useMemo(() => createAppTheme(resolved), [resolved]);
+  const theme = useMemo(() => createTrackerTheme(resolved), [resolved]);
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />

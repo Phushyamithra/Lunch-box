@@ -52,7 +52,7 @@ export function SignIn() {
     <Box sx={{ minHeight: '100%', display: 'grid', placeItems: 'center', p: 2 }}>
       <Paper variant="outlined" sx={{ p: 3, width: '100%', maxWidth: 400 }}>
         <Typography variant="h5" component="h1" gutterBottom>
-          🍱 LunchBox
+          Tracker
         </Typography>
         {step === 'email' ? (
           <Stack component="form" spacing={2} onSubmit={handleSend} noValidate>

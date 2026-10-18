@@ -93,7 +93,7 @@ export default function Settings() {
       </Section>
 
       <Typography variant="body2" color="text.secondary" align="center">
-        LunchBox web · {import.meta.env.MODE === 'production' ? 'production build' : 'development'}
+        Tracker · {import.meta.env.MODE === 'production' ? 'production build' : 'development'}
       </Typography>
     </Stack>
   );
