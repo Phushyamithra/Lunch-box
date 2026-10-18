@@ -2,14 +2,15 @@ import { alpha, createTheme, type Theme } from '@mui/material/styles';
 import type { ResolvedThemeMode } from '../../src/models';
 
 /**
- * Tracker palette. Major colours: slate teal, butter and amber. Minor
- * accents: brick and maroon (errors, the Fitness tile). Worn two ways —
+ * Tracker palette. Light mode: slate teal, butter and amber, with brick
+ * and maroon as minor accents. Dark mode is deliberately minimal: neutral
+ * graphite with one soft-teal accent and no gold. Worn two ways —
  * iOS-style frosted glass for surfaces, and Material You tonal "pop" for
  * actions (pill buttons, tonal containers, pill nav indicators).
  *
  * Contrast is WCAG AA, checked against the worst case of each glass layer
- * over the background glow: body text ≥ 10:1, secondary text ≥ 5.8:1,
- * text on the amber CTA ≥ 5.3:1.
+ * over the background glow. Light: body ≥ 10:1, secondary ≥ 5.8:1, CTA
+ * text ≥ 5.3:1. Dark: body ≥ 14:1, secondary ≥ 6.6:1, CTA text ≥ 7.6:1.
  */
 export const PALETTE = {
   teal: '#335C67',
@@ -23,38 +24,48 @@ export const PALETTE = {
   amberDeep: '#9A6A1F', // amber that reads on butter (4.5:1+)
   tealDeep: '#1F3A41', // light-mode text; text on amber/butter fills
   tealLight: '#4A7A86',
-  night: '#0E1C20', // dark-mode page (teal, deepened)
-  surface: '#1A3238', // dark-mode glass base
+  // Minimal dark mode: graphite neutrals + one soft teal (from #335C67).
+  night: '#101314', // dark-mode page
+  surface: '#1A1E20', // dark-mode glass base
+  mist: '#E8ECEC', // dark-mode text
+  mistMuted: '#9BA6A8', // dark-mode secondary text
+  tealSoft: '#8CC2CC', // dark-mode accent
+  tealSoftDeep: '#7DB3BE',
+  onTealSoft: '#0F1A1D',
   /** Text on light fills (butter, amber, the CTA gradient). */
   ink: '#1F3A41',
 } as const;
 
-/** Primary call-to-action fill; deep-teal text passes on every stop. */
-export const CTA_GRADIENT = `linear-gradient(135deg, ${PALETTE.amberLight} 0%, ${PALETTE.amber} 100%)`;
+/** Primary call-to-action fill per mode; its text colour passes on every stop. */
+export const CTA = {
+  light: { fill: `linear-gradient(135deg, ${PALETTE.amberLight} 0%, ${PALETTE.amber} 100%)`, text: PALETTE.ink },
+  dark: { fill: `linear-gradient(135deg, ${PALETTE.tealSoft} 0%, ${PALETTE.tealSoftDeep} 100%)`, text: PALETTE.onTealSoft },
+} as const;
 
 export function createTrackerTheme(mode: ResolvedThemeMode): Theme {
   const dark = mode === 'dark';
-  const glassFill = dark ? alpha(PALETTE.surface, 0.7) : alpha('#FFFFFF', 0.6);
-  const glassBorder = dark ? alpha(PALETTE.butter, 0.1) : alpha('#FFFFFF', 0.8);
+  const glassFill = dark ? alpha(PALETTE.surface, 0.72) : alpha('#FFFFFF', 0.6);
+  const glassBorder = dark ? alpha(PALETTE.mist, 0.08) : alpha('#FFFFFF', 0.8);
   const glassShadow = dark
-    ? '0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,243,176,0.06)'
+    ? '0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(232,236,236,0.05)'
     : '0 8px 32px rgba(31,58,65,0.1), inset 0 1px 0 rgba(255,255,255,0.9)';
-  const tonal = dark ? '#2A4C55' : '#D5E5E7'; // teal containers
-  const onTonal = dark ? PALETTE.butter : PALETTE.tealDeep;
+  const tonal = dark ? '#1F3237' : '#D5E5E7'; // teal containers
+  const onTonal = dark ? PALETTE.mist : PALETTE.tealDeep;
+  const cta = dark ? CTA.dark : CTA.light;
 
   const theme = createTheme({
     palette: dark
       ? {
           mode,
-          primary: { main: PALETTE.amber, contrastText: PALETTE.ink },
-          secondary: { main: PALETTE.amber, contrastText: PALETTE.ink },
+          primary: { main: PALETTE.tealSoft, contrastText: PALETTE.onTealSoft },
+          secondary: { main: PALETTE.tealSoft, contrastText: PALETTE.onTealSoft },
           error: { main: '#F2A7A0' },
-          warning: { main: PALETTE.amberLight },
+          warning: { main: '#D9B26F' },
           success: { main: '#9CC5A1' },
-          info: { main: '#8FB8C2' },
+          info: { main: PALETTE.tealSoft },
           background: { default: PALETTE.night, paper: PALETTE.surface },
-          text: { primary: PALETTE.butter, secondary: '#B2AE82' },
-          divider: alpha(PALETTE.butter, 0.1),
+          text: { primary: PALETTE.mist, secondary: PALETTE.mistMuted },
+          divider: alpha(PALETTE.mist, 0.08),
         }
       : {
           mode,
@@ -81,7 +92,7 @@ export function createTrackerTheme(mode: ResolvedThemeMode): Theme {
   });
 
   return createTheme(theme, {
-    tracker: { tonal, onTonal, glassFill, glassBorder },
+    tracker: { tonal, onTonal, glassFill, glassBorder, cta: cta.fill, onCta: cta.text, minimal: dark },
     components: {
       MuiCssBaseline: {
         styleOverrides: {
@@ -94,8 +105,8 @@ export function createTrackerTheme(mode: ResolvedThemeMode): Theme {
             zIndex: -1,
             pointerEvents: 'none',
             background: dark
-              ? `radial-gradient(60vmax 45vmax at 0% 0%, ${alpha(PALETTE.teal, 0.55)}, transparent 60%),
-                 radial-gradient(55vmax 40vmax at 100% 100%, ${alpha(PALETTE.amber, 0.18)}, transparent 60%),
+              ? `radial-gradient(60vmax 45vmax at 0% 0%, ${alpha(PALETTE.teal, 0.28)}, transparent 60%),
+                 radial-gradient(55vmax 40vmax at 100% 100%, ${alpha(PALETTE.teal, 0.12)}, transparent 60%),
                  ${PALETTE.night}`
               : `radial-gradient(60vmax 45vmax at 0% 0%, ${alpha(PALETTE.amber, 0.32)}, transparent 60%),
                  radial-gradient(55vmax 40vmax at 100% 100%, ${alpha(PALETTE.teal, 0.25)}, transparent 60%),
@@ -146,11 +157,11 @@ export function createTrackerTheme(mode: ResolvedThemeMode): Theme {
         styleOverrides: {
           root: { borderRadius: 999, paddingInline: 20 },
           containedPrimary: {
-            background: CTA_GRADIENT,
-            color: PALETTE.ink,
-            boxShadow: `0 6px 18px ${alpha(PALETTE.amber, dark ? 0.25 : 0.45)}`,
-            '&:hover': { background: CTA_GRADIENT, filter: 'brightness(1.04)' },
-            '&.Mui-disabled': { background: alpha(PALETTE.amber, 0.35), color: alpha(PALETTE.ink, 0.6) },
+            background: cta.fill,
+            color: cta.text,
+            boxShadow: dark ? '0 6px 18px rgba(0,0,0,0.35)' : `0 6px 18px ${alpha(PALETTE.amber, 0.45)}`,
+            '&:hover': { background: cta.fill, filter: 'brightness(1.04)' },
+            '&.Mui-disabled': { background: alpha(dark ? PALETTE.tealSoft : PALETTE.amber, 0.3), color: alpha(cta.text, 0.6) },
           },
         },
       },
@@ -185,9 +196,9 @@ export function createTrackerTheme(mode: ResolvedThemeMode): Theme {
       },
       MuiLinearProgress: {
         styleOverrides: {
-          root: { height: 10, borderRadius: 999, backgroundColor: alpha(dark ? PALETTE.butter : PALETTE.tealDeep, 0.1) },
+          root: { height: 10, borderRadius: 999, backgroundColor: alpha(dark ? PALETTE.mist : PALETTE.tealDeep, 0.1) },
           bar: { borderRadius: 999 },
-          barColorSecondary: { background: CTA_GRADIENT },
+          barColorSecondary: { background: cta.fill },
         },
       },
       MuiOutlinedInput: {
@@ -199,11 +210,23 @@ export function createTrackerTheme(mode: ResolvedThemeMode): Theme {
   });
 }
 
+export interface TrackerTokens {
+  tonal: string;
+  onTonal: string;
+  glassFill: string;
+  glassBorder: string;
+  /** Call-to-action fill and its text colour (mode-specific). */
+  cta: string;
+  onCta: string;
+  /** Dark mode: monochrome icon tiles, no decorative colour. */
+  minimal: boolean;
+}
+
 declare module '@mui/material/styles' {
   interface Theme {
-    tracker: { tonal: string; onTonal: string; glassFill: string; glassBorder: string };
+    tracker: TrackerTokens;
   }
   interface ThemeOptions {
-    tracker?: { tonal: string; onTonal: string; glassFill: string; glassBorder: string };
+    tracker?: TrackerTokens;
   }
 }

@@ -1,6 +1,7 @@
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import ArchiveRoundedIcon from '@mui/icons-material/ArchiveRounded';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
+import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import UnarchiveRoundedIcon from '@mui/icons-material/UnarchiveRounded';
@@ -28,7 +29,7 @@ import { MealFormDialog } from './MealFormDialog';
 export default function MealsPage() {
   const navigate = useNavigate();
   const showToast = useSnackbar();
-  const { data, addMeal, editMeal, archiveMeal } = useFood();
+  const { data, addMeal, editMeal, archiveMeal, removeMeal } = useFood();
   const [query, setQuery] = useState('');
   const [showArchived, setShowArchived] = useState(false);
   const [editing, setEditing] = useState<MealRow | null>(null);
@@ -59,6 +60,20 @@ export default function MealsPage() {
       });
     } catch (e) {
       showToast(`Not saved: ${e instanceof Error ? e.message : 'unknown error'}`, { severity: 'error' });
+    }
+  };
+
+  /** Meals with any log or plan cap keep their history: archive only. */
+  const hasHistory = (meal: MealRow) =>
+    data.logs.some((l) => l.meal_id === meal.id) || data.caps.some((c) => c.meal_id === meal.id);
+
+  const remove = async (meal: MealRow) => {
+    if (!window.confirm(`Delete ${meal.name}? It has never been logged, so nothing else is affected.`)) return;
+    try {
+      await removeMeal(meal.id);
+      showToast(`Deleted ${meal.name}`);
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Not deleted.', { severity: 'error' });
     }
   };
 
@@ -121,7 +136,14 @@ export default function MealsPage() {
                     <EditRoundedIcon />
                   </IconButton>
                 </Tooltip>
-                <Tooltip title={meal.archived_at ? 'Restore' : 'Archive'}>
+                {!hasHistory(meal) && (
+                  <Tooltip title="Delete (never logged)">
+                    <IconButton aria-label={`Delete ${meal.name}`} onClick={() => void remove(meal)}>
+                      <DeleteOutlineRoundedIcon />
+                    </IconButton>
+                  </Tooltip>
+                )}
+                <Tooltip title={meal.archived_at ? 'Restore' : 'Archive (keeps history)'}>
                   <IconButton
                     aria-label={`${meal.archived_at ? 'Restore' : 'Archive'} ${meal.name}`}
                     onClick={() => void toggleArchive(meal)}

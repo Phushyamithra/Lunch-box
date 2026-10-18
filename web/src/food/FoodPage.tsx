@@ -1,4 +1,5 @@
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
+import CategoryRoundedIcon from '@mui/icons-material/CategoryRounded';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import FlagRoundedIcon from '@mui/icons-material/FlagRounded';
 import MenuBookRoundedIcon from '@mui/icons-material/MenuBookRounded';
@@ -304,6 +305,9 @@ export default function FoodPage() {
         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
           <Button startIcon={<MenuBookRoundedIcon />} onClick={() => navigate('/food/meals')}>
             Manage meals
+          </Button>
+          <Button startIcon={<CategoryRoundedIcon />} onClick={() => navigate('/food/categories')}>
+            Categories
           </Button>
           <Button startIcon={<UploadFileRoundedIcon />} onClick={() => navigate('/food/import')}>
             Import from LunchBox

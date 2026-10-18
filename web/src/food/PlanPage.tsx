@@ -45,8 +45,12 @@ export default function PlanPage() {
   const navigate = useNavigate();
   const { data, activePlan, stateOf } = useFood();
   const history = useMemo(
-    () => data.plans.filter((p) => p.completed_at).sort((a, b) => (b.completed_at ?? '').localeCompare(a.completed_at ?? '')),
-    [data.plans],
+    () =>
+      data.plans
+        // Plans without quotas are leftovers of a failed start; nothing to show.
+        .filter((p) => p.completed_at && data.quotas.some((q) => q.plan_id === p.id))
+        .sort((a, b) => (b.completed_at ?? '').localeCompare(a.completed_at ?? '')),
+    [data.plans, data.quotas],
   );
 
   return (
@@ -256,6 +260,7 @@ function ActivePlan({ state }: { state: PlanState }) {
 // ---------- New plan ----------
 
 function NewPlanForm({ previous }: { previous: PlanState | null }) {
+  const navigate = useNavigate();
   const { data, startPlan } = useFood();
   const showToast = useSnackbar();
   const enabled = data.categories.filter((c) => c.enabled);
@@ -323,7 +328,7 @@ function NewPlanForm({ previous }: { previous: PlanState | null }) {
               <TextField
                 size="small"
                 inputMode="numeric"
-                value={quantities[c.id] ?? 0}
+                value={quantities[c.id] ?? previous?.quotas.find((q) => q.category_id === c.id)?.quantity ?? 0}
                 onChange={(e) => {
                   const v = Number(e.target.value.replace(/\D/g, '').slice(0, 3) || 0);
                   setQuantities((q) => ({ ...q, [c.id]: v }));
@@ -333,9 +338,14 @@ function NewPlanForm({ previous }: { previous: PlanState | null }) {
             </Box>
           ))}
         </Stack>
-        <Typography variant="body2" color="text.secondary">
-          Leave a category at 0 to keep it out of the plan.
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>
+            Leave a category at 0 to keep it out of the plan.
+          </Typography>
+          <Button size="small" onClick={() => navigate('/food/categories')}>
+            Add or edit categories
+          </Button>
+        </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
           <FormControlLabel
             control={<Switch checked={capOn} onChange={(e) => setCapOn(e.target.checked)} />}

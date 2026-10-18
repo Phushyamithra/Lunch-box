@@ -21,6 +21,7 @@ const FoodPage = lazy(() => import('./food/FoodPage'));
 const ImportPage = lazy(() => import('./food/ImportPage'));
 const PlanPage = lazy(() => import('./food/PlanPage'));
 const MealsPage = lazy(() => import('./food/MealsPage'));
+const CategoriesPage = lazy(() => import('./food/CategoriesPage'));
 
 /** Tracker design system (cream, peach, rose, charcoal), dark by default. */
 function Themed({ mode, children }: { mode: ThemeMode; children: ReactNode }) {
@@ -59,6 +60,7 @@ function SignedInApp({ client }: { client: SupabaseClient }) {
                   <Route path="food/import" element={<ImportPage client={client} />} />
                   <Route path="food/plan" element={<PlanPage />} />
                   <Route path="food/meals" element={<MealsPage />} />
+                  <Route path="food/categories" element={<CategoriesPage />} />
                   <Route path="fitness" element={<ModulePlaceholder module={MODULES.fitness} />} />
                   <Route path="finance" element={<ModulePlaceholder module={MODULES.finance} />} />
                   <Route path="goals" element={<ModulePlaceholder module={MODULES.goals} />} />

@@ -178,6 +178,71 @@ export async function setMealArchived(client: SupabaseClient, id: string, archiv
   return data as MealRow;
 }
 
+/**
+ * Deletes a meal that has no history. Meals with logs (or caps in a plan)
+ * are protected by foreign keys; archive those instead.
+ */
+export async function deleteMeal(client: SupabaseClient, id: string): Promise<void> {
+  const { error } = await client.from('meals').delete().eq('id', id);
+  if (error) throw friendly(error, 'This meal has history, so it can only be archived.');
+}
+
+// ---------- Categories ----------
+
+export interface CategoryInput {
+  name: string;
+  icon: string;
+  color: string;
+}
+
+const CATEGORY_COLUMNS = 'id, legacy_id, name, icon, color, sort_order, enabled';
+
+export async function insertCategory(client: SupabaseClient, input: CategoryInput, sortOrder: number): Promise<CategoryRow> {
+  const { data, error } = await client
+    .from('food_categories')
+    .insert({ name: input.name.trim(), icon: input.icon.trim() || '🍽️', color: input.color, sort_order: sortOrder })
+    .select(CATEGORY_COLUMNS)
+    .single();
+  if (error) throw friendly(error);
+  return data as CategoryRow;
+}
+
+export async function updateCategory(
+  client: SupabaseClient,
+  id: string,
+  patch: Partial<Pick<CategoryRow, 'name' | 'icon' | 'color' | 'enabled' | 'sort_order'>>,
+): Promise<CategoryRow> {
+  const { data, error } = await client
+    .from('food_categories')
+    .update({ ...patch, ...(patch.name ? { name: patch.name.trim() } : {}), updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select(CATEGORY_COLUMNS)
+    .single();
+  if (error) throw friendly(error);
+  return data as CategoryRow;
+}
+
+/**
+ * Deletes a category. Its meals are first moved to `moveTo` (required when
+ * it has any), so no meal or log is ever lost. Categories used by a meal
+ * plan are protected; hide those instead.
+ */
+export async function deleteCategory(client: SupabaseClient, id: string, moveTo: string | null): Promise<void> {
+  if (moveTo) {
+    const { error } = await client.from('meals').update({ category_id: moveTo }).eq('category_id', id);
+    if (error) throw friendly(error);
+  }
+  const { error } = await client.from('food_categories').delete().eq('id', id);
+  if (error) throw friendly(error, 'This category is part of a meal plan, so it can only be hidden.');
+}
+
+/** Maps database errors the user can cause to plain language. */
+function friendly(error: { message: string; code?: string }, inUse?: string): Error {
+  if (error.code === '23503') return new Error(inUse ?? 'This is still in use elsewhere.');
+  if (error.code === '23505') return new Error('That name is already taken.');
+  return new Error(error.message);
+}
+
 // ---------- Meal plans ----------
 
 export interface NewPlan {
@@ -210,8 +275,8 @@ export async function createPlan(
     .insert(input.quotas.map((q) => ({ plan_id: planId, category_id: q.categoryId, quantity: q.quantity })))
     .select('id, plan_id, category_id, quantity');
   if (quotaError) {
-    // Don't leave a half-made plan active.
-    await client.from('meal_plans').update({ completed_at: new Date().toISOString(), completion: 'forced' }).eq('id', planId);
+    // Roll back: an empty plan has no data, and must not linger in history.
+    await client.from('meal_plans').delete().eq('id', planId);
     throw new Error(quotaError.message);
   }
   let caps: ItemCapRow[] = [];
@@ -220,7 +285,11 @@ export async function createPlan(
       .from('meal_plan_item_caps')
       .insert(input.caps.map((c) => ({ plan_id: planId, meal_id: c.mealId, cap: c.cap })))
       .select('id, plan_id, meal_id, cap');
-    if (capError) throw new Error(capError.message);
+    if (capError) {
+      await client.from('meal_plan_quotas').delete().eq('plan_id', planId);
+      await client.from('meal_plans').delete().eq('id', planId);
+      throw new Error(capError.message);
+    }
     caps = (data ?? []) as ItemCapRow[];
   }
   return { plan: plan as PlanRow, quotas: (quotas ?? []) as QuotaRow[], caps };

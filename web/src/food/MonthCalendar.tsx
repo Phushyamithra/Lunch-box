@@ -4,7 +4,6 @@ import { Box, IconButton, Paper, Typography, useTheme } from '@mui/material';
 import dayjs from 'dayjs';
 import { useMemo } from 'react';
 import type { LogsByDate } from '../../../src/core/logs';
-import { CTA_GRADIENT, PALETTE } from '../theme';
 import { MONTH_KEY, monthGrid, todayKey } from './foodModel';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -93,8 +92,8 @@ export function MonthCalendar({ month, selected, logsByDate, colorForMeal, onMon
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 0.5,
-                color: isSelected ? PALETTE.ink : 'text.primary',
-                background: isSelected ? CTA_GRADIENT : logs.length > 0 ? theme.tracker.tonal : 'transparent',
+                color: isSelected ? theme.tracker.onCta : 'text.primary',
+                background: isSelected ? theme.tracker.cta : logs.length > 0 ? theme.tracker.tonal : 'transparent',
                 boxShadow: isToday && !isSelected ? `inset 0 0 0 2px ${theme.palette.secondary.main}` : 'none',
                 opacity: future ? 0.35 : 1,
                 transition: 'transform 120ms ease',
@@ -122,7 +121,7 @@ export function MonthCalendar({ month, selected, logsByDate, colorForMeal, onMon
                       height: 6,
                       borderRadius: '50%',
                       bgcolor: colorForMeal(log.mealId),
-                      boxShadow: `0 0 0 1px ${isSelected ? 'rgba(31,58,65,0.35)' : 'rgba(255,255,255,0.5)'}`,
+                      boxShadow: `0 0 0 1px ${isSelected ? 'rgba(15,26,29,0.35)' : 'rgba(255,255,255,0.35)'}`,
                     }}
                   />
                 ))}

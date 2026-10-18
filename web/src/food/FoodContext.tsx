@@ -10,6 +10,9 @@ import {
 } from 'react';
 import {
   createPlan,
+  deleteCategory,
+  deleteMeal,
+  insertCategory,
   insertLog,
   insertMeal,
   loadFoodData,
@@ -17,8 +20,11 @@ import {
   setLogDeleted,
   setMealArchived,
   setQuota,
+  updateCategory,
   updateMeal,
   updatePlan,
+  type CategoryInput,
+  type CategoryRow,
   type FoodData,
   type LogRow,
   type MealInput,
@@ -70,6 +76,12 @@ interface FoodValue {
   addMeal: (input: MealInput) => Promise<MealRow>;
   editMeal: (id: string, input: MealInput) => Promise<void>;
   archiveMeal: (id: string, archived: boolean) => Promise<void>;
+  removeMeal: (id: string) => Promise<void>;
+  // Categories
+  addCategory: (input: CategoryInput) => Promise<void>;
+  editCategory: (id: string, patch: Partial<Pick<CategoryRow, 'name' | 'icon' | 'color' | 'enabled'>>) => Promise<void>;
+  moveCategory: (id: string, direction: -1 | 1) => Promise<void>;
+  removeCategory: (id: string, moveTo: string | null) => Promise<void>;
 }
 
 const EMPTY: FoodData = { categories: [], meals: [], logs: [], settings: null, plans: [], quotas: [], caps: [] };
@@ -243,6 +255,66 @@ export function FoodProvider({ client, children }: { client: SupabaseClient; chi
     [client],
   );
 
+  const removeMeal = useCallback(
+    async (id: string) => {
+      await deleteMeal(client, id);
+      setData((d) => ({ ...d, meals: d.meals.filter((m) => m.id !== id) }));
+    },
+    [client],
+  );
+
+  const replaceCategory = (row: CategoryRow) =>
+    setData((d) => ({
+      ...d,
+      categories: d.categories.map((c) => (c.id === row.id ? row : c)).sort((a, b) => a.sort_order - b.sort_order),
+    }));
+
+  const addCategory = useCallback(
+    async (input: CategoryInput) => {
+      const order = Math.max(-1, ...data.categories.map((c) => c.sort_order)) + 1;
+      const row = await insertCategory(client, input, order);
+      setData((d) => ({ ...d, categories: [...d.categories, row] }));
+    },
+    [client, data.categories],
+  );
+
+  const editCategory = useCallback(
+    async (id: string, patch: Partial<Pick<CategoryRow, 'name' | 'icon' | 'color' | 'enabled'>>) =>
+      replaceCategory(await updateCategory(client, id, patch)),
+    [client],
+  );
+
+  /** Swaps a category with its neighbour in the display order. */
+  const moveCategory = useCallback(
+    async (id: string, direction: -1 | 1) => {
+      const ordered = [...data.categories].sort((a, b) => a.sort_order - b.sort_order);
+      const index = ordered.findIndex((c) => c.id === id);
+      const other = ordered[index + direction];
+      if (index < 0 || !other) return;
+      const a = ordered[index];
+      // Normalise orders first so equal values still swap cleanly.
+      const [savedA, savedB] = await Promise.all([
+        updateCategory(client, a.id, { sort_order: index + direction }),
+        updateCategory(client, other.id, { sort_order: index }),
+      ]);
+      replaceCategory(savedA);
+      replaceCategory(savedB);
+    },
+    [client, data.categories],
+  );
+
+  const removeCategory = useCallback(
+    async (id: string, moveTo: string | null) => {
+      await deleteCategory(client, id, moveTo);
+      setData((d) => ({
+        ...d,
+        categories: d.categories.filter((c) => c.id !== id),
+        meals: moveTo ? d.meals.map((m) => (m.category_id === id ? { ...m, category_id: moveTo } : m)) : d.meals,
+      }));
+    },
+    [client],
+  );
+
   const value = useMemo<FoodValue>(
     () => ({
       loading,
@@ -265,8 +337,13 @@ export function FoodProvider({ client, children }: { client: SupabaseClient; chi
       addMeal,
       editMeal,
       archiveMeal,
+      removeMeal,
+      addCategory,
+      editCategory,
+      moveCategory,
+      removeCategory,
     }),
-    [loading, error, data, mealById, categoryOf, activePlan, stateOf, reload, check, logMeal, removeLog, restoreLog, startPlan, completePlan, setDefaultCap, setMealCap, setQuotaQuantity, addMeal, editMeal, archiveMeal],
+    [loading, error, data, mealById, categoryOf, activePlan, stateOf, reload, check, logMeal, removeLog, restoreLog, startPlan, completePlan, setDefaultCap, setMealCap, setQuotaQuantity, addMeal, editMeal, archiveMeal, removeMeal, addCategory, editCategory, moveCategory, removeCategory],
   );
   return <FoodContext.Provider value={value}>{children}</FoodContext.Provider>;
 }

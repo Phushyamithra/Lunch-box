@@ -102,8 +102,23 @@ export function AppShell() {
       )}
 
       <Box sx={{ flexGrow: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-        <AppBar position="sticky" color="inherit" elevation={0}>
-          <Toolbar sx={{ gap: 1, pt: 'env(safe-area-inset-top)' }}>
+        {/* Floating glass header — rounded like the tab bar and the cards. */}
+        <AppBar
+          position="sticky"
+          color="inherit"
+          elevation={0}
+          sx={{
+            top: 'calc(10px + env(safe-area-inset-top))',
+            mt: 'calc(10px + env(safe-area-inset-top))',
+            mx: { xs: 1.5, md: 2 },
+            width: 'auto',
+            borderRadius: '24px',
+            border: `1px solid ${theme.tracker.glassBorder}`,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+            overflow: 'hidden',
+          }}
+        >
+          <Toolbar sx={{ gap: 1, minHeight: { xs: 60, sm: 64 } }}>
             <Typography variant="h5" component="h1" sx={{ flexGrow: 1 }}>
               {title}
             </Typography>
@@ -122,7 +137,7 @@ export function AppShell() {
             maxWidth: 1100,
             mx: 'auto',
             px: 2,
-            pt: 1,
+            pt: 2,
             pb: wide ? 4 : 'calc(104px + env(safe-area-inset-bottom))',
           }}
         >
