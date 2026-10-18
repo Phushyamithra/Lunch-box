@@ -31,7 +31,18 @@ generator (workbox) fails on Node 19 with
 5. After your first successful sign-in, turn off **Authentication →
    Providers → Email → Allow new users to sign up**. The app is single-user;
    Row Level Security already limits every row to its owner.
-6. **Project Settings → API:** copy the Project URL and the `anon` public key.
+6. Copy the Project URL and the public key. Supabase moves these between
+   dashboard versions; any of the following works:
+   - Click **Connect** at the top of the project dashboard. It shows both.
+   - **Project Settings → Data API** shows the Project URL, and
+     **Project Settings → API Keys** shows the key.
+   - Build the URL yourself: the dashboard address is
+     `supabase.com/dashboard/project/<ref>`, so the Project URL is
+     `https://<ref>.supabase.co`.
+
+   For the key, use the **anon** key from the **Legacy API Keys** tab (it
+   starts with `eyJ`), or the **publishable** key (`sb_publishable_…`).
+   Never use the `service_role` or `secret` key in the app.
 
 Note: free projects pause after about a week with no activity. Restore
 them from the dashboard. No data is lost.
