@@ -16,6 +16,8 @@ interface NutritionValue {
   addEntry: (input: api.EntryInput) => Promise<Entry>;
   /** Soft delete; `false` restores (undo). */
   setEntryDeleted: (entry: Entry, deleted: boolean) => Promise<void>;
+  /** Adds imported rows, then reloads from the server. */
+  importRows: (rows: api.ImportRows, onProgress?: (done: number, total: number) => void) => Promise<void>;
 }
 
 const NutritionContext = createContext<NutritionValue | null>(null);
@@ -74,6 +76,13 @@ export function NutritionProvider({ client, children }: { client: SupabaseClient
       async setEntryDeleted(entry, deleted) {
         const row = await api.setEntryDeleted(client, entry.id, deleted);
         setData((d) => (d ? { ...d, entries: deleted ? d.entries.filter((e) => e.id !== entry.id) : [...d.entries, row] } : d));
+      },
+      async importRows(rows, onProgress) {
+        try {
+          await api.importRows(client, rows, onProgress);
+        } finally {
+          setData(await api.loadNutrition(client));
+        }
       },
     }),
     [client, loading, error, data, reload],

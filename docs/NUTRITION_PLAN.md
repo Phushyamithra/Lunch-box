@@ -211,3 +211,25 @@ Regression run after every stage: all existing Vitest suites, the PGlite migrati
     days covering 70% of the window. "Apply" saves a new target version only
     after you confirm, keeping protein and fat; carbs take the difference.
   - **Protein per meal:** an optional switch on Today (25/30/15/30%).
+- **Stage 7 (done):** a Backup tab (`backup.ts` + `DataPage.tsx`), with no
+  new migration.
+  - **Export:** a full JSON backup (`schema: tracker.nutrition`,
+    `version: 1`) holding the profile, every target version, your own foods
+    (including edited copies of catalog and menu items) and the food log
+    with its snapshots. There are also food-log and foods CSVs that open in
+    Sheets or Excel; cells that would run as formulas are escaped. Shared
+    catalog foods and menus are app data, so they aren't copied.
+  - **Import:**
+    - Takes a backup or a CSV; the kind is told by the headers, and
+      friendly headers such as Date, Calories or Fiber work.
+    - Every row is checked with the same rules as the forms, and bad rows
+      are listed by row number and skipped.
+    - A preview shows what will be added before anything is written.
+  - **Only adds:**
+    - Rows already present (same id or same contents) are skipped, and
+      nothing existing is changed or deleted.
+    - Ids are fresh, and links between imported rows are remapped.
+    - A link to a food you don't have is dropped, and the entry keeps its
+      nutrients. Meal-prep delivery links are dropped too.
+    - Your profile is set only if you have none.
+    - A backup made by a newer app version is refused, with a clear message.

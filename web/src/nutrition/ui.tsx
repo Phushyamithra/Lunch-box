@@ -12,6 +12,7 @@ const TABS = [
   { path: '/nutrition/overview', label: 'Overview' },
   { path: '/nutrition/foods', label: 'My foods' },
   { path: '/nutrition/targets', label: 'Targets' },
+  { path: '/nutrition/data', label: 'Backup' },
 ];
 
 /** Frame for nutrition screens: section tabs plus load/error states. */

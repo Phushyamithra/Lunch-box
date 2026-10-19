@@ -37,6 +37,7 @@ const NutritionOverview = lazy(() => import('./nutrition/OverviewPage'));
 const NutritionToday = lazy(() => import('./nutrition/TodayPage'));
 const NutritionFoods = lazy(() => import('./nutrition/FoodsPage'));
 const NutritionTrends = lazy(() => import('./nutrition/TrendsPage'));
+const NutritionData = lazy(() => import('./nutrition/DataPage'));
 const NutritionTargets = lazy(() => import('./nutrition/TargetsPage'));
 
 /** Tracker design system (cream, peach, rose, charcoal), dark by default. */
@@ -80,6 +81,7 @@ function SignedInApp({ client }: { client: SupabaseClient }) {
                       <Route path="overview" element={<NutritionOverview />} />
                       <Route path="foods" element={<NutritionFoods />} />
                       <Route path="trends" element={<NutritionTrends />} />
+                      <Route path="data" element={<NutritionData />} />
                       <Route path="targets" element={<NutritionTargets />} />
                     </Route>
                     <Route path="food" element={<FoodPage />} />

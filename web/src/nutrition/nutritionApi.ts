@@ -156,3 +156,36 @@ export async function setEntryDeleted(client: SupabaseClient, id: string, delete
     check(await client.from('food_log_entries').update({ deleted_at: deleted ? new Date().toISOString() : null }).eq('id', id).select(ENTRY_COLUMNS).single()) as Entry,
   );
 }
+
+export interface ImportRows {
+  foods: (FoodInput & { id: string; notes: string | null })[];
+  entries: (EntryInput & { id: string; logged_at: string })[];
+  targets: (TargetInput & { id: string })[];
+  profile: Profile | null;
+}
+
+/**
+ * Adds imported rows (never updates or deletes). Ids are chosen client side
+ * so links between new rows hold; foods go first, in chunks.
+ */
+export async function importRows(client: SupabaseClient, rows: ImportRows, onProgress?: (done: number, total: number) => void): Promise<void> {
+  const total = rows.foods.length + rows.entries.length + rows.targets.length + (rows.profile ? 1 : 0);
+  let done = 0;
+  const step = (n: number) => onProgress?.((done += n), total);
+  const CHUNK = 500;
+  const insert = async (table: string, list: object[]) => {
+    for (let i = 0; i < list.length; i += CHUNK) {
+      const part = list.slice(i, i + CHUNK);
+      check(await client.from(table).insert(part).select('id'));
+      step(part.length);
+    }
+  };
+  const now = new Date().toISOString();
+  await insert('foods', rows.foods.map((f) => ({ ...f, name: f.name.trim(), updated_at: now })));
+  await insert('nutrition_targets', rows.targets);
+  await insert('food_log_entries', rows.entries);
+  if (rows.profile) {
+    await saveProfile(client, rows.profile);
+    step(1);
+  }
+}
