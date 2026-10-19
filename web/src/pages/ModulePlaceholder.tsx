@@ -28,7 +28,7 @@ export const MODULES = {
   },
   goals: {
     title: 'Goals',
-    phase: 2,
+    phase: 5,
     summary: 'Milestones shared by every module, with history that is never reset.',
     features: ['Daily, weekly, monthly and one-off goals', 'Cycle history', 'Achievement timeline'],
   },
