@@ -4,7 +4,7 @@
   "installCommand": "npm ci",
   "buildCommand": "npm run build:web",
   "outputDirectory": "dist-web",
-  "rewrites": [{ "source": "/((?!assets/|icons/|sw\.js|workbox-|manifest\.webmanifest).*)", "destination": "/index.html" }],
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
   "headers": [
     {
       "source": "/sw.js",
