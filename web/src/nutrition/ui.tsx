@@ -52,7 +52,8 @@ export function NutritionLayout() {
           }
         >
           {error}
-          {/(relation|table) .*(nutrition_|foods|food_log)/.test(error) && ' — run supabase/migrations/0008_nutrition_targets.sql and 0009_food_log.sql in the Supabase SQL Editor, then Retry.'}
+          {/(relation|table|column) .*(nutrition_|foods|food_log)/.test(error) &&
+            ' — run the nutrition migrations (0008, 0009, 0010) from supabase/migrations in the Supabase SQL Editor, in order, then Retry.'}
         </Alert>
       ) : !nutrition.data || !fitness.data ? (
         <Box sx={{ display: 'grid', placeItems: 'center', py: 8 }}>

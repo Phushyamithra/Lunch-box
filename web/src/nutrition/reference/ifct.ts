@@ -1,0 +1,118 @@
+/**
+ * Subset of the Indian Food Composition Tables 2017 (NIN-ICMR, Hyderabad),
+ * per 100 g edible portion, extracted from @ifct2017/compositions 2.0.9
+ * (MIT-licensed packaging of the NIN tables). Used with the user's OK for a
+ * private app; check NIN's terms before sharing the app with others.
+ * The package stores minerals in grams; sodium here is converted to mg.
+ * Generated: do not edit by hand. kj is the table's own energy value (kept
+ * for reference; it's inconsistent for some foods, so kcal is computed from
+ * the macros instead, see build.ts).
+ */
+export interface IfctRow {
+  name: string;
+  protein: number;
+  fat: number;
+  carbs: number;
+  fibre: number;
+  sugar: number | null;
+  sodium_mg: number | null;
+  kj: number | null;
+}
+
+export const IFCT: Record<string, IfctRow> = {
+  A003: { name: "Bajra", protein: 10.96, fat: 5.43, carbs: 61.78, fibre: 11.49, sugar: 0.81, sodium_mg: 0, kj: 1456.0 },
+  A004: { name: "Barley", protein: 10.94, fat: 1.3, carbs: 61.29, fibre: 15.64, sugar: 0.06, sodium_mg: 10, kj: 1321.0 },
+  A005: { name: "Jowar", protein: 9.97, fat: 1.73, carbs: 67.68, fibre: 10.22, sugar: 1.27, sodium_mg: 10, kj: 1398.0 },
+  A009: { name: "Quinoa", protein: 13.11, fat: 5.5, carbs: 53.65, fibre: 14.66, sugar: 1.41, sodium_mg: 0, kj: 1374.0 },
+  A010: { name: "Ragi", protein: 7.16, fat: 1.92, carbs: 66.82, fibre: 11.18, sugar: 0.34, sodium_mg: 0, kj: 1342.0 },
+  A011: { name: "Rice flakes", protein: 7.44, fat: 1.14, carbs: 76.75, fibre: 3.46, sugar: 0.34, sodium_mg: 0, kj: 1480.0 },
+  A012: { name: "Rice puffed", protein: 7.47, fat: 1.62, carbs: 77.68, fibre: 2.56, sugar: 0.64, sodium_mg: 0, kj: 1514.0 },
+  A013: { name: "Rice, raw, brown", protein: 9.16, fat: 1.24, carbs: 74.8, fibre: 4.43, sugar: 0.69, sodium_mg: 0, kj: 1480.0 },
+  A014: { name: "Rice, parboiled, milled", protein: 7.81, fat: 0.55, carbs: 77.16, fibre: 3.74, sugar: 0.67, sodium_mg: 0, kj: 1471.0 },
+  A015: { name: "Rice, raw, milled", protein: 7.94, fat: 0.52, carbs: 78.24, fibre: 2.81, sugar: 0.69, sodium_mg: 0, kj: 1491.0 },
+  A018: { name: "Wheat flour, refined", protein: 10.36, fat: 0.76, carbs: 74.27, fibre: 2.76, sugar: 1.79, sodium_mg: 0, kj: 1472.0 },
+  A019: { name: "Wheat flour, atta", protein: 10.57, fat: 1.53, carbs: 64.17, fibre: 11.36, sugar: 1.8, sodium_mg: 0, kj: 1340.0 },
+  A022: { name: "Wheat, semolina", protein: 11.38, fat: 0.74, carbs: 68.43, fibre: 9.72, sugar: 1.65, sodium_mg: 0, kj: 1396.0 },
+  A023: { name: "Wheat, vermicelli", protein: 9.7, fat: 0.45, carbs: 70.39, fibre: 9.28, sugar: 1.68, sodium_mg: 0, kj: 1392.0 },
+  B001: { name: "Bengal gram, dal", protein: 21.55, fat: 5.31, carbs: 46.72, fibre: 15.15, sugar: 1.03, sodium_mg: 20, kj: 1377.0 },
+  B002: { name: "Bengal gram, whole", protein: 18.77, fat: 5.11, carbs: 39.56, fibre: 25.22, sugar: 0.99, sodium_mg: 30, kj: 1201.0 },
+  B003: { name: "Black gram, dal", protein: 23.06, fat: 1.69, carbs: 51.0, fibre: 11.93, sugar: 0.84, sodium_mg: 20, kj: 1356.0 },
+  B004: { name: "Black gram, whole", protein: 21.97, fat: 1.58, carbs: 43.99, fibre: 20.41, sugar: 0.45, sodium_mg: 30, kj: 1219.0 },
+  B010: { name: "Green gram, dal", protein: 23.88, fat: 1.35, carbs: 52.59, fibre: 9.37, sugar: 0.95, sodium_mg: 10, kj: 1363.0 },
+  B011: { name: "Green gram, whole", protein: 22.53, fat: 1.14, carbs: 46.13, fibre: 17.04, sugar: 0.54, sodium_mg: 10, kj: 1229.0 },
+  B012: { name: "Horse gram, whole", protein: 21.73, fat: 0.62, carbs: 57.24, fibre: 7.88, sugar: 0.35, sodium_mg: 10, kj: 1379.0 },
+  B013: { name: "Lentil dal", protein: 24.35, fat: 0.75, carbs: 52.53, fibre: 10.43, sugar: 1.95, sodium_mg: 10, kj: 1349.0 },
+  B020: { name: "Rajmah, red", protein: 19.91, fat: 1.77, carbs: 48.61, fibre: 16.57, sugar: 1.52, sodium_mg: 10, kj: 1252.0 },
+  B021: { name: "Red gram, dal", protein: 21.7, fat: 1.56, carbs: 55.23, fibre: 9.06, sugar: 2.08, sodium_mg: 20, kj: 1384.0 },
+  B025: { name: "Soya bean, white", protein: 37.8, fat: 19.42, carbs: 10.16, fibre: 22.63, sugar: 2.2, sodium_mg: 0, kj: 1579.0 },
+  C015: { name: "Cabbage, green", protein: 1.36, fat: 0.12, carbs: 3.25, fibre: 2.76, sugar: 1.0, sodium_mg: 10, kj: 90.0 },
+  C020: { name: "Fenugreek leaves", protein: 3.68, fat: 0.83, carbs: 2.17, fibre: 4.9, sugar: 0.88, sodium_mg: 50, kj: 144.0 },
+  C033: { name: "Spinach", protein: 2.14, fat: 0.64, carbs: 2.05, fibre: 2.38, sugar: 0.24, sodium_mg: 40, kj: 102.0 },
+  D004: { name: "Bitter gourd, jagged, teeth ridges, elongate", protein: 1.44, fat: 0.24, carbs: 2.82, fibre: 3.78, sugar: 0.04, sodium_mg: 10, kj: 87.0 },
+  D007: { name: "Bottle gourd, elongate, pale green", protein: 0.53, fat: 0.13, carbs: 1.68, fibre: 2.12, sugar: 0.36, sodium_mg: 0, kj: 46.0 },
+  D031: { name: "Brinjal - all varieties", protein: 1.48, fat: 0.32, carbs: 3.52, fibre: 3.98, sugar: 0.97, sodium_mg: 0, kj: 106.0 },
+  D033: { name: "Capsicum, green", protein: 1.11, fat: 0.34, carbs: 1.84, fibre: 2.06, sugar: 0.86, sodium_mg: 0, kj: 68.0 },
+  D036: { name: "Cauliflower", protein: 2.15, fat: 0.44, carbs: 2.03, fibre: 3.71, sugar: 0.47, sodium_mg: 30, kj: 96.0 },
+  D043: { name: "Cucumber, green, elongate", protein: 0.71, fat: 0.16, carbs: 3.48, fibre: 2.14, sugar: 0.27, sodium_mg: 10, kj: 82.0 },
+  D046: { name: "Drumstick", protein: 2.62, fat: 0.12, carbs: 3.76, fibre: 6.83, sugar: 1.47, sodium_mg: 20, kj: 123.0 },
+  D049: { name: "French beans, country", protein: 2.49, fat: 0.26, carbs: 2.68, fibre: 4.38, sugar: 1.06, sodium_mg: 10, kj: 102.0 },
+  D056: { name: "Ladies finger", protein: 2.08, fat: 0.22, carbs: 3.62, fibre: 4.08, sugar: 0.48, sodium_mg: 10, kj: 115.0 },
+  D061: { name: "Peas, fresh", protein: 7.25, fat: 0.13, carbs: 11.88, fibre: 6.32, sugar: 0.97, sodium_mg: 0, kj: 340.0 },
+  D066: { name: "Pumpkin, orange, round", protein: 0.84, fat: 0.16, carbs: 4.0, fibre: 2.56, sugar: 2.97, sodium_mg: 10, kj: 97.0 },
+  D076: { name: "Tomato, ripe, local", protein: 0.9, fat: 0.47, carbs: 2.71, fibre: 1.77, sugar: 1.34, sodium_mg: 10, kj: 82.0 },
+  E001: { name: "Apple, big", protein: 0.29, fat: 0.64, carbs: 13.11, fibre: 2.59, sugar: 9.53, sodium_mg: 0, kj: 261.0 },
+  E012: { name: "Banana, ripe, robusta", protein: 1.23, fat: 0.33, carbs: 23.63, fibre: 1.94, sugar: 13.65, sodium_mg: 0, kj: 440.0 },
+  E018: { name: "Dates, dry, dark brown", protein: 2.38, fat: 0.35, carbs: 72.67, fibre: 9.1, sugar: 68.84, sodium_mg: 0, kj: 1301.0 },
+  E026: { name: "Grapes, seedless, round, green", protein: 0.62, fat: 0.26, carbs: 11.81, fibre: 1.28, sugar: 9.6, sodium_mg: 0, kj: 224.0 },
+  E028: { name: "Guava, white flesh", protein: 1.44, fat: 0.32, carbs: 5.13, fibre: 8.59, sugar: 4.1, sodium_mg: 0, kj: 135.0 },
+  E033: { name: "Lemon, juice", protein: 0.41, fat: 0.75, carbs: 0, fibre: 0, sugar: 2.59, sodium_mg: 0, kj: 153.0 },
+  E036: { name: "Mango, ripe, banganapalli", protein: 0.54, fat: 0.55, carbs: 8.18, fibre: 1.88, sugar: 7.77, sodium_mg: 0, kj: 175.0 },
+  E047: { name: "Orange, pulp", protein: 0.7, fat: 0.13, carbs: 7.92, fibre: 1.29, sugar: 6.86, sodium_mg: 0, kj: 156.0 },
+  E049: { name: "Papaya, ripe", protein: 0.42, fat: 0.16, carbs: 4.61, fibre: 2.83, sugar: 4.09, sodium_mg: 10, kj: 100.0 },
+  E053: { name: "Pineapple", protein: 0.52, fat: 0.16, carbs: 9.42, fibre: 3.46, sugar: 8.56, sodium_mg: 0, kj: 180.0 },
+  E055: { name: "Pomegranate, maroon seeds", protein: 1.33, fat: 0.15, carbs: 11.58, fibre: 2.83, sugar: 10.87, sodium_mg: 0, kj: 229.0 },
+  E057: { name: "Raisins, dried, black", protein: 2.57, fat: 0.34, carbs: 71.29, fibre: 3.92, sugar: 61.51, sodium_mg: 10, kj: 1279.0 },
+  E060: { name: "Sapota", protein: 0.92, fat: 1.26, carbs: 13.9, fibre: 9.6, sugar: 12.3, sodium_mg: 0, kj: 307.0 },
+  E064: { name: "Tamarind, pulp", protein: 2.92, fat: 0.15, carbs: 67.35, fibre: 5.31, sugar: 52.88, sodium_mg: 20, kj: 1207.0 },
+  E065: { name: "Water melon, dark green (sugar baby)", protein: 0.6, fat: 0.16, carbs: 3.86, fibre: 0.7, sugar: 3.66, sodium_mg: 0, kj: 85.0 },
+  F001: { name: "Beet root", protein: 1.95, fat: 0.14, carbs: 6.18, fibre: 3.31, sugar: 4.35, sodium_mg: 70, kj: 149.0 },
+  F002: { name: "Carrot, orange", protein: 0.95, fat: 0.47, carbs: 5.55, fibre: 4.18, sugar: 3.23, sodium_mg: 50, kj: 139.0 },
+  F006: { name: "Potato, brown skin, big", protein: 1.54, fat: 0.23, carbs: 14.89, fibre: 1.71, sugar: 0.32, sodium_mg: 0, kj: 292.0 },
+  F013: { name: "Sweet potato, brown skin", protein: 1.33, fat: 0.26, carbs: 24.25, fibre: 3.99, sugar: 3.63, sodium_mg: 30, kj: 456.0 },
+  G017: { name: "Onion, big", protein: 1.5, fat: 0.24, carbs: 9.56, fibre: 2.45, sugar: 5.88, sodium_mg: 10, kj: 201.0 },
+  H001: { name: "Almond", protein: 18.41, fat: 58.49, carbs: 3.04, fibre: 13.06, sugar: 2.23, sodium_mg: 0, kj: 2549.0 },
+  H005: { name: "Cashew nut", protein: 18.78, fat: 45.2, carbs: 25.46, fibre: 3.86, sugar: 3.11, sodium_mg: 10, kj: 2438.0 },
+  H006: { name: "Coconut, kernal, dry", protein: 7.27, fat: 63.26, carbs: 8.01, fibre: 15.88, sugar: 6.93, sodium_mg: 20, kj: 2611.0 },
+  H007: { name: "Coconut, kernel, fresh", protein: 3.84, fat: 41.38, carbs: 6.3, fibre: 10.42, sugar: 6.2, sodium_mg: 10, kj: 1711.0 },
+  H011: { name: "Gingelly seeds, white", protein: 21.7, fat: 43.05, carbs: 10.83, fibre: 16.99, sugar: 0.67, sodium_mg: 20, kj: 2174.0 },
+  H012: { name: "Ground nut", protein: 23.65, fat: 39.63, carbs: 17.27, fibre: 10.38, sugar: 4.42, sodium_mg: 10, kj: 2176.0 },
+  H014: { name: "Linseeds", protein: 18.55, fat: 35.67, carbs: 10.99, fibre: 26.17, sugar: 0.6, sodium_mg: 30, kj: 1857.0 },
+  H018: { name: "Pistachio nuts", protein: 23.35, fat: 42.49, carbs: 15.82, fibre: 10.64, sugar: 7.9, sodium_mg: 10, kj: 2257.0 },
+  H021: { name: "Walnut", protein: 14.92, fat: 64.27, carbs: 10.14, fibre: 5.39, sugar: 3.22, sodium_mg: 0, kj: 2809.0 },
+  I001: { name: "Jaggery, cane", protein: 1.85, fat: 0.16, carbs: 84.87, fibre: 0, sugar: 84.32, sodium_mg: 30, kj: 1480.0 },
+  J001: { name: "Button mushroom, fresh", protein: 3.68, fat: 0.42, carbs: 1.98, fibre: 3.11, sugar: 0.1, sodium_mg: 10, kj: 115.0 },
+  K002: { name: "Coconut Water", protein: 0.26, fat: 0.16, carbs: 3.16, fibre: 0, sugar: 3.06, sodium_mg: 30, kj: 64.0 },
+  L001: { name: "Milk, whole, Buffalo", protein: 3.68, fat: 6.58, carbs: 8.39, fibre: 0, sugar: 5.34, sodium_mg: 30, kj: 449.0 },
+  L002: { name: "Milk, whole, Cow", protein: 3.26, fat: 4.48, carbs: 4.94, fibre: 0, sugar: 4.89, sodium_mg: 30, kj: 305.0 },
+  L003: { name: "Paneer", protein: 18.86, fat: 14.78, carbs: 12.41, fibre: 0, sugar: 11.57, sodium_mg: 20, kj: 1079.0 },
+  L004: { name: "Khoa", protein: 16.34, fat: 20.62, carbs: 16.53, fibre: 0, sugar: 16.14, sodium_mg: 50, kj: 1322.0 },
+  M001: { name: "Egg, poultry, whole, raw", protein: 13.28, fat: 9.15, carbs: 0, fibre: 0, sugar: 0.0, sodium_mg: 120, kj: 564.0 },
+  M002: { name: "Egg, poultry, white, raw", protein: 10.84, fat: 0.06, carbs: 0, fibre: 0, sugar: 0.0, sodium_mg: 170, kj: 187.0 },
+  M004: { name: "Egg, poultry, whole, boiled", protein: 13.43, fat: 10.54, carbs: 0, fibre: 0, sugar: 0.0, sodium_mg: 120, kj: 618.0 },
+  M007: { name: "Egg, poultry, omlet", protein: 16.53, fat: 11.6, carbs: 0, fibre: 0, sugar: 0.0, sodium_mg: 170, kj: 710.0 },
+  N001: { name: "Chicken, poultry, leg, skinless", protein: 19.44, fat: 12.64, carbs: 0, fibre: 0, sugar: 0.0, sodium_mg: 70, kj: 1605.0 },
+  N002: { name: "Chicken, poultry, thigh, skinless", protein: 18.18, fat: 14.23, carbs: 0, fibre: 0, sugar: 0.0, sodium_mg: 60, kj: 836.0 },
+  N003: { name: "Chicken, poultry, breast, skinless", protein: 21.81, fat: 9.0, carbs: 0, fibre: 0, sugar: 0.0, sodium_mg: 40, kj: 704.0 },
+  O003: { name: "Goat, legs", protein: 22.07, fat: 7.94, carbs: 0, fibre: 0, sugar: 0.0, sodium_mg: 40, kj: 669.0 },
+  P034: { name: "Mackerel", protein: 21.51, fat: 1.53, carbs: 0, fibre: 0, sugar: 0.0, sodium_mg: 80, kj: 423.0 },
+  P057: { name: "Pomfret, white", protein: 19.02, fat: 5.12, carbs: 0, fibre: 0, sugar: 0.0, sodium_mg: 50, kj: 513.0 },
+  P071: { name: "Sardine", protein: 17.91, fat: 8.99, carbs: 0, fibre: 0, sugar: 0.0, sodium_mg: 40, kj: 637.0 },
+  P084: { name: "Tuna", protein: 24.5, fat: 1.44, carbs: 0, fibre: 0, sugar: 0.0, sodium_mg: 50, kj: 470.0 },
+  S006: { name: "Rohu", protein: 19.71, fat: 2.39, carbs: 0, fibre: 0, sugar: 0.0, sodium_mg: 40, kj: 428.0 },
+  S009: { name: "Prawns, small", protein: 13.07, fat: 0.78, carbs: 0, fibre: 0, sugar: 0.0, sodium_mg: 80, kj: 297.0 },
+  T001: { name: "Coconut oil", protein: 0, fat: 100.0, carbs: 0, fibre: 0, sugar: 0.0, sodium_mg: 0, kj: 0.0 },
+  T005: { name: "Groundnut oil", protein: 0, fat: 100.0, carbs: 0, fibre: 0, sugar: 0.0, sodium_mg: 0, kj: 0.0 },
+  T006: { name: "Mustard oil", protein: 0, fat: 100.0, carbs: 0, fibre: 0, sugar: 0.0, sodium_mg: 0, kj: 0.0 },
+  T012: { name: "Sunflower oil", protein: 0, fat: 100.0, carbs: 0, fibre: 0, sugar: 0.0, sodium_mg: 0, kj: 0.0 },
+  T013: { name: "Ghee", protein: 0, fat: 100.0, carbs: 0, fibre: 0, sugar: 0.0, sodium_mg: 0, kj: 0.0 },
+};

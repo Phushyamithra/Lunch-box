@@ -11,6 +11,7 @@ import {
   DialogTitle,
   IconButton,
   InputAdornment,
+  Link,
   List,
   ListItemButton,
   ListItemText,
@@ -42,6 +43,8 @@ import {
   type MealSlot,
 } from './foodLog';
 import { useNutrition } from './NutritionContext';
+import { CATEGORY_ORDER } from './reference/catalog';
+import { dietAllowed, searchFoods, type DietFilter } from './search';
 import type { EntryInput } from './nutritionApi';
 
 type Mode = 'search' | 'quick' | 'mealprep';
@@ -53,6 +56,7 @@ export function AddFoodSheet({ open, day, meal: initialMeal, onClose }: { open: 
   const [meal, setMeal] = useState<MealSlot>(initialMeal);
   const [picked, setPicked] = useState<{ food: Food; quantity?: number; unit?: string } | null>(null);
   const [creating, setCreating] = useState<string | null>(null);
+  const [copying, setCopying] = useState<Food | null>(null);
 
   const close = () => {
     setPicked(null);
@@ -91,7 +95,7 @@ export function AddFoodSheet({ open, day, meal: initialMeal, onClose }: { open: 
         {/* No exit wait: switching steps is instant, the new step just slides in. */}
           {picked ? (
             <motion.div key="portion" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.18 }}>
-              <PortionStep food={picked.food} quantity={picked.quantity} unit={picked.unit} day={day} meal={meal} onAdded={() => setPicked(null)} />
+              <PortionStep food={picked.food} quantity={picked.quantity} unit={picked.unit} day={day} meal={meal} onAdded={() => setPicked(null)} onCopy={(f) => setCopying(f)} />
             </motion.div>
           ) : (
             <motion.div key="list" initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.18 }}>
@@ -107,11 +111,13 @@ export function AddFoodSheet({ open, day, meal: initialMeal, onClose }: { open: 
           )}
       </DialogContent>
       <FoodFormDialog
-        open={creating !== null}
+        open={creating !== null || copying !== null}
         food={null}
+        copyFrom={copying ?? undefined}
         initialName={creating ?? ''}
         onClose={(saved) => {
           setCreating(null);
+          setCopying(null);
           if (saved) setPicked({ food: saved });
         }}
       />
@@ -119,22 +125,75 @@ export function AddFoodSheet({ open, day, meal: initialMeal, onClose }: { open: 
   );
 }
 
-const matches = (f: Food, q: string) => {
-  const hay = `${f.name} ${f.brand ?? ''}`.toLowerCase();
-  return q
-    .toLowerCase()
-    .split(/\s+/)
-    .filter(Boolean)
-    .every((w) => hay.includes(w));
+const FILTERS: { key: DietFilter; label: string }[] = [
+  { key: 'veg', label: '🟢 Veg' },
+  { key: 'egg', label: '🥚 + Egg' },
+  { key: 'all', label: '🍗 All' },
+];
+const FILTER_KEY = 'tracker.nutrition.dietFilter';
+const readFilter = (): DietFilter => {
+  try {
+    const v = localStorage.getItem(FILTER_KEY);
+    return v === 'veg' || v === 'egg' || v === 'all' ? v : 'all';
+  } catch {
+    return 'all';
+  }
 };
+
+function FoodRow({ f, onPick }: { f: Food; onPick: (f: Food) => void }) {
+  return (
+    <ListItemButton onClick={() => onPick(f)} sx={{ borderRadius: '12px' }}>
+      <ListItemText
+        primary={
+          <>
+            {f.diet && <span aria-label={DIET[f.diet].label}>{DIET[f.diet].emoji} </span>}
+            {f.name}
+            {f.brand && (
+              <Typography component="span" variant="caption" color="text.secondary">
+                {' '}
+                · {f.brand}
+              </Typography>
+            )}
+          </>
+        }
+        secondary={`${Math.round(f.kcal)} kcal · P ${f.protein} · C ${f.carbs} · F ${f.fat} ${f.basis === 'serving' ? 'per serving' : f.basis === '100ml' ? 'per 100 ml' : 'per 100 g'}${
+          f.portions[0] ? ` · ${f.portions[0].label} = ${Math.round((f.kcal * f.portions[0].grams) / 100)} kcal` : ''
+        }`}
+      />
+      <Chip
+        size="small"
+        variant="outlined"
+        label={f.user_id ? 'Mine' : f.verification === 'official' ? 'Official' : 'Estimated'}
+        color={f.user_id ? 'secondary' : f.verification === 'official' ? 'success' : 'default'}
+        sx={{ ml: 1, flexShrink: 0 }}
+      />
+    </ListItemButton>
+  );
+}
 
 function SearchStep({ day, meal, onPick, onCreate }: { day: string; meal: MealSlot; onPick: (f: Food, quantity?: number, unit?: string) => void; onCreate: (name: string) => void }) {
   const { data, addEntry } = useNutrition();
   const toast = useSnackbar();
   const [q, setQ] = useState('');
+  const [filter, setFilter] = useState<DietFilter>(readFilter);
+  const [category, setCategory] = useState<string | null>(null);
   const foods = data!.foods;
   const frequent = useMemo(() => frequentFoods(data!.entries, day), [data, day]);
-  const results = q.trim() ? foods.filter((f) => matches(f, q)).slice(0, 50) : [];
+  const results = useMemo(() => searchFoods(foods, q, filter), [foods, q, filter]);
+  const categories = useMemo(() => {
+    const present = new Set(foods.map((f) => f.category).filter((c): c is string => Boolean(c)));
+    return [...(CATEGORY_ORDER as string[]).filter((c) => present.has(c)), ...[...present].filter((c) => !(CATEGORY_ORDER as string[]).includes(c))];
+  }, [foods]);
+  const inCategory = category ? foods.filter((f) => f.category === category && dietAllowed(f.diet, filter)).sort((a, b) => a.name.localeCompare(b.name)) : [];
+
+  const chooseFilter = (f: DietFilter) => {
+    setFilter(f);
+    try {
+      localStorage.setItem(FILTER_KEY, f);
+    } catch {
+      /* private mode: keep it for this session only */
+    }
+  };
 
   const again = async (last: Entry) => {
     const input: EntryInput = { ...last, day, meal, meal_log_id: null };
@@ -151,14 +210,23 @@ function SearchStep({ day, meal, onPick, onCreate }: { day: string; meal: MealSl
     <Stack spacing={1}>
       <TextField
         autoFocus
-        placeholder="Search your foods"
+        placeholder="Search: dal, roti, paneer, chai…"
         value={q}
-        onChange={(e) => setQ(e.target.value)}
+        onChange={(e) => {
+          setQ(e.target.value);
+          setCategory(null);
+        }}
         InputProps={{ startAdornment: <InputAdornment position="start"><SearchRoundedIcon /></InputAdornment> }}
       />
+      <Box sx={{ display: 'flex', gap: 0.75 }} role="group" aria-label="Diet filter">
+        {FILTERS.map((f) => (
+          <Chip key={f.key} size="small" label={f.label} color={filter === f.key ? 'secondary' : 'default'} variant={filter === f.key ? 'filled' : 'outlined'} onClick={() => chooseFilter(f.key)} />
+        ))}
+      </Box>
       <List dense disablePadding>
-        {!q.trim() && frequent.length > 0 && <ListSubheader disableSticky>Frequent</ListSubheader>}
+        {!q.trim() && !category && frequent.length > 0 && <ListSubheader disableSticky>Frequent</ListSubheader>}
         {!q.trim() &&
+          !category &&
           frequent.map((f) => {
             const food = f.food_id ? foods.find((x) => x.id === f.food_id) : undefined;
             return (
@@ -170,35 +238,34 @@ function SearchStep({ day, meal, onPick, onCreate }: { day: string; meal: MealSl
               </ListItemButton>
             );
           })}
-        {q.trim() && results.length > 0 && <ListSubheader disableSticky>Your foods</ListSubheader>}
-        {results.map((f) => (
-          <ListItemButton key={f.id} onClick={() => onPick(f)} sx={{ borderRadius: '12px' }}>
-            <ListItemText
-              primary={
-                <>
-                  {f.diet && <span aria-label={DIET[f.diet].label}>{DIET[f.diet].emoji} </span>}
-                  {f.name}
-                  {f.brand && (
-                    <Typography component="span" variant="caption" color="text.secondary">
-                      {' '}
-                      · {f.brand}
-                    </Typography>
-                  )}
-                </>
-              }
-              secondary={`${Math.round(f.kcal)} kcal · P ${f.protein} · C ${f.carbs} · F ${f.fat} ${f.basis === 'serving' ? 'per serving' : f.basis === '100ml' ? 'per 100 ml' : 'per 100 g'}${f.verification === 'estimated' ? ' · estimated' : ''}`}
-            />
-          </ListItemButton>
+        {q.trim() && results.map((f) => <FoodRow key={f.id} f={f} onPick={onPick} />)}
+        {category && (
+          <ListSubheader disableSticky sx={{ display: 'flex', alignItems: 'center' }}>
+            <Box sx={{ flexGrow: 1 }}>{category}</Box>
+            <Button size="small" onClick={() => setCategory(null)}>
+              All categories
+            </Button>
+          </ListSubheader>
+        )}
+        {inCategory.map((f) => (
+          <FoodRow key={f.id} f={f} onPick={onPick} />
         ))}
       </List>
+      {!q.trim() && !category && categories.length > 0 && (
+        <Box>
+          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4 }}>
+            Browse
+          </Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 0.75 }}>
+            {categories.map((c) => (
+              <Chip key={c} label={c} variant="outlined" onClick={() => setCategory(c)} />
+            ))}
+          </Box>
+        </Box>
+      )}
       {q.trim() && results.length === 0 && (
         <Typography variant="body2" color="text.secondary">
-          No match in your foods yet. The Indian food database arrives in the next stage; for now, create it once and it’s here from then on.
-        </Typography>
-      )}
-      {!q.trim() && frequent.length === 0 && foods.length === 0 && (
-        <Typography variant="body2" color="text.secondary">
-          Create your everyday foods once (from the label or your recipe) and logging becomes one tap. Or use Quick add for a one-off.
+          No match{filter !== 'all' ? ' with this diet filter' : ''}. Create it once and it’s yours from then on, or use Quick add.
         </Typography>
       )}
       <Button startIcon={<AddRoundedIcon />} onClick={() => onCreate(q.trim())} sx={{ alignSelf: 'flex-start' }}>
@@ -208,7 +275,23 @@ function SearchStep({ day, meal, onPick, onCreate }: { day: string; meal: MealSl
   );
 }
 
-function PortionStep({ food, quantity, unit, day, meal, onAdded }: { food: Food; quantity?: number; unit?: string; day: string; meal: MealSlot; onAdded: () => void }) {
+function PortionStep({
+  food,
+  quantity,
+  unit,
+  day,
+  meal,
+  onAdded,
+  onCopy,
+}: {
+  food: Food;
+  quantity?: number;
+  unit?: string;
+  day: string;
+  meal: MealSlot;
+  onAdded: () => void;
+  onCopy?: (f: Food) => void;
+}) {
   const { addEntry } = useNutrition();
   const toast = useSnackbar();
   const units = unitsFor(food);
@@ -254,8 +337,26 @@ function PortionStep({ food, quantity, unit, day, meal, onAdded }: { food: Food;
         </Typography>
         <Typography variant="body2" color="text.secondary">
           {food.brand ? `${food.brand} · ` : ''}
-          {food.verification === 'official' ? 'Official values' : food.verification === 'estimated' ? 'Estimated values' : 'Your values'}
+          {food.user_id ? 'Your values' : food.verification === 'official' ? 'Official values' : 'Estimated values'}
         </Typography>
+        {food.notes && (
+          <Typography variant="caption" color="text.secondary" component="p" sx={{ mt: 0.5 }}>
+            {food.notes}
+            {food.source_url && (
+              <>
+                {' '}
+                <Link href={food.source_url} target="_blank" rel="noopener noreferrer">
+                  Source
+                </Link>
+              </>
+            )}
+          </Typography>
+        )}
+        {!food.user_id && onCopy && (
+          <Button size="small" sx={{ mt: 0.5, px: 0 }} onClick={() => onCopy(food)}>
+            ✏️ Make my version (the original stays as it is)
+          </Button>
+        )}
       </Box>
       <Box sx={{ display: 'grid', gap: 1, gridTemplateColumns: '1fr 1fr', alignItems: 'center' }}>
         <NumberStepper label="Amount" unit={grams ? unitKey : '×'} value={qty} step={grams ? 10 : 0.5} max={grams ? 5000 : 50} decimals={grams ? 0 : 1} onChange={setQty} />

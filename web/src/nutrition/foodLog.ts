@@ -59,6 +59,11 @@ export interface Food extends Nutrients {
   parent_food_id: string | null;
   source_url: string | null;
   archived_at: string | null;
+  /** Catalog foods: stable code, browse category, other names, how the values were made. */
+  ref_code?: string | null;
+  category?: string | null;
+  aliases?: string;
+  notes?: string | null;
 }
 
 /** Units a food can be logged in: grams/ml, its household portions, servings. */
@@ -217,6 +222,8 @@ export interface FoodInput {
   fibre: number;
   sugar: number | null;
   sodium_mg: number | null;
+  /** Your edited copy of another food (that food stays as it was). */
+  parent_food_id?: string | null;
 }
 
 export function validateFood(f: FoodInput): string | null {

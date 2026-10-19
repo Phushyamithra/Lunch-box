@@ -40,12 +40,15 @@ export function FoodFormDialog({
   open,
   food,
   initialName,
+  copyFrom,
   onClose,
   onArchive,
 }: {
   open: boolean;
   food: Food | null;
   initialName?: string;
+  /** Start from another food (e.g. a catalog dish) and save it as your own version. */
+  copyFrom?: Food;
   onClose: (saved?: Food) => void;
   onArchive?: (food: Food) => void;
 }) {
@@ -60,23 +63,24 @@ export function FoodFormDialog({
 
   useEffect(() => {
     if (!open) return;
+    const src = food ?? copyFrom ?? null;
     setText({
-      name: food?.name ?? initialName ?? '',
-      brand: food?.brand ?? '',
-      serving_g: str(food?.serving_g),
-      kcal: str(food?.kcal),
-      protein: str(food?.protein),
-      carbs: str(food?.carbs),
-      fat: str(food?.fat),
-      fibre: str(food?.fibre),
-      sugar: str(food?.sugar),
-      sodium_mg: str(food?.sodium_mg),
+      name: food?.name ?? (copyFrom ? `${copyFrom.name} (my version)` : initialName ?? ''),
+      brand: src?.brand ?? '',
+      serving_g: str(src?.serving_g),
+      kcal: str(src?.kcal),
+      protein: str(src?.protein),
+      carbs: str(src?.carbs),
+      fat: str(src?.fat),
+      fibre: str(src?.fibre),
+      sugar: str(src?.sugar),
+      sodium_mg: str(src?.sodium_mg),
     });
-    setDiet(food?.diet ?? null);
-    setBasis(food?.basis ?? '100g');
-    setPortions(food?.portions.map((p) => ({ label: p.label, grams: String(p.grams) })) ?? []);
+    setDiet(src?.diet ?? null);
+    setBasis(src?.basis ?? '100g');
+    setPortions(src?.portions.map((p) => ({ label: p.label, grams: String(p.grams) })) ?? []);
     setError(null);
-  }, [open, food, initialName]);
+  }, [open, food, copyFrom, initialName]);
 
   const input = (): FoodInput => ({
     name: text.name ?? '',
@@ -92,6 +96,7 @@ export function FoodFormDialog({
     fibre: num(text.fibre ?? '') ?? 0,
     sugar: num(text.sugar ?? ''),
     sodium_mg: num(text.sodium_mg ?? ''),
+    ...(copyFrom && !food ? { parent_food_id: copyFrom.id } : {}),
   });
   const draft = input();
   const energy = [draft.kcal, draft.protein, draft.carbs, draft.fat].every((v) => v >= 0) ? energyCheck(draft) : null;
@@ -112,7 +117,7 @@ export function FoodFormDialog({
 
   return (
     <Dialog open={open} onClose={() => onClose()} fullScreen={phone} fullWidth maxWidth="sm" aria-labelledby="food-form-title">
-      <DialogTitle id="food-form-title">{food ? 'Edit food' : 'New food'}</DialogTitle>
+      <DialogTitle id="food-form-title">{food ? 'Edit food' : copyFrom ? 'Make my version' : 'New food'}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
           <TextField label="Name" value={text.name ?? ''} onChange={(e) => setText({ ...text, name: e.target.value })} autoFocus={!food} inputProps={{ maxLength: 120 }} />
