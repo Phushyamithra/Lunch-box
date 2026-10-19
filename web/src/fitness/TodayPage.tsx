@@ -14,6 +14,7 @@ import {
   Typography,
 } from '@mui/material';
 import dayjs from 'dayjs';
+import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { useSnackbar } from '../layout/Snackbar';
 import { useFitness } from './FitnessContext';
@@ -28,6 +29,7 @@ import {
   type WeighIn,
 } from './rules';
 import { NumberStepper } from './NumberStepper';
+import { DueToday } from './RemindersUi';
 import { SessionLogger } from './SessionLogger';
 import { Card, kg } from './ui';
 
@@ -69,6 +71,7 @@ export default function TodayPage() {
           Entries today are kept but flagged, and stay out of trends and training adherence.
         </Alert>
       )}
+      {day === today && <DueToday data={data} today={today} />}
       <WeightCard key={`w-${day}`} day={day} data={data} />
       <SessionLogger key={`t-${day}`} day={day} data={data} />
       <DietCard key={`d-${day}`} day={day} data={data} />
@@ -78,8 +81,13 @@ export default function TodayPage() {
   );
 }
 
+const CHECKLIST: Record<string, string[]> = {
+  morning: ['After the loo', 'Before food or water', 'Same clothes'],
+  evening: ['Gym scale', 'Before training', 'Shoes off', 'Similar clothes'],
+};
+
 function WeightCard({ day, data }: { day: string; data: FitnessData }) {
-  const { addWeighIn, setMeasurementDeleted } = useFitness();
+  const { addWeighIn, setMeasurementDeleted, saveSettings } = useFitness();
   const toast = useSnackbar();
   const trendTime = data.settings.weigh_time;
   const last = [...data.weighIns].filter((w) => trendTime === 'any' || w.time_of_day === trendTime).sort((a, b) => a.measured_at.localeCompare(b.measured_at)).pop();
@@ -87,6 +95,17 @@ function WeightCard({ day, data }: { day: string; data: FitnessData }) {
   const [time, setTime] = useState<WeighIn['time_of_day']>(trendTime === 'any' ? defaultTime() : trendTime);
   const [busy, setBusy] = useState(false);
   const entries = data.weighIns.filter((w) => w.day === day);
+  const checklist = CHECKLIST[trendTime] ?? [];
+
+  const switchTrend = async (next: 'morning' | 'evening') => {
+    try {
+      await saveSettings({ weigh_time: next });
+      setTime(next);
+      toast(`Trend now uses ${next} weigh-ins`);
+    } catch (e) {
+      toast(`Not saved: ${e instanceof Error ? e.message : 'error'}`, { severity: 'error' });
+    }
+  };
   const week = weeklyAverages(data.weighIns, data.away, day, trendTime).find((w) => w.weekStart === weekStart(day));
 
   const save = async () => {
@@ -104,6 +123,7 @@ function WeightCard({ day, data }: { day: string; data: FitnessData }) {
 
   return (
     <Card
+      id="weight-card"
       title="Weight"
       aside={
         <Typography variant="body2" color="text.secondary">
@@ -112,10 +132,27 @@ function WeightCard({ day, data }: { day: string; data: FitnessData }) {
       }
     >
       <Stack spacing={1.5}>
-        {trendTime === 'morning' && (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          <Typography variant="body2" color="text.secondary">
+            Trend uses
+          </Typography>
+          <ToggleButtonGroup
+            size="small"
+            exclusive
+            value={trendTime === 'morning' || trendTime === 'evening' ? trendTime : null}
+            onChange={(_, v) => v && void switchTrend(v)}
+            aria-label="Weigh-ins used for the trend"
+          >
+            <ToggleButton value="morning">🌅 Mornings</ToggleButton>
+            <ToggleButton value="evening">🌇 Evenings</ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+        {checklist.length > 0 && (
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-            {['Morning', 'After bathroom', 'Before food', 'Same conditions'].map((c) => (
-              <Chip key={c} size="small" variant="outlined" label={`✓ ${c}`} />
+            {checklist.map((c, i) => (
+              <motion.div key={`${trendTime}-${c}`} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
+                <Chip size="small" variant="outlined" label={`✓ ${c}`} />
+              </motion.div>
             ))}
           </Box>
         )}
@@ -158,7 +195,7 @@ function WeightCard({ day, data }: { day: string; data: FitnessData }) {
           </Box>
         ))}
         <Typography variant="caption" color="text.secondary">
-          3 mornings a week is enough. Daily swings of 1.5–2 kg are water and mean nothing; the weekly average is what counts.
+          3 {trendTime === 'any' ? 'weigh-ins' : `${trendTime}s`} a week is enough{trendTime === 'evening' ? ', on the same scale' : ''}. Daily swings of 1.5–2 kg are water and mean nothing; the weekly average is what counts.
         </Typography>
       </Stack>
     </Card>
@@ -251,7 +288,7 @@ function WaistCard({ day, data }: { day: string; data: FitnessData }) {
     }
   };
   return (
-    <Card title="Waist" aside={<Chip size="small" color="warning" label={summary.latest ? (summary.overdue ? 'Overdue' : 'Due today') : 'First measurement'} />}>
+    <Card id="waist-card" title="Waist" aside={<Chip size="small" color="warning" label={summary.latest ? (summary.overdue ? 'Overdue' : 'Due today') : 'First measurement'} />}>
       {loggedToday ? (
         <Typography color="text.secondary">Measured today. Next check in {data.settings.waist_interval_days} days.</Typography>
       ) : (

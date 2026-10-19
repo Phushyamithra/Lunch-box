@@ -8,9 +8,10 @@ import { useSnackbar } from '../layout/Snackbar';
 import { useFitness } from './FitnessContext';
 import type { FitnessSettings } from './fitnessApi';
 import { trendsResumeOn, type AwayPeriod, type KeyLiftGroup } from './rules';
+import { RemindersCard } from './RemindersUi';
 import { Card } from './ui';
 
-type NumKey = Exclude<keyof FitnessSettings, 'rotation_start' | 'phase_start' | 'key_lifts' | 'rotation_offset' | 'weigh_time' | 'day_focus' | 'finishers'>;
+type NumKey = Exclude<keyof FitnessSettings, 'rotation_start' | 'phase_start' | 'key_lifts' | 'rotation_offset' | 'weigh_time' | 'day_focus' | 'finishers' | 'reminders'>;
 const FIELDS: { key: NumKey; label: string; step?: string }[] = [
   { key: 'gain_target_kg_month', label: 'Target gain (kg/month)', step: '0.05' },
   { key: 'gain_high_kg_month', label: 'Review above (kg/month)', step: '0.05' },
@@ -55,6 +56,7 @@ export default function FitnessSettingsPage() {
     <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, alignItems: 'start' }}>
       <Targets settings={data.settings} />
       <Stack spacing={2}>
+        <RemindersCard />
         <AwayPeriods periods={data.away} />
         <KeyLifts groups={data.settings.key_lifts} />
       </Stack>

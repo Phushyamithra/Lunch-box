@@ -59,7 +59,7 @@ describe('muscles', () => {
 describe('swap options', () => {
   it('lists this week first, then the slot’s other weeks, then same-muscle exercises, no duplicates', () => {
     const groups = swapOptions(slots[0], 0, slots, map);
-    expect(groups[0]).toEqual({ label: 'This week', options: ['Barbell Bench', 'DB Bench'] });
+    expect(groups[0]).toEqual({ label: 'Today', options: ['Barbell Bench', 'DB Bench'] });
     expect(groups[1].options).toEqual(['Flat Barbell', 'Machine Chest Press', 'Wide Chest Press']);
     expect(groups[2].label).toBe('Other Chest exercises');
     expect(groups[2].options).toEqual(['Incline Barbell', 'Incline DB Press']);

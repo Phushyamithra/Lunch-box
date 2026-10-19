@@ -1,3 +1,4 @@
+import { MotionConfig } from 'framer-motion';
 import { Box, CircularProgress, CssBaseline, GlobalStyles, useMediaQuery } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -60,6 +61,7 @@ function SignedInApp({ client }: { client: SupabaseClient }) {
       <SnackbarProvider>
         <FoodProvider client={client}>
           <FitnessProvider client={client}>
+            <MotionConfig reducedMotion="user">
             <BrowserRouter>
               <Suspense fallback={<Splash />}>
                 <Routes>
@@ -89,6 +91,7 @@ function SignedInApp({ client }: { client: SupabaseClient }) {
                 </Routes>
               </Suspense>
             </BrowserRouter>
+            </MotionConfig>
           </FitnessProvider>
         </FoodProvider>
       </SnackbarProvider>

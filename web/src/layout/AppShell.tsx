@@ -20,6 +20,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
+import { motion } from 'framer-motion';
 import type { ReactElement } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useSettings, type SyncState } from '../settings/SettingsContext';
@@ -57,6 +58,7 @@ export function AppShell() {
   const theme = useTheme();
   const wide = useMediaQuery(theme.breakpoints.up('md'));
   const location = useLocation();
+  const section = '/' + (location.pathname.split('/')[1] ?? '');
   const navigate = useNavigate();
   const active = activeNavPath(location.pathname);
   const title =
@@ -141,7 +143,10 @@ export function AppShell() {
             pb: wide ? 4 : 'calc(104px + env(safe-area-inset-bottom))',
           }}
         >
-          <Outlet />
+          {/* Each section fades/slides in; reduced-motion users get no movement (MotionConfig). */}
+          <motion.div key={section} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28, ease: [0.2, 0.8, 0.2, 1] }}>
+            <Outlet />
+          </motion.div>
         </Box>
       </Box>
 

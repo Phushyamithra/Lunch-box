@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import * as api from './fitnessApi';
 import type { FitnessData, FitnessSettings, SessionRow, SlotRow, WorkoutSetRow } from './fitnessApi';
+import type { CustomWorkout } from './dayPlan';
 import { deriveKeyLifts, type ParsedReference } from './referenceImport';
 import type { AwayPeriod, DietDay, WeighIn } from './rules';
 
@@ -20,13 +21,9 @@ interface FitnessValue {
   saveAway: (input: { starts_on: string; ends_on: string; label: string | null }, id?: string) => Promise<void>;
   removeAway: (id: string) => Promise<void>;
   saveSlot: (input: Omit<SlotRow, 'id'>) => Promise<void>;
-  saveSession: (input: {
-    day: string;
-    variant_index: number;
-    completed: boolean;
-    slots_completed: number;
-    cardio_done: boolean;
-  }) => Promise<SessionRow>;
+  saveSession: (input: api.SessionInput) => Promise<SessionRow>;
+  saveWorkout: (input: Omit<CustomWorkout, 'id'>, id?: string) => Promise<CustomWorkout>;
+  removeWorkout: (id: string) => Promise<void>;
   /** Logs a set and remembers its weight × reps as the exercise preset. */
   addSet: (input: Omit<WorkoutSetRow, 'id' | 'notes'>) => Promise<WorkoutSetRow>;
   removeSet: (id: string) => Promise<void>;
@@ -123,6 +120,15 @@ export function FitnessProvider({ client, children }: { client: SupabaseClient; 
         const row = await api.upsertSession(client, input);
         patch((d) => ({ ...d, sessions: upsertBy(d.sessions, row, (r) => r.day === input.day).sort((a, b) => a.day.localeCompare(b.day)) }));
         return row;
+      },
+      async saveWorkout(input, id) {
+        const row = await api.saveWorkout(client, input, id);
+        patch((d) => ({ ...d, workouts: id ? d.workouts.map((w) => (w.id === id ? row : w)) : [...d.workouts, row] }));
+        return row;
+      },
+      async removeWorkout(id) {
+        await api.hideWorkout(client, id);
+        patch((d) => ({ ...d, workouts: d.workouts.filter((w) => w.id !== id) }));
       },
       async addSet(input) {
         const row = await api.addSet(client, input);

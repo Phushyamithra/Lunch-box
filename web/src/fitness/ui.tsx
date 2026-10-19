@@ -1,11 +1,12 @@
 import { Alert, Box, Button, CircularProgress, Paper, Tab, Tabs, Typography } from '@mui/material';
+import { motion } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useFitness } from './FitnessContext';
 
-export function Card({ title, aside, children }: { title: string; aside?: ReactNode; children: ReactNode }) {
+export function Card({ title, aside, children, id }: { title: string; aside?: ReactNode; children: ReactNode; id?: string }) {
   return (
-    <Paper variant="outlined" sx={{ p: 2 }}>
+    <Paper variant="outlined" id={id} sx={{ p: 2, scrollMarginTop: 96 }}>
       <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mb: 1.5 }}>
         <Typography variant="subtitle1" component="h2" sx={{ flexGrow: 1 }}>
           {title}
@@ -84,7 +85,9 @@ export function FitnessLayout() {
           <CircularProgress aria-label="Loading fitness data" />
         </Box>
       ) : (
-        <Outlet />
+        <motion.div key={pathname} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}>
+          <Outlet />
+        </motion.div>
       )}
     </Box>
   );

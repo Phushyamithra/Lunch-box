@@ -92,6 +92,15 @@ Living record of the audit, the decisions taken, and phase status.
     slot/session progress, finishers, cardio toggle. Trends use morning
     weigh-ins only; change measured from the baseline. Steps are manual entry: the Google Fit APIs are closed to new
   developers and shut down in 2026, and Health Connect is on-device only.
+  - Flexible days and reminders (`0007_flexible_days_reminders.sql`):
+    pick a variant per day from swipeable cards (the next variant after the
+    last one trained on that weekday is suggested), switch any single
+    exercise to another variant ("mixed"), make your own workout cards
+    (custom_workouts, soft delete), add exercises to a day on the spot,
+    weekly muscle coverage. Trend switch mornings/evenings with matching
+    checklists. Reminders: "Due today" on Today and Home (weigh-in days,
+    waist every N days, monthly review) and a downloadable .ics with
+    repeating alarms. Page and card animations (reduced-motion respected).
 - [ ] **Phase 4 — Finance** (encrypted sync).
 - [ ] **Phase 5 — Home dashboard, polish, PWA install/offline.**
 

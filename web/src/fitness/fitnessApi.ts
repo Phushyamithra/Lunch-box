@@ -1,5 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { CustomExercise, CustomWorkout } from './dayPlan';
 import type { ParsedFinisher, ParsedReference } from './referenceImport';
+import { normaliseReminders, type ReminderSettings } from './reminders';
 import type { AwayPeriod, DietDay, KeyLiftGroup, Preset, Session, SetRow, Waist, WeighIn, WeighTime } from './rules';
 
 export interface FitnessSettings {
@@ -25,6 +27,7 @@ export interface FitnessSettings {
   rest_isolation_sec: number;
   day_focus: Record<string, string>;
   finishers: ParsedFinisher[];
+  reminders: ReminderSettings;
 }
 
 export interface WeighInRow extends WeighIn {
@@ -55,7 +58,12 @@ export interface SlotRow {
 export interface SessionRow extends Session {
   notes: string | null;
   cardio_done: boolean;
+  /** {"3": 1}: slot 3 uses V2 today. */
+  slot_variants: Record<string, number>;
+  custom_workout_id: string | null;
+  extras: CustomExercise[];
 }
+export type SessionInput = Pick<SessionRow, 'day' | 'variant_index' | 'completed' | 'slots_completed' | 'cardio_done' | 'slot_variants' | 'custom_workout_id' | 'extras'>;
 export interface PresetRow extends Preset {
   id: string;
 }
@@ -76,6 +84,7 @@ export interface FitnessData {
   sessions: SessionRow[];
   sets: WorkoutSetRow[];
   presets: PresetRow[];
+  workouts: CustomWorkout[];
 }
 
 const NUMERIC_SETTINGS: (keyof FitnessSettings)[] = [
@@ -96,8 +105,9 @@ const NUMERIC_SETTINGS: (keyof FitnessSettings)[] = [
   'rest_compound_sec',
   'rest_isolation_sec',
 ];
-const SETTINGS_COLUMNS = [...NUMERIC_SETTINGS, 'rotation_start', 'phase_start', 'key_lifts', 'weigh_time', 'day_focus', 'finishers'].join(', ');
-const SESSION_COLUMNS = 'id, day, variant_index, completed, slots_completed, notes, cardio_done';
+const SETTINGS_COLUMNS = [...NUMERIC_SETTINGS, 'rotation_start', 'phase_start', 'key_lifts', 'weigh_time', 'day_focus', 'finishers', 'reminders'].join(', ');
+const SESSION_COLUMNS = 'id, day, variant_index, completed, slots_completed, notes, cardio_done, slot_variants, custom_workout_id, extras';
+const WORKOUT_COLUMNS = 'id, name, weekday, exercises';
 
 /** Postgres numerics can arrive as strings; normalise once at the edge. */
 function normaliseSettings(raw: Record<string, unknown>): FitnessSettings {
@@ -107,8 +117,16 @@ function normaliseSettings(raw: Record<string, unknown>): FitnessSettings {
   out.finishers = Array.isArray(raw.finishers) ? raw.finishers : [];
   out.day_focus = raw.day_focus && typeof raw.day_focus === 'object' ? raw.day_focus : {};
   out.weigh_time = typeof raw.weigh_time === 'string' ? raw.weigh_time : 'morning';
+  out.reminders = normaliseReminders(raw.reminders);
   return out as unknown as FitnessSettings;
 }
+const normaliseSession = (r: SessionRow): SessionRow => ({
+  ...r,
+  slot_variants: r.slot_variants && typeof r.slot_variants === 'object' ? r.slot_variants : {},
+  custom_workout_id: r.custom_workout_id ?? null,
+  extras: Array.isArray(r.extras) ? r.extras : [],
+});
+const normaliseWorkout = (r: CustomWorkout): CustomWorkout => ({ ...r, exercises: Array.isArray(r.exercises) ? r.exercises : [] });
 const num = <T extends object>(rows: T[], keys: (keyof T)[]): T[] =>
   rows.map((r) => {
     const copy = { ...r };
@@ -138,7 +156,7 @@ export async function loadFitness(client: SupabaseClient): Promise<FitnessData> 
     if (created.error) throw new Error(created.error.message);
     settings = created.data;
   }
-  const [weighIns, waists, away, diet, steps, slots, sessions, sets, presets] = await Promise.all([
+  const [weighIns, waists, away, diet, steps, slots, sessions, sets, presets, workouts] = await Promise.all([
     fetchAll<WeighInRow>((f, t) =>
       client.from('weigh_ins').select('id, day, measured_at, time_of_day, weight_kg, notes, deleted_at').is('deleted_at', null).order('measured_at').range(f, t),
     ),
@@ -156,6 +174,7 @@ export async function loadFitness(client: SupabaseClient): Promise<FitnessData> 
       client.from('workout_sets').select('id, session_id, slot, exercise, set_number, reps, weight_kg, notes').range(f, t),
     ),
     fetchAll<PresetRow>((f, t) => client.from('exercise_presets').select('id, exercise, weight_kg, reps').range(f, t)),
+    fetchAll<CustomWorkout>((f, t) => client.from('custom_workouts').select(WORKOUT_COLUMNS).is('deleted_at', null).order('created_at').range(f, t)),
   ]);
   return {
     settings: normaliseSettings(settings as unknown as Record<string, unknown>),
@@ -165,9 +184,10 @@ export async function loadFitness(client: SupabaseClient): Promise<FitnessData> 
     diet,
     steps,
     slots,
-    sessions,
+    sessions: sessions.map(normaliseSession),
     sets: num(sets, ['weight_kg']),
     presets: num(presets, ['weight_kg']),
+    workouts: workouts.map(normaliseWorkout),
   };
 }
 
@@ -253,15 +273,27 @@ export async function upsertSlot(
 
 export async function upsertSession(
   client: SupabaseClient,
-  input: { day: string; variant_index: number; completed: boolean; slots_completed: number; cardio_done: boolean; notes?: string | null },
+  input: SessionInput,
 ): Promise<SessionRow> {
-  return check(
-    await client
-      .from('workout_sessions')
-      .upsert({ ...input, updated_at: new Date().toISOString() }, { onConflict: 'user_id,day' })
-      .select(SESSION_COLUMNS)
-      .single(),
-  ) as SessionRow;
+  return normaliseSession(
+    check(
+      await client
+        .from('workout_sessions')
+        .upsert({ ...input, updated_at: new Date().toISOString() }, { onConflict: 'user_id,day' })
+        .select(SESSION_COLUMNS)
+        .single(),
+    ) as SessionRow,
+  );
+}
+
+/** Your own workout cards. Deleting only hides them (logged sets stay). */
+export async function saveWorkout(client: SupabaseClient, input: Omit<CustomWorkout, 'id'>, id?: string): Promise<CustomWorkout> {
+  const row = { ...input, updated_at: new Date().toISOString() };
+  const q = id ? client.from('custom_workouts').update(row).eq('id', id) : client.from('custom_workouts').insert(row);
+  return normaliseWorkout(check(await q.select(WORKOUT_COLUMNS).single()) as CustomWorkout);
+}
+export async function hideWorkout(client: SupabaseClient, id: string): Promise<void> {
+  check(await client.from('custom_workouts').update({ deleted_at: new Date().toISOString() }).eq('id', id).select('id').single());
 }
 
 export async function addSet(

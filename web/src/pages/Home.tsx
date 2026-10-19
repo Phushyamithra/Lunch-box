@@ -1,5 +1,7 @@
 import { Box, Chip, Paper, Typography } from '@mui/material';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { dueItemsFor } from '../fitness/RemindersUi';
 import { useFitness } from '../fitness/FitnessContext';
 import { weekAdherence, weeklyAverages, weekStart } from '../fitness/rules';
 import { useFood } from '../food/FoodContext';
@@ -33,7 +35,8 @@ export default function Home() {
       const week = [...weeklyAverages(d.weighIns, d.away, today, d.settings.weigh_time)].reverse().find((w) => w.average !== null);
       const training = weekAdherence(weekStart(today), d.sessions, d.away);
       const weight = week ? `${week.average?.toFixed(1)} kg weekly avg` : 'No weigh-ins yet';
-      return { chip: 'This week', text: `${weight} · ${training.completed}/${training.eligible} sessions` };
+      const due = dueItemsFor(d, today);
+      return { chip: due.length ? `⏰ ${due.length} due` : 'This week', text: `${weight} · ${training.completed}/${training.eligible} sessions${due.length ? ` · ${due.map((i) => i.title.toLowerCase()).join(', ')}` : ''}` };
     }
     return { chip: 'Not set up' };
   };
@@ -47,7 +50,12 @@ export default function Home() {
           <Paper
             key={path}
             variant="outlined"
-            component="button"
+            component={motion.button}
+            initial={{ opacity: 0, y: 16, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ delay: CARDS.findIndex((c) => c.path === path) * 0.06, duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => navigate(path)}
             sx={{
               p: 2.5,
@@ -56,9 +64,6 @@ export default function Home() {
               color: 'inherit',
               font: 'inherit',
               minHeight: 120,
-              transition: 'transform 150ms ease',
-              '&:hover, &:focus-visible': { transform: 'translateY(-2px)' },
-              '&:active': { transform: 'scale(0.98)' },
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>

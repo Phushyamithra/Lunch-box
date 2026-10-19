@@ -164,11 +164,17 @@ export interface SwapGroup {
 }
 
 /**
- * Choices for a slot when a machine is taken, most relevant first: this
- * week's default and fallback, the same slot in other weeks, then anything
- * in your program that trains the same muscle.
+ * Choices for a card when a machine is taken, most relevant first: today's
+ * default and fallback, the slot's other variants, then anything in your
+ * program that trains the same muscle.
  */
-export function swapOptions(slot: ProgramSlot, variantIndex: number, allSlots: ProgramSlot[], map: Map<string, Muscle>): SwapGroup[] {
+export function swapGroups(
+  title: string,
+  primary: string[],
+  alternates: string[],
+  allSlots: ProgramSlot[],
+  map: Map<string, Muscle>,
+): SwapGroup[] {
   const seen = new Set<string>();
   const take = (names: string[]) =>
     names.filter((n) => {
@@ -177,17 +183,26 @@ export function swapOptions(slot: ProgramSlot, variantIndex: number, allSlots: P
       seen.add(k);
       return true;
     });
-  const muscle = muscleForTarget(slot.label);
-  const thisWeek = take(exerciseOptions(slot.variants[variantIndex] ?? ''));
-  const otherWeeks = take(slot.variants.flatMap(exerciseOptions)).sort();
+  const muscle = muscleForTarget(title) ?? (primary[0] ? muscleOf(primary[0], map) : null);
+  const today = take(primary);
+  const others = take(alternates).sort();
   const sameMuscle = muscle
     ? take(allSlots.flatMap((s) => s.variants.flatMap(exerciseOptions)).filter((n) => muscleOf(n, map) === muscle)).sort()
     : [];
   return [
-    { label: 'This week', options: thisWeek },
-    { label: 'Same slot, other weeks', options: otherWeeks },
+    { label: 'Today', options: today },
+    { label: 'Other variants', options: others },
     { label: `Other ${muscle ?? 'similar'} exercises`, options: sameMuscle },
   ].filter((g) => g.options.length > 0);
+}
+
+export function swapOptions(slot: ProgramSlot, variantIndex: number, allSlots: ProgramSlot[], map: Map<string, Muscle>): SwapGroup[] {
+  return swapGroups(slot.label, exerciseOptions(slot.variants[variantIndex] ?? ''), slot.variants.flatMap(exerciseOptions), allSlots, map);
+}
+
+/** The muscle a card trains: from its target, else from the exercise. */
+export function muscleOfCard(title: string, exercise: string, map: Map<string, Muscle>): Muscle | null {
+  return muscleForTarget(title) ?? (exercise ? muscleOf(exercise, map) : null);
 }
 
 /** Does swapping to `exercise` change which muscle this slot trains? */
