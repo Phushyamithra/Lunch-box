@@ -18,11 +18,12 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { isValidBarcode, normaliseBarcode } from './barcode';
 import { DIET, energyCheck, validateFood, type Basis, type DietType, type Food, type FoodInput } from './foodLog';
 import { useNutrition } from './NutritionContext';
 
-type Text = Record<'name' | 'brand' | 'serving_g' | 'kcal' | 'protein' | 'carbs' | 'fat' | 'fibre' | 'sugar' | 'sodium_mg', string>;
+type Text = Record<'name' | 'brand' | 'barcode' | 'serving_g' | 'kcal' | 'protein' | 'carbs' | 'fat' | 'fibre' | 'sugar' | 'sodium_mg', string>;
 const NUMS: { key: keyof Text; label: string; required?: boolean }[] = [
   { key: 'kcal', label: 'Calories (kcal)', required: true },
   { key: 'protein', label: 'Protein (g)', required: true },
@@ -32,7 +33,7 @@ const NUMS: { key: keyof Text; label: string; required?: boolean }[] = [
   { key: 'sugar', label: 'Sugar (g)' },
   { key: 'sodium_mg', label: 'Sodium (mg)' },
 ];
-const str = (v: number | null | undefined) => (v === null || v === undefined ? '' : String(v));
+const str = (v: number | null | undefined) => (v === null || v === undefined || !Number.isFinite(v) ? '' : String(v));
 const num = (s: string) => (s.trim() === '' ? null : Number(s.replace(',', '.')));
 
 /** Create or edit one of your foods, straight from a label or a recipe card. */
@@ -41,6 +42,8 @@ export function FoodFormDialog({
   food,
   initialName,
   copyFrom,
+  draft,
+  notice,
   onClose,
   onArchive,
 }: {
@@ -49,6 +52,10 @@ export function FoodFormDialog({
   initialName?: string;
   /** Start from another food (e.g. a catalog dish) and save it as your own version. */
   copyFrom?: Food;
+  /** Prefill for a new food, e.g. from a barcode lookup (you check it before saving). */
+  draft?: FoodInput;
+  /** Shown above the form (where the prefill came from, what's missing). */
+  notice?: ReactNode;
   onClose: (saved?: Food) => void;
   onArchive?: (food: Food) => void;
 }) {
@@ -63,9 +70,10 @@ export function FoodFormDialog({
 
   useEffect(() => {
     if (!open) return;
-    const src = food ?? copyFrom ?? null;
+    const src = food ?? copyFrom ?? draft ?? null;
     setText({
-      name: food?.name ?? (copyFrom ? `${copyFrom.name} (my version)` : initialName ?? ''),
+      name: food?.name ?? (copyFrom ? `${copyFrom.name} (my version)` : draft?.name ?? initialName ?? ''),
+      barcode: (food ?? draft)?.barcode ?? '',
       brand: src?.brand ?? '',
       serving_g: str(src?.serving_g),
       kcal: str(src?.kcal),
@@ -80,7 +88,7 @@ export function FoodFormDialog({
     setBasis(src?.basis ?? '100g');
     setPortions(src?.portions.map((p) => ({ label: p.label, grams: String(p.grams) })) ?? []);
     setError(null);
-  }, [open, food, copyFrom, initialName]);
+  }, [open, food, copyFrom, draft, initialName]);
 
   const input = (): FoodInput => ({
     name: text.name ?? '',
@@ -96,20 +104,23 @@ export function FoodFormDialog({
     fibre: num(text.fibre ?? '') ?? 0,
     sugar: num(text.sugar ?? ''),
     sodium_mg: num(text.sodium_mg ?? ''),
+    barcode: text.barcode?.trim() ? normaliseBarcode(text.barcode) : null,
     ...(copyFrom && !food ? { parent_food_id: copyFrom.id } : {}),
+    ...(draft?.source && !food ? { source: draft.source, source_url: draft.source_url ?? null } : {}),
   });
-  const draft = input();
-  const energy = [draft.kcal, draft.protein, draft.carbs, draft.fat].every((v) => v >= 0) ? energyCheck(draft) : null;
+  const values = input();
+  const energy = [values.kcal, values.protein, values.carbs, values.fat].every((v) => v >= 0) ? energyCheck(values) : null;
   const per = basis === 'serving' ? 'per serving' : basis === '100ml' ? 'per 100 ml' : 'per 100 g';
 
   const save = async () => {
-    const problem = validateFood(draft);
+    const problem = validateFood(values) ?? (values.barcode && !isValidBarcode(values.barcode) ? 'Check the barcode digits.' : null);
     if (problem) return setError(problem);
     setBusy(true);
     try {
-      onClose(await saveFood(draft, food?.id));
+      onClose(await saveFood(values, food?.id));
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not save.');
+      const msg = e instanceof Error ? e.message : 'Could not save.';
+      setError(/foods_user_barcode/.test(msg) ? 'You already have a product with this barcode. Search for it, or archive the old one first.' : msg);
     } finally {
       setBusy(false);
     }
@@ -120,8 +131,18 @@ export function FoodFormDialog({
       <DialogTitle id="food-form-title">{food ? 'Edit food' : copyFrom ? 'Make my version' : 'New food'}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
+          {notice}
           <TextField label="Name" value={text.name ?? ''} onChange={(e) => setText({ ...text, name: e.target.value })} autoFocus={!food} inputProps={{ maxLength: 120 }} />
           <TextField label="Brand (optional)" value={text.brand ?? ''} onChange={(e) => setText({ ...text, brand: e.target.value })} inputProps={{ maxLength: 80 }} />
+          <TextField
+            size="small"
+            label="Barcode (packaged foods, optional)"
+            inputMode="numeric"
+            value={text.barcode ?? ''}
+            onChange={(e) => setText({ ...text, barcode: e.target.value })}
+            error={Boolean(text.barcode?.trim()) && !isValidBarcode(text.barcode ?? '')}
+            helperText={text.barcode?.trim() && !isValidBarcode(text.barcode ?? '') ? 'Check the digits: the check digit doesn’t match.' : 'Scan it next time and this food comes straight up.'}
+          />
           <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }} role="group" aria-label="Diet type">
             {(Object.keys(DIET) as DietType[]).map((d) => (
               <Chip key={d} label={`${DIET[d].emoji} ${DIET[d].label}`} color={diet === d ? 'secondary' : 'default'} variant={diet === d ? 'filled' : 'outlined'} onClick={() => setDiet(diet === d ? null : d)} />
@@ -158,7 +179,7 @@ export function FoodFormDialog({
           </Box>
           {energy && !energy.ok && (
             <Alert severity="warning">
-              Protein, carbs and fat work out to about {energy.computed} kcal, but calories say {draft.kcal} ({energy.gapPct > 0 ? '+' : ''}
+              Protein, carbs and fat work out to about {energy.computed} kcal, but calories say {values.kcal} ({energy.gapPct > 0 ? '+' : ''}
               {energy.gapPct}%). Check for a typo; labels can differ a little because of fibre and rounding.
             </Alert>
           )}

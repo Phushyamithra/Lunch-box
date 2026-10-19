@@ -64,6 +64,7 @@ export interface Food extends Nutrients {
   category?: string | null;
   aliases?: string;
   notes?: string | null;
+  barcode?: string | null;
 }
 
 /** Units a food can be logged in: grams/ml, its household portions, servings. */
@@ -224,6 +225,11 @@ export interface FoodInput {
   sodium_mg: number | null;
   /** Your edited copy of another food (that food stays as it was). */
   parent_food_id?: string | null;
+  /** Packaged products: digits only (see barcode.ts). */
+  barcode?: string | null;
+  /** Where the values came from when it wasn't you (e.g. 'off' + the product page). */
+  source?: string;
+  source_url?: string | null;
 }
 
 export function validateFood(f: FoodInput): string | null {

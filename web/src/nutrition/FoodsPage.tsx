@@ -1,9 +1,10 @@
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
-import { Button, Chip, InputAdornment, List, ListItemButton, ListItemText, Stack, TextField, Typography } from '@mui/material';
+import { Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, InputAdornment, List, ListItemButton, ListItemText, Stack, TextField, Typography } from '@mui/material';
 import { useState } from 'react';
 import { Card } from '../fitness/ui';
 import { useSnackbar } from '../layout/Snackbar';
+import { BarcodeLookup } from './BarcodeLookup';
 import { FoodFormDialog } from './FoodFormDialog';
 import { DIET, type Food } from './foodLog';
 import { useNutrition } from './NutritionContext';
@@ -14,6 +15,7 @@ export default function FoodsPage() {
   const toast = useSnackbar();
   const [q, setQ] = useState('');
   const [editing, setEditing] = useState<Food | 'new' | null>(null);
+  const [scanning, setScanning] = useState(false);
   const mine = data!.foods.filter((f) => f.user_id !== null);
   const shown = mine.filter((f) => `${f.name} ${f.brand ?? ''}`.toLowerCase().includes(q.trim().toLowerCase()));
   const uses = new Map<string, number>();
@@ -24,9 +26,14 @@ export default function FoodsPage() {
       <Card
         title="🥘 My foods"
         aside={
-          <Button size="small" variant="contained" startIcon={<AddRoundedIcon />} onClick={() => setEditing('new')}>
-            New food
-          </Button>
+          <Stack direction="row" spacing={1}>
+            <Button size="small" variant="outlined" onClick={() => setScanning(true)}>
+              📷 Scan
+            </Button>
+            <Button size="small" variant="contained" startIcon={<AddRoundedIcon />} onClick={() => setEditing('new')}>
+              New food
+            </Button>
+          </Stack>
         }
       >
         <Stack spacing={1}>
@@ -46,7 +53,7 @@ export default function FoodsPage() {
               {shown.map((f) => (
                 <ListItemButton key={f.id} onClick={() => setEditing(f)} sx={{ borderRadius: '12px' }}>
                   <ListItemText
-                    primary={`${f.diet ? `${DIET[f.diet].emoji} ` : ''}${f.name}${f.brand ? ` · ${f.brand}` : ''}`}
+                    primary={`${f.barcode ? '📦 ' : ''}${f.diet ? `${DIET[f.diet].emoji} ` : ''}${f.name}${f.brand ? ` · ${f.brand}` : ''}`}
                     secondary={`${Math.round(f.kcal)} kcal · P ${f.protein} · C ${f.carbs} · F ${f.fat} ${f.basis === 'serving' ? 'per serving' : f.basis === '100ml' ? 'per 100 ml' : 'per 100 g'}${
                       f.portions.length ? ` · ${f.portions.map((p) => p.label).join(', ')}` : ''
                     }`}
@@ -58,6 +65,22 @@ export default function FoodsPage() {
           )}
         </Stack>
       </Card>
+      <Dialog open={scanning} onClose={() => setScanning(false)} fullWidth maxWidth="sm" aria-labelledby="scan-title">
+        <DialogTitle id="scan-title">Add a packaged food</DialogTitle>
+        <DialogContent>
+          {scanning && (
+            <BarcodeLookup
+              onFood={(f) => {
+                setScanning(false);
+                toast(`📦 ${f.name} is in your foods`);
+              }}
+            />
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setScanning(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
       <FoodFormDialog
         open={editing !== null}
         food={editing === 'new' ? null : editing}

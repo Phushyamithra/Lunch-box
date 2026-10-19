@@ -36,7 +36,7 @@ export interface EntryInput extends Nutrients {
 }
 
 const FOOD_COLUMNS =
-  'id, user_id, name, brand, diet, basis, serving_g, portions, kcal, protein, carbs, fat, fibre, sugar, sodium_mg, source, verification, parent_food_id, source_url, archived_at, ref_code, category, aliases, notes';
+  'id, user_id, name, brand, diet, basis, serving_g, portions, kcal, protein, carbs, fat, fibre, sugar, sodium_mg, source, verification, parent_food_id, source_url, archived_at, ref_code, category, aliases, notes, barcode';
 const ENTRY_COLUMNS =
   'id, day, meal, food_id, meal_log_id, source, name, quantity, unit, grams, kcal, protein, carbs, fat, fibre, sugar, sodium_mg, verification, logged_at, deleted_at';
 const nOrNull = (v: unknown) => (v === null || v === undefined ? null : Number(v));

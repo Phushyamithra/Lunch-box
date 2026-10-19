@@ -30,6 +30,7 @@ import { useMemo, useState } from 'react';
 import { NumberStepper } from '../fitness/NumberStepper';
 import { useFood } from '../food/FoodContext';
 import { useSnackbar } from '../layout/Snackbar';
+import { BarcodeLookup } from './BarcodeLookup';
 import { FoodFormDialog } from './FoodFormDialog';
 import {
   DIET,
@@ -47,7 +48,7 @@ import { CATEGORY_ORDER } from './reference/catalog';
 import { dietAllowed, searchFoods, type DietFilter } from './search';
 import type { EntryInput } from './nutritionApi';
 
-type Mode = 'search' | 'quick' | 'mealprep';
+type Mode = 'search' | 'scan' | 'quick' | 'mealprep';
 
 /** Search your foods, quick-add, or add a meal-prep delivery: everything lands in the same log. */
 export function AddFoodSheet({ open, day, meal: initialMeal, onClose }: { open: boolean; day: string; meal: MealSlot; onClose: () => void }) {
@@ -100,11 +101,13 @@ export function AddFoodSheet({ open, day, meal: initialMeal, onClose }: { open: 
           ) : (
             <motion.div key="list" initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.18 }}>
               <Tabs value={mode} onChange={(_, v) => setMode(v)} variant="fullWidth" sx={{ mb: 1.5 }}>
-                <Tab value="search" label="🔎 Foods" />
-                <Tab value="quick" label="⚡ Quick add" />
-                <Tab value="mealprep" label="🚚 Meal prep" />
+                <Tab value="search" label="🔎 Foods" sx={{ minWidth: 0, px: 0.5 }} />
+                <Tab value="scan" label="📷 Scan" sx={{ minWidth: 0, px: 0.5 }} />
+                <Tab value="quick" label="⚡ Quick" sx={{ minWidth: 0, px: 0.5 }} />
+                <Tab value="mealprep" label="🚚 Prep" sx={{ minWidth: 0, px: 0.5 }} />
               </Tabs>
               {mode === 'search' && <SearchStep day={day} meal={meal} onPick={(food, quantity, unit) => setPicked({ food, quantity, unit })} onCreate={(name) => setCreating(name)} />}
+              {mode === 'scan' && <BarcodeLookup onFood={(food) => setPicked({ food })} />}
               {mode === 'quick' && <QuickAdd day={day} meal={meal} />}
               {mode === 'mealprep' && <MealPrepStep day={day} meal={meal} />}
             </motion.div>

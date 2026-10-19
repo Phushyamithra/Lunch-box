@@ -171,3 +171,12 @@ Regression run after every stage: all existing Vitest suites, the PGlite migrati
     browse by category.
   - **"Make my version":** saves an edited copy linked to the original
     (`parent_food_id`); the original never changes.
+- **Stage 4 (done):** `0011_food_barcodes.sql` adds `foods.barcode`, with
+  one live product per barcode for each user.
+  - **Scanning:** camera scanning uses Chrome's BarcodeDetector (Android),
+    and typing the number works everywhere; GS1 check digits are validated.
+  - **Lookup order:** your own products → Open Food Facts (only the barcode
+    is sent; volunteer data, so you check it against the pack, and it's
+    saved as your values with the source link) → entering it from the
+    label.
+  - Saved products appear in search and in My foods (📦).
