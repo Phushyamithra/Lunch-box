@@ -2,6 +2,7 @@ import { Alert, Box, Button, Chip, LinearProgress, Stack, Table, TableBody, Tabl
 import dayjs from 'dayjs';
 import { useMemo, useRef, useState } from 'react';
 import { Card } from '../fitness/ui';
+import { ReportCard } from '../report/ReportCard';
 import { useSnackbar } from '../layout/Snackbar';
 import {
   buildBackup,
@@ -85,6 +86,7 @@ export default function DataPage() {
 
   return (
     <Stack spacing={2}>
+      <ReportCard />
       <Card title="💾 Back up and export">
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
           {plural(own.entries, 'log entry', 'log entries')}, {plural(own.foods, 'food')} of yours and {plural(own.targets, 'target version')}. The backup restores everything here; the CSVs open in

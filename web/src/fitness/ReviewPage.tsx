@@ -3,6 +3,7 @@ import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 import { Alert, Box, Chip, IconButton, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
+import { ReportCard } from '../report/ReportCard';
 import { useFitness } from './FitnessContext';
 import { addDays, assessGain, dietSummary, gainRate, isAway, waistSummary, weekAdherence, weeklyAverages } from './rules';
 import { Card, kg, Metric, signed } from './ui';
@@ -119,6 +120,8 @@ export default function ReviewPage() {
             : 'No steps logged this month.'}
         </Typography>
       </Card>
+
+      <ReportCard />
     </Stack>
   );
 }
