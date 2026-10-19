@@ -9,10 +9,16 @@ export interface ModuleInfo {
 
 export const MODULES = {
   food: {
-    title: 'Food',
+    title: 'Meal prep',
     phase: 2,
-    summary: 'Your meal log, moved to the cloud from the Chrome extension.',
-    features: ['Meal catalog and daily logging', 'Per-item caps for each order', 'Daily and weekly summaries'],
+    summary: 'What the meal-prep service delivered and when, moved to the cloud from the Chrome extension.',
+    features: ['Delivery log by date', 'Per-item caps for each plan', 'Monthly calendar'],
+  },
+  nutrition: {
+    title: 'Nutrition',
+    phase: 4,
+    summary: 'Your own calorie and macro tracker, India-first.',
+    features: ['Goal-based calorie and macro targets', 'Indian foods, barcodes and restaurant menus', 'Daily totals and trends'],
   },
   fitness: {
     title: 'Fitness',
@@ -22,7 +28,7 @@ export const MODULES = {
   },
   finance: {
     title: 'Finance',
-    phase: 4,
+    phase: 6,
     summary: 'Budgets, cards and the savings waterfall, encrypted on your device before it syncs.',
     features: ['Quick-add transactions', 'Card cycles and settlements', 'Projections until the last goal'],
   },

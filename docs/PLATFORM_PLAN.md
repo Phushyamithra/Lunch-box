@@ -101,8 +101,17 @@ Living record of the audit, the decisions taken, and phase status.
     checklists. Reminders: "Due today" on Today and Home (weigh-in days,
     waist every N days, monthly review) and a downloadable .ics with
     repeating alarms. Page and card animations (reduced-motion respected).
-- [ ] **Phase 4 — Finance** (encrypted sync).
-- [ ] **Phase 5 — Home dashboard, polish, PWA install/offline.**
+- [ ] **Phase 4 — Nutrition** (separate module; see `docs/NUTRITION_PLAN.md`).
+  Stages: 1 engine and targets → 2 food log → 3 Indian foods → 4 barcodes
+  → 5 restaurants → 6 trends and adjustments → 7 import/export.
+  Food is renamed **Meal prep** (tracks the meal-prep deliveries) and moves
+  to the end of the nav.
+- [ ] **Phase 5 — Goals.** Shared milestones across Fitness, Nutrition and
+  Meal prep (daily / weekly / monthly / one-off, cycle history, timeline;
+  extension achievements carried over). Comes before Finance so goals can
+  use the fitness and nutrition data already in place.
+- [ ] **Phase 6 — Finance** (encrypted sync, phone primary).
+- [ ] **Phase 7 — Home dashboard, polish, PWA install/offline.**
 
 ## Rollback
 

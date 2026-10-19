@@ -2,6 +2,7 @@ import AccountBalanceWalletRoundedIcon from '@mui/icons-material/AccountBalanceW
 import EmojiEventsRoundedIcon from '@mui/icons-material/EmojiEventsRounded';
 import FitnessCenterRoundedIcon from '@mui/icons-material/FitnessCenterRounded';
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
+import LocalShippingRoundedIcon from '@mui/icons-material/LocalShippingRounded';
 import RestaurantRoundedIcon from '@mui/icons-material/RestaurantRounded';
 import type { ReactElement } from 'react';
 import type { IconTint } from './GlassIcon';
@@ -17,10 +18,12 @@ export interface NavItem {
 /** Primary destinations — bottom bar on phones, side rail on laptops. */
 export const NAV_ITEMS: NavItem[] = [
   { path: '/', label: 'Home', icon: <HomeRoundedIcon />, tint: { from: '#FFF3B0', to: '#F0BE6E', ink: '#1F3A41' } },
-  { path: '/food', label: 'Food', icon: <RestaurantRoundedIcon />, tint: { from: '#F0BE6E', to: '#E09F3E', ink: '#1F3A41' } },
+  { path: '/nutrition', label: 'Nutrition', icon: <RestaurantRoundedIcon />, tint: { from: '#F0BE6E', to: '#E09F3E', ink: '#1F3A41' } },
   { path: '/fitness', label: 'Fitness', icon: <FitnessCenterRoundedIcon />, tint: { from: '#9E2A2B', to: '#540B0E', ink: '#FFF3B0' } },
   { path: '/finance', label: 'Finance', icon: <AccountBalanceWalletRoundedIcon />, tint: { from: '#4A7A86', to: '#335C67', ink: '#FFF3B0' } },
   { path: '/goals', label: 'Goals', icon: <EmojiEventsRoundedIcon />, tint: { from: '#335C67', to: '#1F3A41', ink: '#F0BE6E' } },
+  // Meal-prep deliveries (what was delivered, when): last, it's a log to look back at.
+  { path: '/food', label: 'Meal prep', icon: <LocalShippingRoundedIcon />, tint: { from: '#5A8893', to: '#4A7A86', ink: '#FFF3B0' } },
 ];
 
 /**

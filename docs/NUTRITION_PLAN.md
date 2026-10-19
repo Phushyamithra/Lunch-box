@@ -118,16 +118,24 @@ Research on 2026-10-19:
 
 Regression run after every stage: all existing Vitest suites, the PGlite migration checks, and a click-through of Food, Fitness and Home in the preview. Nothing goes to production (`main`) without your approval.
 
-## 7. Decisions needed from you
+## 7. Decisions (answered 2026-10-19)
 
-1. **Where it lives:**
-   - Inside Food (Log + Lunch box) — recommended, one place to log.
-   - Or its own module.
-2. **Lean-bulk carbs:**
-   - Carbs as the remainder (≈ 321 g at 145 g protein / 65 g fat) — recommended.
-   - Or keep 295 g with protein 150 g and fat 75 g.
-3. **Your phone:** iPhone or Android. This decides how barcode scanning works.
-4. **Order:** Nutrition before Finance, or after.
-5. **Indian food values:** OK to use IFCT 2017 values for this private app (see §3)?
-6. **Old lunch-box logs:** later, approval to backfill nutrient snapshots on existing logs (a production data write).
-7. **Profile inputs** for the estimate (entered in the app, not needed now): sex, age, height, activity level.
+1. **Separate module, "Nutrition"**, for logging what you eat. Food becomes
+   **Meal prep**: it tracks what the meal-prep service delivered and when,
+   and moves to the end of the nav. The two stay separate: a delivery is
+   never counted as eaten automatically. Nutrition gets an explicit
+   "add from meal prep" that copies the meal's values as a snapshot and
+   remembers the link, so the same delivery can't be added twice.
+2. **Lean-bulk carbs stay at 295 g.** The preset is an ideal day, not a
+   daily rule. The app shows that 2,450 kcal sits inside what your ranges
+   allow (2,235–2,455 kcal) and notes the midpoint gap, without changing
+   anything. New targets from other modes use carbs as the remainder.
+3. **Android (Pixel 9):** Chrome's built-in BarcodeDetector covers camera
+   scanning; manual entry stays as the fallback. No extra scanner library.
+4. **Order:** Nutrition (Phase 4) → Goals (Phase 5) → Finance (Phase 6) →
+   polish (Phase 7).
+5. **IFCT 2017 values are OK** for this private app. If the app is ever
+   shared with others, check NIN's terms first.
+6. Old meal-prep logs: snapshot backfill still needs approval when Stage 2
+   gets there.
+7. Profile inputs (sex, age, height, activity) are entered in the app.

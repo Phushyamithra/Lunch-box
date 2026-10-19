@@ -16,6 +16,8 @@ import { SetupRequired } from './pages/SetupRequired';
 import { FitnessProvider } from './fitness/FitnessContext';
 import { FitnessLayout } from './fitness/ui';
 import { FoodProvider } from './food/FoodContext';
+import { NutritionProvider } from './nutrition/NutritionContext';
+import { NutritionLayout } from './nutrition/ui';
 import { SnackbarProvider } from './layout/Snackbar';
 import { SettingsProvider, useSettings } from './settings/SettingsContext';
 
@@ -31,6 +33,8 @@ const FitnessTraining = lazy(() => import('./fitness/TrainingPage'));
 const FitnessProgram = lazy(() => import('./fitness/ProgramPage'));
 const FitnessReview = lazy(() => import('./fitness/ReviewPage'));
 const FitnessSettings = lazy(() => import('./fitness/FitnessSettingsPage'));
+const NutritionOverview = lazy(() => import('./nutrition/OverviewPage'));
+const NutritionTargets = lazy(() => import('./nutrition/TargetsPage'));
 
 /** Tracker design system (cream, peach, rose, charcoal), dark by default. */
 function Themed({ mode, children }: { mode: ThemeMode; children: ReactNode }) {
@@ -61,12 +65,17 @@ function SignedInApp({ client }: { client: SupabaseClient }) {
       <SnackbarProvider>
         <FoodProvider client={client}>
           <FitnessProvider client={client}>
+          <NutritionProvider client={client}>
             <MotionConfig reducedMotion="user">
             <BrowserRouter>
               <Suspense fallback={<Splash />}>
                 <Routes>
                   <Route element={<AppShell />}>
                     <Route index element={<Home />} />
+                    <Route path="nutrition" element={<NutritionLayout />}>
+                      <Route index element={<NutritionOverview />} />
+                      <Route path="targets" element={<NutritionTargets />} />
+                    </Route>
                     <Route path="food" element={<FoodPage />} />
                     <Route path="food/import" element={<ImportPage client={client} />} />
                     <Route path="food/plan" element={<PlanPage />} />
@@ -92,6 +101,7 @@ function SignedInApp({ client }: { client: SupabaseClient }) {
               </Suspense>
             </BrowserRouter>
             </MotionConfig>
+          </NutritionProvider>
           </FitnessProvider>
         </FoodProvider>
       </SnackbarProvider>

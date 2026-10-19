@@ -29,6 +29,8 @@ import {
   type WeighIn,
 } from './rules';
 import { NumberStepper } from './NumberStepper';
+import { useNutrition } from '../nutrition/NutritionContext';
+import { activeTarget } from '../nutrition/nutritionApi';
 import { DueToday } from './RemindersUi';
 import { SessionLogger } from './SessionLogger';
 import { Card, kg } from './ui';
@@ -216,7 +218,12 @@ function DietCard({ day, data }: { day: string; data: FitnessData }) {
       toast(`Not saved: ${e instanceof Error ? e.message : 'error'}`, { severity: 'error' });
     }
   };
-  const t = data.settings;
+  // Nutrition targets (versioned) win; Fitness's own numbers are the fallback.
+  const nt = activeTarget(useNutrition().data?.targets ?? [], day);
+  const s = data.settings;
+  const t = nt
+    ? { kcal_target: nt.kcal, protein_min_g: nt.protein_min, protein_max_g: nt.protein_max, fat_min_g: nt.fat_min, fat_max_g: nt.fat_max, carbs_target_g: nt.carbs_g }
+    : s;
   return (
     <Card title="Diet">
       <Stack spacing={1.5}>

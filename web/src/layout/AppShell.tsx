@@ -183,7 +183,7 @@ export function AppShell() {
                   px: 0.5,
                   color: 'text.secondary',
                   '& .nav-pill': {
-                    width: 56,
+                    width: { xs: 46, sm: 56 },
                     height: 32,
                     borderRadius: 999,
                     display: 'grid',
@@ -193,8 +193,8 @@ export function AppShell() {
                   },
                   '&.Mui-selected': { color: theme.tracker.onTonal },
                   '&.Mui-selected .nav-pill': { bgcolor: theme.tracker.tonal },
-                  '& .MuiBottomNavigationAction-label': { fontWeight: 600, fontSize: 12 },
-                  '& .MuiBottomNavigationAction-label.Mui-selected': { fontSize: 12 },
+                  '& .MuiBottomNavigationAction-label': { fontWeight: 600, fontSize: { xs: 11, sm: 12 }, whiteSpace: 'nowrap' },
+                  '& .MuiBottomNavigationAction-label.Mui-selected': { fontSize: { xs: 11, sm: 12 } },
                 }}
               />
             ))}

@@ -2,6 +2,9 @@ import { Box, Chip, Paper, Typography } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { dueItemsFor } from '../fitness/RemindersUi';
+import { MODES } from '../nutrition/engine';
+import { useNutrition } from '../nutrition/NutritionContext';
+import { activeTarget } from '../nutrition/nutritionApi';
 import { useFitness } from '../fitness/FitnessContext';
 import { weekAdherence, weeklyAverages, weekStart } from '../fitness/rules';
 import { useFood } from '../food/FoodContext';
@@ -11,10 +14,11 @@ import { NAV_ITEMS } from '../layout/navItems';
 import { MODULES } from './ModulePlaceholder';
 
 const CARDS = [
-  { path: '/food', module: MODULES.food, metric: "Today's meals and item caps" },
+  { path: '/nutrition', module: MODULES.nutrition, metric: 'Calorie and macro targets' },
   { path: '/fitness', module: MODULES.fitness, metric: 'Weekly-average weight and workouts' },
   { path: '/finance', module: MODULES.finance, metric: 'Monthly spend and savings goal' },
   { path: '/goals', module: MODULES.goals, metric: 'Recently completed milestones' },
+  { path: '/food', module: MODULES.food, metric: 'Deliveries and item caps' },
 ];
 
 /** Platform summary. Each card links to its module and shows live status where built. */
@@ -22,12 +26,13 @@ export default function Home() {
   const navigate = useNavigate();
   const food = useFood();
   const fitness = useFitness();
+  const nutrition = useNutrition();
   const today = todayKey();
   const mealsToday = food.data.logs.filter((l) => l.log_date === today && l.kind === 'consumed').length;
   /** Live status for modules that exist; the rest are not built yet. */
   const status = (path: string): { chip: string; text?: string } => {
     if (path === '/food' && !food.loading && food.data.meals.length > 0) {
-      return { chip: 'Today', text: `${mealsToday} meal${mealsToday === 1 ? '' : 's'} logged today` };
+      return { chip: 'Today', text: `${mealsToday} deliver${mealsToday === 1 ? 'y' : 'ies'} logged today` };
     }
     if (path === '/food') return { chip: food.loading ? 'Loading' : 'Import needed' };
     if (path === '/fitness' && fitness.data) {
@@ -37,6 +42,10 @@ export default function Home() {
       const weight = week ? `${week.average?.toFixed(1)} kg weekly avg` : 'No weigh-ins yet';
       const due = dueItemsFor(d, today);
       return { chip: due.length ? `⏰ ${due.length} due` : 'This week', text: `${weight} · ${training.completed}/${training.eligible} sessions${due.length ? ` · ${due.map((i) => i.title.toLowerCase()).join(', ')}` : ''}` };
+    }
+    if (path === '/nutrition' && nutrition.data) {
+      const t = activeTarget(nutrition.data.targets, today);
+      return t ? { chip: `${MODES[t.mode].emoji} ${MODES[t.mode].label}`, text: `${t.kcal} kcal · P ${t.protein_g} g · C ${t.carbs_g} g · F ${t.fat_g} g` } : { chip: 'Set targets' };
     }
     return { chip: 'Not set up' };
   };
