@@ -125,7 +125,7 @@ export interface Entry extends Nutrients {
   unit: string;
   grams: number | null;
   verification: Verification;
-  source: 'food' | 'quick' | 'meal_prep';
+  source: 'food' | 'quick' | 'meal_prep' | 'restaurant';
   logged_at: string;
   deleted_at: string | null;
 }

@@ -31,6 +31,9 @@ import { NumberStepper } from '../fitness/NumberStepper';
 import { useFood } from '../food/FoodContext';
 import { useSnackbar } from '../layout/Snackbar';
 import { BarcodeLookup } from './BarcodeLookup';
+import { RestaurantStep } from './RestaurantStep';
+import { chainOf, searchMenu } from './restaurants/index';
+import type { MenuItem as RestaurantItem } from './restaurants/types';
 import { FoodFormDialog } from './FoodFormDialog';
 import {
   DIET,
@@ -48,7 +51,7 @@ import { CATEGORY_ORDER } from './reference/catalog';
 import { dietAllowed, searchFoods, type DietFilter } from './search';
 import type { EntryInput } from './nutritionApi';
 
-type Mode = 'search' | 'scan' | 'quick' | 'mealprep';
+type Mode = 'search' | 'scan' | 'out' | 'quick' | 'mealprep';
 
 /** Search your foods, quick-add, or add a meal-prep delivery: everything lands in the same log. */
 export function AddFoodSheet({ open, day, meal: initialMeal, onClose }: { open: boolean; day: string; meal: MealSlot; onClose: () => void }) {
@@ -58,9 +61,11 @@ export function AddFoodSheet({ open, day, meal: initialMeal, onClose }: { open: 
   const [picked, setPicked] = useState<{ food: Food; quantity?: number; unit?: string } | null>(null);
   const [creating, setCreating] = useState<string | null>(null);
   const [copying, setCopying] = useState<Food | null>(null);
+  const [menuItem, setMenuItem] = useState<RestaurantItem | null>(null);
 
   const close = () => {
     setPicked(null);
+    setMenuItem(null);
     setMode('search');
     onClose();
   };
@@ -103,10 +108,23 @@ export function AddFoodSheet({ open, day, meal: initialMeal, onClose }: { open: 
               <Tabs value={mode} onChange={(_, v) => setMode(v)} variant="fullWidth" sx={{ mb: 1.5 }}>
                 <Tab value="search" label="🔎 Foods" sx={{ minWidth: 0, px: 0.5 }} />
                 <Tab value="scan" label="📷 Scan" sx={{ minWidth: 0, px: 0.5 }} />
+                <Tab value="out" label="🍽️ Out" sx={{ minWidth: 0, px: 0.5 }} />
                 <Tab value="quick" label="⚡ Quick" sx={{ minWidth: 0, px: 0.5 }} />
                 <Tab value="mealprep" label="🚚 Prep" sx={{ minWidth: 0, px: 0.5 }} />
               </Tabs>
-              {mode === 'search' && <SearchStep day={day} meal={meal} onPick={(food, quantity, unit) => setPicked({ food, quantity, unit })} onCreate={(name) => setCreating(name)} />}
+              {mode === 'search' && (
+                <SearchStep
+                  day={day}
+                  meal={meal}
+                  onPick={(food, quantity, unit) => setPicked({ food, quantity, unit })}
+                  onCreate={(name) => setCreating(name)}
+                  onPickMenu={(item) => {
+                    setMenuItem(item);
+                    setMode('out');
+                  }}
+                />
+              )}
+              {mode === 'out' && <RestaurantStep key={menuItem?.id ?? 'menu'} day={day} meal={meal} filter={readFilter()} initialItem={menuItem} />}
               {mode === 'scan' && <BarcodeLookup onFood={(food) => setPicked({ food })} />}
               {mode === 'quick' && <QuickAdd day={day} meal={meal} />}
               {mode === 'mealprep' && <MealPrepStep day={day} meal={meal} />}
@@ -174,7 +192,19 @@ function FoodRow({ f, onPick }: { f: Food; onPick: (f: Food) => void }) {
   );
 }
 
-function SearchStep({ day, meal, onPick, onCreate }: { day: string; meal: MealSlot; onPick: (f: Food, quantity?: number, unit?: string) => void; onCreate: (name: string) => void }) {
+function SearchStep({
+  day,
+  meal,
+  onPick,
+  onCreate,
+  onPickMenu,
+}: {
+  day: string;
+  meal: MealSlot;
+  onPick: (f: Food, quantity?: number, unit?: string) => void;
+  onCreate: (name: string) => void;
+  onPickMenu: (item: RestaurantItem) => void;
+}) {
   const { data, addEntry } = useNutrition();
   const toast = useSnackbar();
   const [q, setQ] = useState('');
@@ -183,6 +213,7 @@ function SearchStep({ day, meal, onPick, onCreate }: { day: string; meal: MealSl
   const foods = data!.foods;
   const frequent = useMemo(() => frequentFoods(data!.entries, day), [data, day]);
   const results = useMemo(() => searchFoods(foods, q, filter), [foods, q, filter]);
+  const menuHits = useMemo(() => searchMenu(q).filter((i) => dietAllowed(i.diet, filter)).slice(0, 8), [q, filter]);
   const categories = useMemo(() => {
     const present = new Set(foods.map((f) => f.category).filter((c): c is string => Boolean(c)));
     return [...(CATEGORY_ORDER as string[]).filter((c) => present.has(c)), ...[...present].filter((c) => !(CATEGORY_ORDER as string[]).includes(c))];
@@ -242,6 +273,17 @@ function SearchStep({ day, meal, onPick, onCreate }: { day: string; meal: MealSl
             );
           })}
         {q.trim() && results.map((f) => <FoodRow key={f.id} f={f} onPick={onPick} />)}
+        {q.trim() && menuHits.length > 0 && <ListSubheader disableSticky>Restaurants</ListSubheader>}
+        {q.trim() &&
+          menuHits.map((i) => (
+            <ListItemButton key={i.id} onClick={() => onPickMenu(i)} sx={{ borderRadius: '12px' }}>
+              <ListItemText
+                primary={`${DIET[i.diet].emoji} ${i.name}`}
+                secondary={`${chainOf(i.chain).emoji} ${chainOf(i.chain).name} · ${Math.round(i.options[0].kcal)} kcal${i.options.length > 1 ? ` · ${i.options.length} sizes` : ''}`}
+              />
+              <Chip size="small" variant="outlined" color="success" label="Official" sx={{ ml: 1, flexShrink: 0 }} />
+            </ListItemButton>
+          ))}
         {category && (
           <ListSubheader disableSticky sx={{ display: 'flex', alignItems: 'center' }}>
             <Box sx={{ flexGrow: 1 }}>{category}</Box>
@@ -266,7 +308,7 @@ function SearchStep({ day, meal, onPick, onCreate }: { day: string; meal: MealSl
           </Box>
         </Box>
       )}
-      {q.trim() && results.length === 0 && (
+      {q.trim() && results.length === 0 && menuHits.length === 0 && (
         <Typography variant="body2" color="text.secondary">
           No match{filter !== 'all' ? ' with this diet filter' : ''}. Create it once and it’s yours from then on, or use Quick add.
         </Typography>

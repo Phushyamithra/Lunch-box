@@ -1,0 +1,1925 @@
+{
+ "ricebowl": {
+  "proteins": {
+   "regular": [
+    {
+     "name": "GRILLED BARBEQUE CHICKEN",
+     "cal": 190,
+     "fat": 10.2,
+     "protein": 21.4,
+     "carbs": 1.8
+    },
+    {
+     "name": "CRISPY PERI PERI CHICKEN",
+     "cal": 238,
+     "fat": 13.4,
+     "protein": 19.4,
+     "carbs": 13.8
+    },
+    {
+     "name": "CHILI CHIPOTLE CHICKEN",
+     "cal": 207,
+     "fat": 11.8,
+     "protein": 18,
+     "carbs": 7
+    },
+    {
+     "name": "CARNITAS CHICKEN",
+     "cal": 207,
+     "fat": 11.8,
+     "protein": 18,
+     "carbs": 7
+    },
+    {
+     "name": "MEXICAN PANEER",
+     "cal": 291,
+     "fat": 22.6,
+     "protein": 13.5,
+     "carbs": 7.5
+    },
+    {
+     "name": "BBQ PANEER",
+     "cal": 302,
+     "fat": 20.6,
+     "protein": 13.6,
+     "carbs": 16.1
+    },
+    {
+     "name": "CRISPY MUSHROOM",
+     "cal": 209,
+     "fat": 15.3,
+     "protein": 4.8,
+     "carbs": 14.5
+    },
+    {
+     "name": "PERI PERI POTATO",
+     "cal": 187,
+     "fat": 3.7,
+     "protein": 4,
+     "carbs": 34.8
+    },
+    {
+     "name": "GUACMOLE AND VEGGIE",
+     "cal": 197,
+     "fat": 17.7,
+     "protein": 2.6,
+     "carbs": 12.3
+    }
+   ],
+   "mini": [
+    {
+     "name": "GRILLED BARBEQUE CHICKEN",
+     "cal": 190,
+     "fat": 10.2,
+     "protein": 21.4,
+     "carbs": 1.8
+    },
+    {
+     "name": "CRISPY PERI PERI CHICKEN",
+     "cal": 238,
+     "fat": 13.4,
+     "protein": 19.4,
+     "carbs": 13.8
+    },
+    {
+     "name": "CHILI CHIPOTLE CHICKEN",
+     "cal": 207,
+     "fat": 11.8,
+     "protein": 18,
+     "carbs": 7
+    },
+    {
+     "name": "CARNITAS CHICKEN",
+     "cal": 207,
+     "fat": 11.8,
+     "protein": 18,
+     "carbs": 7
+    },
+    {
+     "name": "MEXICAN PANEER",
+     "cal": 291,
+     "fat": 22.6,
+     "protein": 13.5,
+     "carbs": 7.5
+    },
+    {
+     "name": "BBQ PANEER",
+     "cal": 302,
+     "fat": 20.6,
+     "protein": 13.6,
+     "carbs": 16.1
+    },
+    {
+     "name": "CRISPY MUSHROOM",
+     "cal": 209,
+     "fat": 15.3,
+     "protein": 4.8,
+     "carbs": 14.5
+    },
+    {
+     "name": "PERI PERI POTATO",
+     "cal": 187,
+     "fat": 3.7,
+     "protein": 4,
+     "carbs": 34.8
+    },
+    {
+     "name": "GUACMOLE AND VEGGIE",
+     "cal": 197,
+     "fat": 17.7,
+     "protein": 2.6,
+     "carbs": 12.3
+    }
+   ],
+   "pro": [
+    {
+     "name": "GRILLED BARBEQUE CHICKEN",
+     "cal": 612,
+     "fat": 19,
+     "protein": 54,
+     "carbs": 62
+    },
+    {
+     "name": "MEXICAN PANEER",
+     "cal": 847,
+     "fat": 49,
+     "protein": 43,
+     "carbs": 65
+    }
+   ]
+  },
+  "rice": {
+   "regular": [
+    {
+     "name": "CILANTRO RICE",
+     "cal": 314,
+     "fat": 6.9,
+     "protein": 5.5,
+     "carbs": 55.5
+    },
+    {
+     "name": "BROWN RICE",
+     "cal": 268,
+     "fat": 3.3,
+     "protein": 5.6,
+     "carbs": 53.2
+    },
+    {
+     "name": "NO RICE",
+     "cal": 0,
+     "fat": 0,
+     "protein": 0,
+     "carbs": 0
+    }
+   ],
+   "mini": [
+    {
+     "name": "CILANTRO RICE",
+     "cal": 209,
+     "fat": 4.6,
+     "protein": 3.7,
+     "carbs": 37
+    },
+    {
+     "name": "BROWN RICE",
+     "cal": 178,
+     "fat": 2.2,
+     "protein": 3.7,
+     "carbs": 35.4
+    },
+    {
+     "name": "NO RICE",
+     "cal": 0,
+     "fat": 0,
+     "protein": 0,
+     "carbs": 0
+    }
+   ],
+   "pro": [
+    {
+     "name": "CILANTRO RICE",
+     "cal": 314,
+     "fat": 6.9,
+     "protein": 5.5,
+     "carbs": 55.5
+    },
+    {
+     "name": "BROWN RICE",
+     "cal": 314,
+     "fat": 6.9,
+     "protein": 5.5,
+     "carbs": 55.5
+    },
+    {
+     "name": "NO RICE",
+     "cal": 0,
+     "fat": 0,
+     "protein": 0,
+     "carbs": 0
+    }
+   ]
+  },
+  "beans": {
+   "regular": [
+    {
+     "name": "BLACK BEANS",
+     "cal": 94,
+     "fat": 3.4,
+     "protein": 4.9,
+     "carbs": 13.3
+    },
+    {
+     "name": "PINTO BEANS",
+     "cal": 71,
+     "fat": 1.8,
+     "protein": 3.7,
+     "carbs": 10.5
+    },
+    {
+     "name": "NO BEANS",
+     "cal": 0,
+     "fat": 0,
+     "protein": 0,
+     "carbs": 0
+    }
+   ],
+   "mini": [
+    {
+     "name": "BLACK BEANS",
+     "cal": 94,
+     "fat": 3.4,
+     "protein": 4.9,
+     "carbs": 13.3
+    },
+    {
+     "name": "PINTO BEANS",
+     "cal": 71,
+     "fat": 1.8,
+     "protein": 3.7,
+     "carbs": 10.5
+    },
+    {
+     "name": "NO BEANS",
+     "cal": 0,
+     "fat": 0,
+     "protein": 0,
+     "carbs": 0
+    }
+   ],
+   "pro": [
+    {
+     "name": "BLACK BEANS",
+     "cal": 94,
+     "fat": 3.4,
+     "protein": 4.9,
+     "carbs": 13.3
+    },
+    {
+     "name": "PINTO BEANS",
+     "cal": 71,
+     "fat": 1.8,
+     "protein": 3.7,
+     "carbs": 10.5
+    },
+    {
+     "name": "NO BEANS",
+     "cal": 0,
+     "fat": 0,
+     "protein": 0,
+     "carbs": 0
+    }
+   ]
+  },
+  "toppings": {
+   "regular": [
+    {
+     "name": "GRILLED ONION & CAPSICUM",
+     "cal": 28,
+     "fat": 0.6,
+     "protein": 1.4,
+     "carbs": 5.5
+    },
+    {
+     "name": "CORN SALSA",
+     "cal": 41,
+     "fat": 0.6,
+     "protein": 1.6,
+     "carbs": 8.9
+    },
+    {
+     "name": "SOUR CREAM",
+     "cal": 57,
+     "fat": 5.6,
+     "protein": 0.5,
+     "carbs": 1.1
+    },
+    {
+     "name": "FRESH TOMATO AND ONION SALSA",
+     "cal": 13,
+     "fat": 0.1,
+     "protein": 0.6,
+     "carbs": 2.9
+    },
+    {
+     "name": "ROASTED TOMATILLO SALSA",
+     "cal": 7,
+     "fat": 0.1,
+     "protein": 0.2,
+     "carbs": 1.4
+    },
+    {
+     "name": "RED CHILI TOMATILLO SALSA",
+     "cal": 14,
+     "fat": 0.3,
+     "protein": 0.4,
+     "carbs": 2.8
+    },
+    {
+     "name": "CHEESE",
+     "cal": 23,
+     "fat": 1.8,
+     "protein": 1.2,
+     "carbs": 0
+    },
+    {
+     "name": "LETTUCE",
+     "cal": 2,
+     "fat": 0,
+     "protein": 0.1,
+     "carbs": 0
+    },
+    {
+     "name": "JALAPENOS",
+     "cal": 1,
+     "fat": 0,
+     "protein": 0,
+     "carbs": 0.1
+    },
+    {
+     "name": "MEXICAN VEGGIE MIX",
+     "cal": 10,
+     "fat": 0.1,
+     "protein": 0.4,
+     "carbs": 2.3
+    }
+   ],
+   "mini": [
+    {
+     "name": "GRILLED ONION & CAPSICUM",
+     "cal": 28,
+     "fat": 0.6,
+     "protein": 1.4,
+     "carbs": 5.5
+    },
+    {
+     "name": "CORN SALSA",
+     "cal": 41,
+     "fat": 0.6,
+     "protein": 1.6,
+     "carbs": 8.9
+    },
+    {
+     "name": "SOUR CREAM",
+     "cal": 57,
+     "fat": 5.6,
+     "protein": 0.5,
+     "carbs": 1.1
+    },
+    {
+     "name": "FRESH TOMATO AND ONION SALSA",
+     "cal": 13,
+     "fat": 0.1,
+     "protein": 0.6,
+     "carbs": 2.9
+    },
+    {
+     "name": "ROASTED TOMATILLO SALSA",
+     "cal": 7,
+     "fat": 0.1,
+     "protein": 0.2,
+     "carbs": 1.4
+    },
+    {
+     "name": "RED CHILI TOMATILLO SALSA",
+     "cal": 14,
+     "fat": 0.3,
+     "protein": 0.4,
+     "carbs": 2.8
+    }
+   ],
+   "pro": [
+    {
+     "name": "GRILLED ONION & CAPSICUM",
+     "cal": 18,
+     "fat": 0,
+     "protein": 2,
+     "carbs": 4
+    },
+    {
+     "name": "CORN SALSA",
+     "cal": 35,
+     "fat": 0,
+     "protein": 1.2,
+     "carbs": 7.2
+    }
+   ]
+  },
+  "extraToppings": [
+   {
+    "name": "LETTUCE",
+    "cal": 2,
+    "fat": 0,
+    "protein": 0,
+    "carbs": 0
+   },
+   {
+    "name": "JALAPENOS",
+    "cal": 1,
+    "fat": 0,
+    "protein": 0,
+    "carbs": 0.1
+   },
+   {
+    "name": "CHEESE",
+    "cal": 23,
+    "fat": 1.8,
+    "protein": 1.2,
+    "carbs": 0
+   },
+   {
+    "name": "CORN SALSA",
+    "cal": 35,
+    "fat": 0,
+    "protein": 1.2,
+    "carbs": 7.2
+   },
+   {
+    "name": "MEXICAN VEGGIE MIX",
+    "cal": 24,
+    "fat": 0.8,
+    "protein": 0.8,
+    "carbs": 3.6
+   }
+  ],
+  "extraFillings": [
+   {
+    "name": "GRILLED BARBEQUE CHICKEN",
+    "cal": 190,
+    "fat": 10.2,
+    "protein": 21.4,
+    "carbs": 1.8
+   },
+   {
+    "name": "CRISPY PERI PERI CHICKEN",
+    "cal": 238,
+    "fat": 13.4,
+    "protein": 19.4,
+    "carbs": 13.8
+   },
+   {
+    "name": "CHILI CHIPOTLE CHICKEN",
+    "cal": 207,
+    "fat": 11.8,
+    "protein": 18,
+    "carbs": 7
+   },
+   {
+    "name": "CARNITAS CHICKEN",
+    "cal": 154,
+    "fat": 6.4,
+    "protein": 20.3,
+    "carbs": 3.2
+   },
+   {
+    "name": "MEXICAN PANEER",
+    "cal": 291,
+    "fat": 22.6,
+    "protein": 13.5,
+    "carbs": 7.5
+   },
+   {
+    "name": "BARBEQUE PANEER",
+    "cal": 302,
+    "fat": 20.6,
+    "protein": 13.6,
+    "carbs": 16.1
+   },
+   {
+    "name": "CRISPY MUSHROOM",
+    "cal": 209,
+    "fat": 15.3,
+    "protein": 4.8,
+    "carbs": 14.5
+   },
+   {
+    "name": "PERI PERI POTATO",
+    "cal": 187,
+    "fat": 3.7,
+    "protein": 4,
+    "carbs": 34.8
+   }
+  ],
+  "makeItRich": [
+   {
+    "name": "SUNFLOWER SEEDS",
+    "cal": 9,
+    "fat": 0.2,
+    "protein": 0.2,
+    "carbs": 1.9
+   },
+   {
+    "name": "GUACAMOLE",
+    "cal": 148,
+    "fat": 13.3,
+    "protein": 1.9,
+    "carbs": 9.2
+   },
+   {
+    "name": "CRUSHED CORN CHIPS",
+    "cal": 10,
+    "fat": 0.2,
+    "protein": 0.3,
+    "carbs": 1.8
+   },
+   {
+    "name": "CHIPOTLE MAYO",
+    "cal": 24,
+    "fat": 0.8,
+    "protein": 0.8,
+    "carbs": 3.6
+   },
+   {
+    "name": "SOUTHWEST SAUCE",
+    "cal": 18,
+    "fat": 0.2,
+    "protein": 0.6,
+    "carbs": 3.6
+   },
+   {
+    "name": "HOT HABANERO SAUCE",
+    "cal": 9,
+    "fat": 0.3,
+    "protein": 0.1,
+    "carbs": 0.9
+   },
+   {
+    "name": "SOUR CREAM",
+    "cal": 57,
+    "fat": 5.6,
+    "protein": 0.5,
+    "carbs": 1.1
+   },
+   {
+    "name": "MANGO SALSA",
+    "cal": 9,
+    "fat": 0.2,
+    "protein": 0.2,
+    "carbs": 1.9
+   },
+   {
+    "name": "MELTED CHEESE QUESO",
+    "cal": 107,
+    "fat": 8,
+    "protein": 4,
+    "carbs": 4
+   }
+  ],
+  "dressing": []
+ },
+ "burrito": {
+  "tortilla": {
+   "regular": [
+    {
+     "name": "12\" TORTILLA",
+     "cal": 142,
+     "fat": 1.9,
+     "protein": 3.7,
+     "carbs": 29.2
+    }
+   ],
+   "mini": [
+    {
+     "name": "10\" TORTILLA",
+     "cal": 105,
+     "fat": 1.4,
+     "protein": 2.7,
+     "carbs": 21.6
+    }
+   ],
+   "pro": [
+    {
+     "name": "10\" TORTILLA",
+     "cal": 105,
+     "fat": 1.4,
+     "protein": 2.7,
+     "carbs": 21.6
+    }
+   ],
+   "habanero": [
+    {
+     "name": "10\" TORTILLA",
+     "cal": 105,
+     "fat": 1.4,
+     "protein": 2.7,
+     "carbs": 21.6
+    }
+   ]
+  },
+  "proteins": {
+   "regular": [
+    {
+     "name": "GRILLED BARBEQUE CHICKEN",
+     "cal": 190,
+     "fat": 10.2,
+     "protein": 21.4,
+     "carbs": 1.8
+    },
+    {
+     "name": "CRISPY PERI PERI CHICKEN",
+     "cal": 238,
+     "fat": 13.4,
+     "protein": 19.4,
+     "carbs": 13.8
+    },
+    {
+     "name": "CHILI CHIPOTLE CHICKEN",
+     "cal": 207,
+     "fat": 11.8,
+     "protein": 18,
+     "carbs": 7
+    },
+    {
+     "name": "CARNITAS CHICKEN",
+     "cal": 207,
+     "fat": 11.8,
+     "protein": 18,
+     "carbs": 7
+    },
+    {
+     "name": "MEXICAN PANEER",
+     "cal": 291,
+     "fat": 22.6,
+     "protein": 13.5,
+     "carbs": 7.5
+    },
+    {
+     "name": "BBQ PANEER",
+     "cal": 302,
+     "fat": 20.6,
+     "protein": 13.6,
+     "carbs": 16.1
+    },
+    {
+     "name": "CRISPY MUSHROOM",
+     "cal": 209,
+     "fat": 15.3,
+     "protein": 4.8,
+     "carbs": 14.5
+    },
+    {
+     "name": "PERI PERI POTATO",
+     "cal": 187,
+     "fat": 3.7,
+     "protein": 4,
+     "carbs": 34.8
+    },
+    {
+     "name": "GUACMOLE AND VEGGIE",
+     "cal": 197,
+     "fat": 17.7,
+     "protein": 2.6,
+     "carbs": 12.3
+    }
+   ],
+   "mini": [
+    {
+     "name": "GRILLED BARBEQUE CHICKEN",
+     "cal": 190,
+     "fat": 10.2,
+     "protein": 21.4,
+     "carbs": 1.8
+    },
+    {
+     "name": "CRISPY PERI PERI CHICKEN",
+     "cal": 238,
+     "fat": 13.4,
+     "protein": 19.4,
+     "carbs": 13.8
+    },
+    {
+     "name": "CHILI CHIPOTLE CHICKEN",
+     "cal": 207,
+     "fat": 11.8,
+     "protein": 18,
+     "carbs": 7
+    },
+    {
+     "name": "CARNITAS CHICKEN",
+     "cal": 207,
+     "fat": 11.8,
+     "protein": 18,
+     "carbs": 7
+    },
+    {
+     "name": "MEXICAN PANEER",
+     "cal": 291,
+     "fat": 22.6,
+     "protein": 13.5,
+     "carbs": 7.5
+    },
+    {
+     "name": "BBQ PANEER",
+     "cal": 302,
+     "fat": 20.6,
+     "protein": 13.6,
+     "carbs": 16.1
+    },
+    {
+     "name": "CRISPY MUSHROOM",
+     "cal": 209,
+     "fat": 15.3,
+     "protein": 4.8,
+     "carbs": 14.5
+    },
+    {
+     "name": "PERI PERI POTATO",
+     "cal": 187,
+     "fat": 3.7,
+     "protein": 4,
+     "carbs": 34.8
+    },
+    {
+     "name": "GUACMOLE AND VEGGIE",
+     "cal": 197,
+     "fat": 17.7,
+     "protein": 2.6,
+     "carbs": 12.3
+    }
+   ],
+   "habanero": [
+    {
+     "name": "PANEER HABANERO",
+     "cal": 268,
+     "fat": 19.5,
+     "protein": 15.8,
+     "carbs": 7.4
+    },
+    {
+     "name": "CHICKEN HABANERO",
+     "cal": 226,
+     "fat": 11.8,
+     "protein": 25.4,
+     "carbs": 5.6
+    }
+   ]
+  },
+  "rice": {
+   "regular": [
+    {
+     "name": "CILANTRO RICE",
+     "cal": 158,
+     "fat": 3.5,
+     "protein": 2.8,
+     "carbs": 27.9
+    },
+    {
+     "name": "BROWN RICE",
+     "cal": 135,
+     "fat": 1.6,
+     "protein": 2.8,
+     "carbs": 26.7
+    },
+    {
+     "name": "NO RICE",
+     "cal": 0,
+     "fat": 0,
+     "protein": 0,
+     "carbs": 0
+    }
+   ],
+   "mini": [
+    {
+     "name": "CILANTRO RICE",
+     "cal": 158,
+     "fat": 3.5,
+     "protein": 2.8,
+     "carbs": 27.9
+    },
+    {
+     "name": "BROWN RICE",
+     "cal": 135,
+     "fat": 1.6,
+     "protein": 2.8,
+     "carbs": 26.7
+    },
+    {
+     "name": "NO RICE",
+     "cal": 0,
+     "fat": 0,
+     "protein": 0,
+     "carbs": 0
+    }
+   ]
+  },
+  "beans": {
+   "regular": [
+    {
+     "name": "BLACK BEANS",
+     "cal": 94,
+     "fat": 3.4,
+     "protein": 4.9,
+     "carbs": 13.3
+    },
+    {
+     "name": "PINTO BEANS",
+     "cal": 71,
+     "fat": 1.8,
+     "protein": 3.7,
+     "carbs": 10.5
+    },
+    {
+     "name": "NO BEANS",
+     "cal": 0,
+     "fat": 0,
+     "protein": 0,
+     "carbs": 0
+    }
+   ],
+   "mini": [
+    {
+     "name": "BLACK BEANS",
+     "cal": 94,
+     "fat": 3.4,
+     "protein": 4.9,
+     "carbs": 13.3
+    },
+    {
+     "name": "PINTO BEANS",
+     "cal": 71,
+     "fat": 1.8,
+     "protein": 3.7,
+     "carbs": 10.5
+    },
+    {
+     "name": "NO BEANS",
+     "cal": 0,
+     "fat": 0,
+     "protein": 0,
+     "carbs": 0
+    }
+   ],
+   "pro": [
+    {
+     "name": "BLACK BEANS",
+     "cal": 94,
+     "fat": 3.4,
+     "protein": 4.9,
+     "carbs": 13.3
+    },
+    {
+     "name": "PINTO BEANS",
+     "cal": 71,
+     "fat": 1.8,
+     "protein": 3.7,
+     "carbs": 10.5
+    },
+    {
+     "name": "NO BEANS",
+     "cal": 0,
+     "fat": 0,
+     "protein": 0,
+     "carbs": 0
+    }
+   ]
+  },
+  "toppings": {
+   "regular": [
+    {
+     "name": "GRILLED ONION & CAPSICUM",
+     "cal": 28,
+     "fat": 0.6,
+     "protein": 1.4,
+     "carbs": 5.5
+    },
+    {
+     "name": "CORN SALSA",
+     "cal": 41,
+     "fat": 0.6,
+     "protein": 1.6,
+     "carbs": 8.9
+    },
+    {
+     "name": "SOUR CREAM",
+     "cal": 57,
+     "fat": 5.6,
+     "protein": 0.5,
+     "carbs": 1.1
+    },
+    {
+     "name": "FRESH TOMATO AND ONION SALSA",
+     "cal": 13,
+     "fat": 0.1,
+     "protein": 0.6,
+     "carbs": 2.9
+    },
+    {
+     "name": "ROASTED TOMATILLO SALSA",
+     "cal": 7,
+     "fat": 0.1,
+     "protein": 0.2,
+     "carbs": 1.4
+    },
+    {
+     "name": "RED CHILI TOMATILLO SALSA",
+     "cal": 14,
+     "fat": 0.3,
+     "protein": 0.4,
+     "carbs": 2.8
+    },
+    {
+     "name": "CHEESE",
+     "cal": 23,
+     "fat": 1.8,
+     "protein": 1.2,
+     "carbs": 0
+    },
+    {
+     "name": "LETTUCE",
+     "cal": 2,
+     "fat": 0,
+     "protein": 0.1,
+     "carbs": 0
+    },
+    {
+     "name": "JALAPENOS",
+     "cal": 1,
+     "fat": 0,
+     "protein": 0,
+     "carbs": 0.1
+    },
+    {
+     "name": "MEXICAN VEGGIE MIX",
+     "cal": 10,
+     "fat": 0.1,
+     "protein": 0.4,
+     "carbs": 2.3
+    }
+   ],
+   "mini": [
+    {
+     "name": "GRILLED ONION & CAPSICUM",
+     "cal": 28,
+     "fat": 0.6,
+     "protein": 1.4,
+     "carbs": 5.5
+    },
+    {
+     "name": "CORN SALSA",
+     "cal": 41,
+     "fat": 0.6,
+     "protein": 1.6,
+     "carbs": 8.9
+    },
+    {
+     "name": "SOUR CREAM",
+     "cal": 57,
+     "fat": 5.6,
+     "protein": 0.5,
+     "carbs": 1.1
+    },
+    {
+     "name": "FRESH TOMATO AND ONION SALSA",
+     "cal": 13,
+     "fat": 0.1,
+     "protein": 0.6,
+     "carbs": 2.9
+    },
+    {
+     "name": "ROASTED TOMATILLO SALSA",
+     "cal": 7,
+     "fat": 0.1,
+     "protein": 0.2,
+     "carbs": 1.4
+    },
+    {
+     "name": "RED CHILI TOMATILLO SALSA",
+     "cal": 14,
+     "fat": 0.3,
+     "protein": 0.4,
+     "carbs": 2.8
+    }
+   ]
+  },
+  "extraToppings": [
+   {
+    "name": "LETTUCE",
+    "cal": 2,
+    "fat": 0,
+    "protein": 0,
+    "carbs": 0
+   },
+   {
+    "name": "JALAPENOS",
+    "cal": 1,
+    "fat": 0,
+    "protein": 0,
+    "carbs": 0.1
+   },
+   {
+    "name": "CHEESE",
+    "cal": 23,
+    "fat": 1.8,
+    "protein": 1.2,
+    "carbs": 0
+   },
+   {
+    "name": "CORN SALSA",
+    "cal": 35,
+    "fat": 0,
+    "protein": 1.2,
+    "carbs": 7.2
+   },
+   {
+    "name": "MEXICAN VEGGIE MIX",
+    "cal": 24,
+    "fat": 0.8,
+    "protein": 0.8,
+    "carbs": 3.6
+   }
+  ],
+  "extraFillings": [
+   {
+    "name": "GRILLED BARBEQUE CHICKEN",
+    "cal": 190,
+    "fat": 10.2,
+    "protein": 21.4,
+    "carbs": 1.8
+   },
+   {
+    "name": "CRISPY PERI PERI CHICKEN",
+    "cal": 238,
+    "fat": 13.4,
+    "protein": 19.4,
+    "carbs": 13.8
+   },
+   {
+    "name": "CHILI CHIPOTLE CHICKEN",
+    "cal": 207,
+    "fat": 11.8,
+    "protein": 18,
+    "carbs": 7
+   },
+   {
+    "name": "CARNITAS CHICKEN",
+    "cal": 154,
+    "fat": 6.4,
+    "protein": 20.3,
+    "carbs": 3.2
+   },
+   {
+    "name": "MEXICAN PANEER",
+    "cal": 291,
+    "fat": 22.6,
+    "protein": 13.5,
+    "carbs": 7.5
+   },
+   {
+    "name": "BARBEQUE PANEER",
+    "cal": 302,
+    "fat": 20.6,
+    "protein": 13.6,
+    "carbs": 16.1
+   },
+   {
+    "name": "CRISPY MUSHROOM",
+    "cal": 209,
+    "fat": 15.3,
+    "protein": 4.8,
+    "carbs": 14.5
+   },
+   {
+    "name": "PERI PERI POTATO",
+    "cal": 187,
+    "fat": 3.7,
+    "protein": 4,
+    "carbs": 34.8
+   }
+  ],
+  "makeItRich": [
+   {
+    "name": "SUNFLOWER SEEDS",
+    "cal": 9,
+    "fat": 0.2,
+    "protein": 0.2,
+    "carbs": 1.9
+   },
+   {
+    "name": "GUACAMOLE",
+    "cal": 148,
+    "fat": 13.3,
+    "protein": 1.9,
+    "carbs": 9.2
+   },
+   {
+    "name": "CRUSHED CORN CHIPS",
+    "cal": 10,
+    "fat": 0.2,
+    "protein": 0.3,
+    "carbs": 1.8
+   },
+   {
+    "name": "CHIPOTLE MAYO",
+    "cal": 24,
+    "fat": 0.8,
+    "protein": 0.8,
+    "carbs": 3.6
+   },
+   {
+    "name": "SOUTHWEST SAUCE",
+    "cal": 18,
+    "fat": 0.2,
+    "protein": 0.6,
+    "carbs": 3.6
+   },
+   {
+    "name": "HOT HABANERO SAUCE",
+    "cal": 9,
+    "fat": 0.3,
+    "protein": 0.1,
+    "carbs": 0.9
+   },
+   {
+    "name": "SOUR CREAM",
+    "cal": 57,
+    "fat": 5.6,
+    "protein": 0.5,
+    "carbs": 1.1
+   },
+   {
+    "name": "MANGO SALSA",
+    "cal": 9,
+    "fat": 0.2,
+    "protein": 0.2,
+    "carbs": 1.9
+   },
+   {
+    "name": "MELTED CHEESE QUESO",
+    "cal": 107,
+    "fat": 8,
+    "protein": 4,
+    "carbs": 4
+   }
+  ],
+  "dressing": []
+ },
+ "salad": {
+  "proteins": {
+   "regular": [
+    {
+     "name": "GRILLED BARBEQUE CHICKEN",
+     "cal": 190,
+     "fat": 10.2,
+     "protein": 21.4,
+     "carbs": 1.8
+    },
+    {
+     "name": "CRISPY PERI PERI CHICKEN",
+     "cal": 238,
+     "fat": 13.4,
+     "protein": 19.4,
+     "carbs": 13.8
+    },
+    {
+     "name": "CHILI CHIPOTLE CHICKEN",
+     "cal": 207,
+     "fat": 11.8,
+     "protein": 18,
+     "carbs": 7
+    },
+    {
+     "name": "CARNITAS CHICKEN",
+     "cal": 207,
+     "fat": 11.8,
+     "protein": 18,
+     "carbs": 7
+    },
+    {
+     "name": "MEXICAN PANEER",
+     "cal": 291,
+     "fat": 22.6,
+     "protein": 13.5,
+     "carbs": 7.5
+    },
+    {
+     "name": "BBQ PANEER",
+     "cal": 302,
+     "fat": 20.6,
+     "protein": 13.6,
+     "carbs": 16.1
+    },
+    {
+     "name": "CRISPY MUSHROOM",
+     "cal": 209,
+     "fat": 15.3,
+     "protein": 4.8,
+     "carbs": 14.5
+    },
+    {
+     "name": "PERI PERI POTATO",
+     "cal": 187,
+     "fat": 3.7,
+     "protein": 4,
+     "carbs": 34.8
+    },
+    {
+     "name": "GUACMOLE AND VEGGIE",
+     "cal": 197,
+     "fat": 17.7,
+     "protein": 2.6,
+     "carbs": 12.3
+    }
+   ],
+   "mini": [
+    {
+     "name": "GRILLED BARBEQUE CHICKEN",
+     "cal": 190,
+     "fat": 10.2,
+     "protein": 21.4,
+     "carbs": 1.8
+    },
+    {
+     "name": "CRISPY PERI PERI CHICKEN",
+     "cal": 238,
+     "fat": 13.4,
+     "protein": 19.4,
+     "carbs": 13.8
+    },
+    {
+     "name": "CHILI CHIPOTLE CHICKEN",
+     "cal": 207,
+     "fat": 11.8,
+     "protein": 18,
+     "carbs": 7
+    },
+    {
+     "name": "CARNITAS CHICKEN",
+     "cal": 207,
+     "fat": 11.8,
+     "protein": 18,
+     "carbs": 7
+    },
+    {
+     "name": "MEXICAN PANEER",
+     "cal": 291,
+     "fat": 22.6,
+     "protein": 13.5,
+     "carbs": 7.5
+    },
+    {
+     "name": "BBQ PANEER",
+     "cal": 302,
+     "fat": 20.6,
+     "protein": 13.6,
+     "carbs": 16.1
+    },
+    {
+     "name": "CRISPY MUSHROOM",
+     "cal": 209,
+     "fat": 15.3,
+     "protein": 4.8,
+     "carbs": 14.5
+    },
+    {
+     "name": "PERI PERI POTATO",
+     "cal": 187,
+     "fat": 3.7,
+     "protein": 4,
+     "carbs": 34.8
+    },
+    {
+     "name": "GUACMOLE AND VEGGIE",
+     "cal": 197,
+     "fat": 17.7,
+     "protein": 2.6,
+     "carbs": 12.3
+    }
+   ],
+   "pro": [
+    {
+     "name": "GRILLED BARBEQUE CHICKEN",
+     "cal": 596,
+     "fat": 28,
+     "protein": 54,
+     "carbs": 45
+    },
+    {
+     "name": "MEXICAN PANEER",
+     "cal": 836,
+     "fat": 59,
+     "protein": 43,
+     "carbs": 49
+    }
+   ]
+  },
+  "rice": {
+   "regular": [
+    {
+     "name": "CILANTRO RICE",
+     "cal": 266,
+     "fat": 6.6,
+     "protein": 8.8,
+     "carbs": 66
+    },
+    {
+     "name": "BROWN RICE",
+     "cal": 135,
+     "fat": 1.6,
+     "protein": 2.8,
+     "carbs": 26.7
+    },
+    {
+     "name": "NO RICE",
+     "cal": 0,
+     "fat": 0,
+     "protein": 0,
+     "carbs": 0
+    }
+   ],
+   "mini": [
+    {
+     "name": "CILANTRO RICE",
+     "cal": 177,
+     "fat": 4.4,
+     "protein": 5.9,
+     "carbs": 44
+    },
+    {
+     "name": "BROWN RICE",
+     "cal": 135,
+     "fat": 1.6,
+     "protein": 2.8,
+     "carbs": 26.7
+    },
+    {
+     "name": "NO RICE",
+     "cal": 0,
+     "fat": 0,
+     "protein": 0,
+     "carbs": 0
+    }
+   ],
+   "pro": [
+    {
+     "name": "CILANTRO RICE",
+     "cal": 266,
+     "fat": 6.6,
+     "protein": 8.8,
+     "carbs": 66
+    },
+    {
+     "name": "BROWN RICE",
+     "cal": 266,
+     "fat": 6.6,
+     "protein": 8.8,
+     "carbs": 66
+    },
+    {
+     "name": "NO RICE",
+     "cal": 0,
+     "fat": 0,
+     "protein": 0,
+     "carbs": 0
+    }
+   ]
+  },
+  "beans": {
+   "regular": [
+    {
+     "name": "BLACK BEANS",
+     "cal": 94,
+     "fat": 3.4,
+     "protein": 4.9,
+     "carbs": 13.3
+    },
+    {
+     "name": "PINTO BEANS",
+     "cal": 71,
+     "fat": 1.8,
+     "protein": 3.7,
+     "carbs": 10.5
+    },
+    {
+     "name": "NO BEANS",
+     "cal": 0,
+     "fat": 0,
+     "protein": 0,
+     "carbs": 0
+    }
+   ],
+   "mini": [
+    {
+     "name": "BLACK BEANS",
+     "cal": 94,
+     "fat": 3.4,
+     "protein": 4.9,
+     "carbs": 13.3
+    },
+    {
+     "name": "PINTO BEANS",
+     "cal": 71,
+     "fat": 1.8,
+     "protein": 3.7,
+     "carbs": 10.5
+    },
+    {
+     "name": "NO BEANS",
+     "cal": 0,
+     "fat": 0,
+     "protein": 0,
+     "carbs": 0
+    }
+   ],
+   "pro": [
+    {
+     "name": "BLACK BEANS",
+     "cal": 94,
+     "fat": 3.4,
+     "protein": 4.9,
+     "carbs": 13.3
+    },
+    {
+     "name": "PINTO BEANS",
+     "cal": 71,
+     "fat": 1.8,
+     "protein": 3.7,
+     "carbs": 10.5
+    },
+    {
+     "name": "NO BEANS",
+     "cal": 0,
+     "fat": 0,
+     "protein": 0,
+     "carbs": 0
+    }
+   ]
+  },
+  "toppings": {
+   "regular": [
+    {
+     "name": "GRILLED ONION & CAPSICUM",
+     "cal": 28,
+     "fat": 0.6,
+     "protein": 1.4,
+     "carbs": 5.5
+    },
+    {
+     "name": "CORN SALSA",
+     "cal": 41,
+     "fat": 0.6,
+     "protein": 1.6,
+     "carbs": 8.9
+    },
+    {
+     "name": "SOUR CREAM",
+     "cal": 57,
+     "fat": 5.6,
+     "protein": 0.5,
+     "carbs": 1.1
+    },
+    {
+     "name": "FRESH TOMATO AND ONION SALSA",
+     "cal": 13,
+     "fat": 0.1,
+     "protein": 0.6,
+     "carbs": 2.9
+    },
+    {
+     "name": "ROASTED TOMATILLO SALSA",
+     "cal": 7,
+     "fat": 0.1,
+     "protein": 0.2,
+     "carbs": 1.4
+    },
+    {
+     "name": "RED CHILI TOMATILLO SALSA",
+     "cal": 14,
+     "fat": 0.3,
+     "protein": 0.4,
+     "carbs": 2.8
+    },
+    {
+     "name": "CHEESE",
+     "cal": 23,
+     "fat": 1.8,
+     "protein": 1.2,
+     "carbs": 0
+    },
+    {
+     "name": "JALAPENOS",
+     "cal": 1,
+     "fat": 0,
+     "protein": 0,
+     "carbs": 0.1
+    },
+    {
+     "name": "MEXICAN VEGGIE MIX",
+     "cal": 10,
+     "fat": 0.1,
+     "protein": 0.4,
+     "carbs": 2.3
+    },
+    {
+     "name": "LETTUCE",
+     "cal": 23,
+     "fat": 0.3,
+     "protein": 2.1,
+     "carbs": 4.4
+    }
+   ],
+   "mini": [
+    {
+     "name": "GRILLED ONION & CAPSICUM",
+     "cal": 28,
+     "fat": 0.6,
+     "protein": 1.4,
+     "carbs": 5.5
+    },
+    {
+     "name": "CORN SALSA",
+     "cal": 41,
+     "fat": 0.6,
+     "protein": 1.6,
+     "carbs": 8.9
+    },
+    {
+     "name": "SOUR CREAM",
+     "cal": 57,
+     "fat": 5.6,
+     "protein": 0.5,
+     "carbs": 1.1
+    },
+    {
+     "name": "FRESH TOMATO AND ONION SALSA",
+     "cal": 13,
+     "fat": 0.1,
+     "protein": 0.6,
+     "carbs": 2.9
+    },
+    {
+     "name": "ROASTED TOMATILLO SALSA",
+     "cal": 7,
+     "fat": 0.1,
+     "protein": 0.2,
+     "carbs": 1.4
+    },
+    {
+     "name": "RED CHILI TOMATILLO SALSA",
+     "cal": 14,
+     "fat": 0.3,
+     "protein": 0.4,
+     "carbs": 2.8
+    },
+    {
+     "name": "LETTUCE",
+     "cal": 15,
+     "fat": 0.2,
+     "protein": 1.4,
+     "carbs": 2.9
+    }
+   ],
+   "pro": [
+    {
+     "name": "GRILLED ONION & CAPSICUM",
+     "cal": 18,
+     "fat": 0,
+     "protein": 2,
+     "carbs": 4
+    },
+    {
+     "name": "CORN SALSA",
+     "cal": 35,
+     "fat": 0,
+     "protein": 1.2,
+     "carbs": 7.2
+    }
+   ]
+  },
+  "extraToppings": [
+   {
+    "name": "LETTUCE",
+    "cal": 2,
+    "fat": 0,
+    "protein": 0.1,
+    "carbs": 0
+   },
+   {
+    "name": "JALAPENOS",
+    "cal": 1,
+    "fat": 0,
+    "protein": 0,
+    "carbs": 0.1
+   },
+   {
+    "name": "CHEESE",
+    "cal": 23,
+    "fat": 1.8,
+    "protein": 1.2,
+    "carbs": 0
+   },
+   {
+    "name": "CORN SALSA",
+    "cal": 35,
+    "fat": 0,
+    "protein": 1.2,
+    "carbs": 7.2
+   },
+   {
+    "name": "MEXICAN VEGGIE MIX",
+    "cal": 24,
+    "fat": 0.8,
+    "protein": 0.8,
+    "carbs": 3.6
+   }
+  ],
+  "extraFillings": [
+   {
+    "name": "GRILLED BARBEQUE CHICKEN",
+    "cal": 190,
+    "fat": 10.2,
+    "protein": 21.4,
+    "carbs": 1.8
+   },
+   {
+    "name": "CRISPY PERI PERI CHICKEN",
+    "cal": 238,
+    "fat": 13.4,
+    "protein": 19.4,
+    "carbs": 13.8
+   },
+   {
+    "name": "CHILI CHIPOTLE CHICKEN",
+    "cal": 207,
+    "fat": 11.8,
+    "protein": 18,
+    "carbs": 7
+   },
+   {
+    "name": "CARNITAS CHICKEN",
+    "cal": 154,
+    "fat": 6.4,
+    "protein": 20.3,
+    "carbs": 3.2
+   },
+   {
+    "name": "MEXICAN PANEER",
+    "cal": 291,
+    "fat": 22.6,
+    "protein": 13.5,
+    "carbs": 7.5
+   },
+   {
+    "name": "BARBEQUE PANEER",
+    "cal": 302,
+    "fat": 20.6,
+    "protein": 13.6,
+    "carbs": 16.1
+   },
+   {
+    "name": "CRISPY MUSHROOM",
+    "cal": 209,
+    "fat": 15.3,
+    "protein": 4.8,
+    "carbs": 14.5
+   },
+   {
+    "name": "PERI PERI POTATO",
+    "cal": 187,
+    "fat": 3.7,
+    "protein": 4,
+    "carbs": 34.8
+   }
+  ],
+  "makeItRich": [
+   {
+    "name": "SUNFLOWER SEEDS",
+    "cal": 9,
+    "fat": 0.2,
+    "protein": 0.2,
+    "carbs": 1.9
+   },
+   {
+    "name": "GUACAMOLE",
+    "cal": 148,
+    "fat": 13.3,
+    "protein": 1.9,
+    "carbs": 9.2
+   },
+   {
+    "name": "CRUSHED CORN CHIPS",
+    "cal": 10,
+    "fat": 0.2,
+    "protein": 0.3,
+    "carbs": 1.8
+   },
+   {
+    "name": "CHIPOTLE MAYO",
+    "cal": 24,
+    "fat": 0.8,
+    "protein": 0.8,
+    "carbs": 3.6
+   },
+   {
+    "name": "SOUTHWEST SAUCE",
+    "cal": 18,
+    "fat": 0.2,
+    "protein": 0.6,
+    "carbs": 3.6
+   },
+   {
+    "name": "HOT HABANERO SAUCE",
+    "cal": 9,
+    "fat": 0.3,
+    "protein": 0.1,
+    "carbs": 0.9
+   },
+   {
+    "name": "SOUR CREAM",
+    "cal": 57,
+    "fat": 5.6,
+    "protein": 0.5,
+    "carbs": 1.1
+   },
+   {
+    "name": "MANGO SALSA",
+    "cal": 9,
+    "fat": 0.2,
+    "protein": 0.2,
+    "carbs": 1.9
+   },
+   {
+    "name": "MELTED CHEESE QUESO",
+    "cal": 107,
+    "fat": 8,
+    "protein": 4,
+    "carbs": 4
+   }
+  ],
+  "dressing": {
+   "regular": [
+    {
+     "name": "CHILLI LIME VINAIGRETTE",
+     "cal": 28,
+     "fat": 0.2,
+     "protein": 0.4,
+     "carbs": 6.5
+    },
+    {
+     "name": "RANCH DRESSING",
+     "cal": 10,
+     "fat": 1.1,
+     "protein": 0,
+     "carbs": 0.1
+    },
+    {
+     "name": "CHIPOTLE MAYO",
+     "cal": 24,
+     "fat": 0.8,
+     "protein": 0.8,
+     "carbs": 1.2
+    }
+   ],
+   "mini": [
+    {
+     "name": "CHILLI LIME VINAIGRETTE",
+     "cal": 28,
+     "fat": 0.2,
+     "protein": 0.4,
+     "carbs": 6.5
+    },
+    {
+     "name": "RANCH DRESSING",
+     "cal": 10,
+     "fat": 1.1,
+     "protein": 0,
+     "carbs": 0.1
+    },
+    {
+     "name": "CHIPOTLE MAYO",
+     "cal": 24,
+     "fat": 0.8,
+     "protein": 0.8,
+     "carbs": 1.2
+    }
+   ],
+   "pro": [
+    {
+     "name": "CHILLI LIME VINAIGRETTE",
+     "cal": 28,
+     "fat": 0.2,
+     "protein": 0.4,
+     "carbs": 6.5
+    },
+    {
+     "name": "RANCH DRESSING",
+     "cal": 10,
+     "fat": 1.1,
+     "protein": 0,
+     "carbs": 0.1
+    },
+    {
+     "name": "CHIPOTLE MAYO",
+     "cal": 24,
+     "fat": 0.8,
+     "protein": 0.8,
+     "carbs": 1.2
+    }
+   ]
+  }
+ },
+ "sides": [
+  {
+   "name": "GRILLED BBQ CHICKEN",
+   "cal": 592,
+   "fat": 31.9,
+   "protein": 67,
+   "carbs": 5.6
+  },
+  {
+   "name": "CHILI CHIPOTLE CHICKEN",
+   "cal": 647,
+   "fat": 36.8,
+   "protein": 56.2,
+   "carbs": 21.8
+  },
+  {
+   "name": "GUACAMOLE",
+   "cal": 617,
+   "fat": 55.2,
+   "protein": 8.1,
+   "carbs": 38.5
+  },
+  {
+   "name": "BBQ PANEER",
+   "cal": 944,
+   "fat": 64.5,
+   "protein": 42.4,
+   "carbs": 50.2
+  },
+  {
+   "name": "MEXICAN PANEER",
+   "cal": 908,
+   "fat": 70.7,
+   "protein": 42.1,
+   "carbs": 23.3
+  },
+  {
+   "name": "MANGO SALSA",
+   "cal": 45,
+   "fat": 1,
+   "protein": 1,
+   "carbs": 9.5
+  },
+  {
+   "name": "TOMATILLO RED CHILI SALSA",
+   "cal": 159,
+   "fat": 3.7,
+   "protein": 4.8,
+   "carbs": 31.2
+  },
+  {
+   "name": "TOMATILLO ROASTED SALSA",
+   "cal": 135,
+   "fat": 2.2,
+   "protein": 4.7,
+   "carbs": 26
+  },
+  {
+   "name": "CORN SALSA",
+   "cal": 342,
+   "fat": 5.4,
+   "protein": 13.2,
+   "carbs": 74.3
+  },
+  {
+   "name": "JALAPENOS",
+   "cal": 25,
+   "fat": 0,
+   "protein": 0,
+   "carbs": 2.5
+  },
+  {
+   "name": "SOUR CREAM",
+   "cal": 646,
+   "fat": 64.2,
+   "protein": 6.1,
+   "carbs": 12.4
+  },
+  {
+   "name": "MEXICAN VEGGIE MIX",
+   "cal": 62,
+   "fat": 0.5,
+   "protein": 2.4,
+   "carbs": 14.6
+  }
+ ]
+}

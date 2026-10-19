@@ -180,3 +180,20 @@ Regression run after every stage: all existing Vitest suites, the PGlite migrati
     saved as your values with the source link) → entering it from the
     label.
   - Saved products appear in search and in My foods (📦).
+- **Stage 5 (done):** restaurants, using official published values only.
+  Menus ship with the app (`web/src/nutrition/restaurants/`); logged meals
+  are `source = 'restaurant'` entries with snapshots (`0013_restaurant_entries.sql`).
+  - **McDonald's India (North & East booklet):** 76 items, every size,
+    parsed from the PDF.
+  - **Domino's India (official sheets):** about 70 pizzas, sides, pastas
+    and desserts, by size and crust, with logging by slice. Transcribed by
+    hand from the images, and every row is tested: calories must match the
+    macros.
+    - Pages that contradict others for the same item are left out.
+    - Sugar and sodium aren't transcribed.
+  - **California Burrito:** a builder that sums the chain's own
+    per-ingredient calculator values, plus sides.
+  - **Pizza Hut India:** the booklet link returns "not found". **Subway
+    India:** no official chart. Neither is listed, and the app says why.
+  - **Customise:** saves an editable copy as your own food, with a warning
+    that customised values can't be exact. The official item never changes.

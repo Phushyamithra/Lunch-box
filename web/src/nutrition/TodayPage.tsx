@@ -121,6 +121,7 @@ export default function NutritionToday() {
                     <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                       <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
                         {e.source === 'meal_prep' && '🚚 '}
+                        {e.source === 'restaurant' && '🍽️ '}
                         {e.name}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
