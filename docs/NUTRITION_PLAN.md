@@ -197,3 +197,17 @@ Regression run after every stage: all existing Vitest suites, the PGlite migrati
     India:** no official chart. Neither is listed, and the app says why.
   - **Customise:** saves an editable copy as your own food, with a warning
     that customised values can't be exact. The official item never changes.
+- **Stage 6 (done):** a Trends tab (`trends.ts` + `TrendsPage.tsx`), with
+  no new migration.
+  - **Days:** a day counts as fully logged when it has at least half the
+    calorie target. Partial, unlogged, away and event days are shown but
+    left out of averages and adherence.
+  - **Adherence:** calories within ±10% of the target in force that day,
+    and protein at or above its minimum.
+  - **Charts and lists:** daily calories and protein, a by-week table, and
+    the foods that contributed most.
+  - **Measured maintenance:** average intake on fully logged days minus the
+    weight change (7,700 kcal/kg) over the same weeks. It needs 14+ logged
+    days covering 70% of the window. "Apply" saves a new target version only
+    after you confirm, keeping protein and fat; carbs take the difference.
+  - **Protein per meal:** an optional switch on Today (25/30/15/30%).

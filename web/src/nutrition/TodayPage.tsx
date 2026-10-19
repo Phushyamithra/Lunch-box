@@ -2,7 +2,7 @@ import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import ChevronLeftRoundedIcon from '@mui/icons-material/ChevronLeftRounded';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
-import { Alert, Box, Button, Chip, IconButton, LinearProgress, Paper, Stack, Typography } from '@mui/material';
+import { Alert, Box, Button, Chip, FormControlLabel, IconButton, LinearProgress, Paper, Stack, Switch, Typography } from '@mui/material';
 import dayjs from 'dayjs';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useState } from 'react';
@@ -14,8 +14,10 @@ import { AddFoodSheet } from './AddFoodSheet';
 import { MEALS, dayTotals, progressAgainst, type Entry, type MacroProgress, type MealSlot } from './foodLog';
 import { useNutrition } from './NutritionContext';
 import { activeTarget } from './nutritionApi';
+import { proteinPerMeal } from './trends';
 
 const KEY = 'YYYY-MM-DD';
+const SPREAD_KEY = 'tracker.nutrition.proteinPerMeal';
 const LABEL: Record<MacroProgress['key'], { label: string; emoji: string; unit: string }> = {
   kcal: { label: 'Calories', emoji: '🔥', unit: 'kcal' },
   protein: { label: 'Protein', emoji: '🥚', unit: 'g' },
@@ -36,6 +38,21 @@ export default function NutritionToday() {
   const today = dayjs().format(KEY);
   const [day, setDay] = useState(today);
   const [adding, setAdding] = useState<MealSlot | null>(null);
+  const [perMeal, setPerMeal] = useState(() => {
+    try {
+      return localStorage.getItem(SPREAD_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const togglePerMeal = (on: boolean) => {
+    setPerMeal(on);
+    try {
+      localStorage.setItem(SPREAD_KEY, on ? '1' : '0');
+    } catch {
+      /* private mode: just for this visit */
+    }
+  };
   const nd = data!;
   const target = activeTarget(nd.targets, day);
   const { total, byMeal } = dayTotals(nd.entries, day);
@@ -83,6 +100,13 @@ export default function NutritionToday() {
             {total.kcal} kcal · P {total.protein} g · C {total.carbs} g · F {total.fat} g · fibre {total.fibre} g
           </Typography>
         )}
+        {target && (
+          <FormControlLabel
+            sx={{ mt: 1 }}
+            control={<Switch size="small" checked={perMeal} onChange={(e) => togglePerMeal(e.target.checked)} />}
+            label={<Typography variant="body2">Spread protein across meals</Typography>}
+          />
+        )}
         {(total.sugar !== null || total.sodium_mg !== null) && (
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
             Where labels give it: sugar {total.sugar ?? '–'} g · sodium {total.sodium_mg ?? '–'} mg
@@ -98,10 +122,19 @@ export default function NutritionToday() {
               <Typography sx={{ fontWeight: 700, flexGrow: 1 }}>
                 {m.emoji} {m.label}
               </Typography>
-              {entries.length > 0 && (
-                <Typography variant="body2" color="text.secondary">
-                  {mt.kcal} kcal · P {mt.protein} g
-                </Typography>
+              {perMeal && target ? (
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  color={mt.protein >= proteinPerMeal(target.protein_g)[m.key] ? 'success' : 'default'}
+                  label={`P ${mt.protein} / ${proteinPerMeal(target.protein_g)[m.key]} g${entries.length ? ` · ${mt.kcal} kcal` : ''}`}
+                />
+              ) : (
+                entries.length > 0 && (
+                  <Typography variant="body2" color="text.secondary">
+                    {mt.kcal} kcal · P {mt.protein} g
+                  </Typography>
+                )
               )}
               <IconButton aria-label={`Add to ${m.label}`} onClick={() => setAdding(m.key)} sx={{ bgcolor: (t) => t.tracker.tonal }}>
                 <AddRoundedIcon />

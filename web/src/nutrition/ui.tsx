@@ -8,6 +8,7 @@ import { useNutrition } from './NutritionContext';
 
 const TABS = [
   { path: '/nutrition', label: 'Today' },
+  { path: '/nutrition/trends', label: 'Trends' },
   { path: '/nutrition/overview', label: 'Overview' },
   { path: '/nutrition/foods', label: 'My foods' },
   { path: '/nutrition/targets', label: 'Targets' },
