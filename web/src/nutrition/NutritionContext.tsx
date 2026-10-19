@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { Profile } from './engine';
+import type { Entry, Food, FoodInput } from './foodLog';
 import * as api from './nutritionApi';
 
 interface NutritionValue {
@@ -10,6 +11,11 @@ interface NutritionValue {
   reload: () => Promise<void>;
   saveProfile: (p: Profile) => Promise<void>;
   addTargets: (t: api.TargetInput) => Promise<api.TargetRow>;
+  saveFood: (input: FoodInput, id?: string) => Promise<Food>;
+  archiveFood: (id: string) => Promise<void>;
+  addEntry: (input: api.EntryInput) => Promise<Entry>;
+  /** Soft delete; `false` restores (undo). */
+  setEntryDeleted: (entry: Entry, deleted: boolean) => Promise<void>;
 }
 
 const NutritionContext = createContext<NutritionValue | null>(null);
@@ -50,6 +56,24 @@ export function NutritionProvider({ client, children }: { client: SupabaseClient
         const row = await api.addTargets(client, t);
         setData((d) => (d ? { ...d, targets: [...d.targets, row] } : d));
         return row;
+      },
+      async saveFood(input, id) {
+        const row = await api.saveFood(client, input, id);
+        setData((d) => (d ? { ...d, foods: [...d.foods.filter((f) => f.id !== row.id), row].sort((a, b) => a.name.localeCompare(b.name)) } : d));
+        return row;
+      },
+      async archiveFood(id) {
+        await api.archiveFood(client, id);
+        setData((d) => (d ? { ...d, foods: d.foods.filter((f) => f.id !== id) } : d));
+      },
+      async addEntry(input) {
+        const row = await api.addEntry(client, input);
+        setData((d) => (d ? { ...d, entries: [...d.entries, row] } : d));
+        return row;
+      },
+      async setEntryDeleted(entry, deleted) {
+        const row = await api.setEntryDeleted(client, entry.id, deleted);
+        setData((d) => (d ? { ...d, entries: deleted ? d.entries.filter((e) => e.id !== entry.id) : [...d.entries, row] } : d));
       },
     }),
     [client, loading, error, data, reload],

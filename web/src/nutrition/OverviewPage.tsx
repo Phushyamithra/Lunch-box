@@ -89,7 +89,7 @@ function TargetCard({ target }: { target: TargetRow }) {
         </Box>
         <Alert severity={c.status === 'inconsistent' ? 'warning' : 'info'}>{c.message}</Alert>
         <Typography variant="caption" color="text.secondary">
-          Food logging comes next (stage 2): intake, remaining and meal-by-meal totals will show here against these targets.
+          Log what you eat under Today: totals, what's left and meal-by-meal breakdowns use these targets.
         </Typography>
       </Stack>
     </Card>

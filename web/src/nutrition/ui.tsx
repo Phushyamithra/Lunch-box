@@ -7,7 +7,9 @@ import { weeklyAverages } from '../fitness/rules';
 import { useNutrition } from './NutritionContext';
 
 const TABS = [
-  { path: '/nutrition', label: 'Overview' },
+  { path: '/nutrition', label: 'Today' },
+  { path: '/nutrition/overview', label: 'Overview' },
+  { path: '/nutrition/foods', label: 'My foods' },
   { path: '/nutrition/targets', label: 'Targets' },
 ];
 
@@ -50,7 +52,7 @@ export function NutritionLayout() {
           }
         >
           {error}
-          {/relation .*nutrition_/.test(error) && ' (run migration 0008 in Supabase first)'}
+          {/relation .*(nutrition_|foods|food_log)/.test(error) && ' (run migrations 0008 and 0009 in Supabase first)'}
         </Alert>
       ) : !nutrition.data || !fitness.data ? (
         <Box sx={{ display: 'grid', placeItems: 'center', py: 8 }}>

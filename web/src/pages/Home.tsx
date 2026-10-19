@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { dueItemsFor } from '../fitness/RemindersUi';
 import { MODES } from '../nutrition/engine';
+import { dayTotals } from '../nutrition/foodLog';
 import { useNutrition } from '../nutrition/NutritionContext';
 import { activeTarget } from '../nutrition/nutritionApi';
 import { useFitness } from '../fitness/FitnessContext';
@@ -45,7 +46,10 @@ export default function Home() {
     }
     if (path === '/nutrition' && nutrition.data) {
       const t = activeTarget(nutrition.data.targets, today);
-      return t ? { chip: `${MODES[t.mode].emoji} ${MODES[t.mode].label}`, text: `${t.kcal} kcal · P ${t.protein_g} g · C ${t.carbs_g} g · F ${t.fat_g} g` } : { chip: 'Set targets' };
+      const eaten = dayTotals(nutrition.data.entries, today).total;
+      return t
+        ? { chip: `${MODES[t.mode].emoji} ${MODES[t.mode].label}`, text: `Today ${eaten.kcal} / ${t.kcal} kcal · protein ${eaten.protein} / ${t.protein_min}–${t.protein_max} g` }
+        : { chip: 'Set targets', text: eaten.kcal ? `Today ${eaten.kcal} kcal · protein ${eaten.protein} g` : undefined };
     }
     return { chip: 'Not set up' };
   };

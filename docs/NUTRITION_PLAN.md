@@ -136,6 +136,19 @@ Regression run after every stage: all existing Vitest suites, the PGlite migrati
    polish (Phase 7).
 5. **IFCT 2017 values are OK** for this private app. If the app is ever
    shared with others, check NIN's terms first.
-6. Old meal-prep logs: snapshot backfill still needs approval when Stage 2
-   gets there.
+6. Old meal-prep logs: no backfill needed. Meal prep stays a delivery log;
+   nutrition copies a delivery's values only when you add it (stage 2).
 7. Profile inputs (sex, age, height, activity) are entered in the app.
+
+## 8. Progress
+
+- **Stage 1 (done):** `0008_nutrition_targets.sql`, engine and tests,
+  Targets screen with the working shown, lean-bulk dashboard with
+  confirm-to-apply trend changes.
+- **Stage 2 (done):** `0009_food_log.sql` (foods with per-100 g/ml or
+  per-serving values and household portions; food log entries with nutrient
+  snapshots; one-time link to a meal-prep delivery; owner checks).
+  - **Today:** totals against the targets in force that day, what's left,
+    the protein and fat ranges, meal by meal, remove with undo.
+  - **Add sheet:** search your foods, frequent foods, quick add, meal prep.
+  - **My foods:** create, edit and archive; edits never change past days.
