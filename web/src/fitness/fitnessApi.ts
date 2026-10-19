@@ -62,8 +62,13 @@ export interface SessionRow extends Session {
   slot_variants: Record<string, number>;
   custom_workout_id: string | null;
   extras: CustomExercise[];
+  /** Whose program was trained (Mon = 1 … Sat = 6); null = the day's own. */
+  program_weekday: number | null;
 }
-export type SessionInput = Pick<SessionRow, 'day' | 'variant_index' | 'completed' | 'slots_completed' | 'cardio_done' | 'slot_variants' | 'custom_workout_id' | 'extras'>;
+export type SessionInput = Pick<
+  SessionRow,
+  'day' | 'variant_index' | 'completed' | 'slots_completed' | 'cardio_done' | 'slot_variants' | 'custom_workout_id' | 'extras' | 'program_weekday'
+>;
 export interface PresetRow extends Preset {
   id: string;
 }
@@ -106,7 +111,7 @@ const NUMERIC_SETTINGS: (keyof FitnessSettings)[] = [
   'rest_isolation_sec',
 ];
 const SETTINGS_COLUMNS = [...NUMERIC_SETTINGS, 'rotation_start', 'phase_start', 'key_lifts', 'weigh_time', 'day_focus', 'finishers', 'reminders'].join(', ');
-const SESSION_COLUMNS = 'id, day, variant_index, completed, slots_completed, notes, cardio_done, slot_variants, custom_workout_id, extras';
+const SESSION_COLUMNS = 'id, day, variant_index, completed, slots_completed, notes, cardio_done, slot_variants, custom_workout_id, extras, program_weekday';
 const WORKOUT_COLUMNS = 'id, name, weekday, exercises';
 
 /** Postgres numerics can arrive as strings; normalise once at the edge. */
@@ -125,6 +130,7 @@ const normaliseSession = (r: SessionRow): SessionRow => ({
   slot_variants: r.slot_variants && typeof r.slot_variants === 'object' ? r.slot_variants : {},
   custom_workout_id: r.custom_workout_id ?? null,
   extras: Array.isArray(r.extras) ? r.extras : [],
+  program_weekday: r.program_weekday === null || r.program_weekday === undefined ? null : Number(r.program_weekday),
 });
 const normaliseWorkout = (r: CustomWorkout): CustomWorkout => ({ ...r, exercises: Array.isArray(r.exercises) ? r.exercises : [] });
 const num = <T extends object>(rows: T[], keys: (keyof T)[]): T[] =>

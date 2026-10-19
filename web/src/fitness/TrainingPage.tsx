@@ -75,7 +75,7 @@ export default function TrainingPage() {
                 <Box key={s.id} sx={{ py: 1.25 }}>
                   <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
                     <Typography sx={{ fontWeight: 600, flexGrow: 1 }}>{dayjs(s.day).format('ddd D MMM')}</Typography>
-                    <Chip size="small" label={s.custom_workout_id ? `⭐ ${data.workouts.find((w) => w.id === s.custom_workout_id)?.name ?? 'Your card'}` : `V${s.variant_index + 1}${Object.values(s.slot_variants).some((v) => v !== s.variant_index) ? ' · mixed' : ''}`} />
+                    <Chip size="small" label={s.custom_workout_id ? `⭐ ${data.workouts.find((w) => w.id === s.custom_workout_id)?.name ?? 'Your card'}` : `${s.program_weekday ? `${['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][s.program_weekday]}’s · ` : ''}V${s.variant_index + 1}${Object.values(s.slot_variants).some((v) => v !== s.variant_index) ? ' · mixed' : ''}`} />
                     {isAway(s.day, data.away) && <Chip size="small" variant="outlined" label="away" />}
                     <Chip size="small" color={s.completed ? 'success' : 'default'} label={s.completed ? 'done' : `${s.slots_completed} exercises done`} />
                   </Box>

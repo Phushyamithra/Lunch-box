@@ -5,6 +5,7 @@ import {
   buildDayPlan,
   dayProgress,
   isMixed,
+  programDaysOwed,
   setsForItem,
   suggestVariant,
   validateCustomWorkout,
@@ -22,7 +23,7 @@ const slots: ProgramSlot[] = [
   { weekday: 2, slot: 1, label: 'Vertical Pull', default_sets: 3, variants: v('Pull-ups', 'Lat Pulldown', '', '', 'Wide Pulldown') },
 ];
 const finishers: FinisherDef[] = [{ name: 'Abs', days: [1], exercises: [{ name: 'Cable Crunch / Leg Raise', sets: 3, reps: '10–15' }] }];
-const base = { variant_index: 0, slot_variants: {}, custom_workout_id: null, extras: [] };
+const base = { variant_index: 0, slot_variants: {}, custom_workout_id: null, extras: [], program_weekday: null };
 
 describe('variant per day', () => {
   it('lists only the variants that have exercises on that day', () => {
@@ -101,5 +102,28 @@ describe('custom cards', () => {
 
   it('can start from an existing variant', () => {
     expect(workoutFromVariant(2, 4, slots)).toEqual([{ label: 'Vertical Pull', exercise: 'Wide Pulldown', sets: 3 }]);
+  });
+});
+
+describe('training another day’s program', () => {
+  it('suggests per program day, wherever it was trained', () => {
+    // Last Wednesday you trained Tuesday’s program (V2); today (Monday) you pick Tuesday’s again.
+    const sessions = [{ day: '2026-10-14', variant_index: 1, custom_workout_id: null, program_weekday: 2 }];
+    expect(suggestVariant('2026-10-19', sessions, slots, 0, 2)).toEqual({ index: 4, reason: 'next' });
+    // Monday’s own program is unaffected by it.
+    expect(suggestVariant('2026-10-19', sessions, slots, 0).reason).toBe('rotation');
+  });
+
+  it('weekly coverage owes the program you actually trained, plus missed days', () => {
+    const away = (d: string) => d === '2026-10-21';
+    const sessions = [
+      { day: '2026-10-19', program_weekday: 2, custom_workout_id: null, completed: true }, // Mon: did Tuesday’s
+      { day: '2026-10-20', program_weekday: 1, custom_workout_id: null, completed: true }, // Tue: did Monday’s
+      { day: '2026-10-23', program_weekday: null, custom_workout_id: 'w1', completed: true }, // Fri: own card
+      { day: '2026-10-24', program_weekday: null, custom_workout_id: null, completed: false }, // Sat (today), not done yet
+    ];
+    // Wed away, Thu missed (owes Thursday), Fri own card, Sat not finished.
+    expect(programDaysOwed('2026-10-19', '2026-10-24', sessions, away)).toEqual([2, 1, 4]);
+    expect(programDaysOwed('2026-10-19', '2026-10-19', [], away)).toEqual([]);
   });
 });

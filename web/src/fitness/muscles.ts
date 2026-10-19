@@ -232,8 +232,9 @@ export interface LoggedSet {
 }
 
 /**
- * Sets per muscle this week vs the program. `trainingDaysSoFar` are the
- * weekdays (1–6) up to today that are not away.
+ * Sets per muscle this week vs the program. `trainingDaysSoFar` lists the
+ * program days (1–6) owed so far this week, as programDaysOwed() works them
+ * out; a day can appear twice if you repeated it.
  */
 export function weeklyCoverage(
   slots: ProgramSlot[],
@@ -249,13 +250,13 @@ export function weeklyCoverage(
     if (s.weekday < 1 || s.weekday > 6 || !s.variants.some(Boolean)) continue;
     const muscle = muscleForTarget(s.label);
     add(planned, muscle, s.default_sets);
-    if (trainingDaysSoFar.includes(s.weekday)) add(expected, muscle, s.default_sets);
+    add(expected, muscle, s.default_sets * trainingDaysSoFar.filter((d) => d === s.weekday).length);
   }
   for (const f of finishers) {
     const muscle = muscleForTarget(f.name);
     const perDay = f.exercises.reduce((a, e) => a + e.sets, 0);
     add(planned, muscle, perDay * f.days.length);
-    add(expected, muscle, perDay * f.days.filter((d) => trainingDaysSoFar.includes(d)).length);
+    add(expected, muscle, perDay * trainingDaysSoFar.filter((d) => f.days.includes(d)).length);
   }
   const done = new Map<Muscle, number>();
   for (const set of logged) add(done, muscleOf(set.exercise, map), 1);

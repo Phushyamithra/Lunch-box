@@ -32,6 +32,7 @@ import {
   buildDayPlan,
   dayProgress,
   isMixed,
+  programDaysOwed,
   setsForItem,
   suggestVariant,
   variantsFor,
@@ -77,9 +78,12 @@ export function SessionLogger({ day, data }: { day: string; data: FitnessData })
   const toast = useSnackbar();
   const { saveSession } = useFitness();
   const weekday = isoWeekday(day);
-  const rotation = variantIndexFor(day, data.settings.rotation_start, data.settings.rotation_offset);
-  const suggestion = suggestVariant(day, data.sessions, data.slots, rotation);
   const session = data.sessions.find((s) => s.day === day);
+  // Which day's program you're training today (Tuesday's on a Monday is fine).
+  const [chosenDay, setChosenDay] = useState<number | null>(null);
+  const programDay = chosenDay ?? session?.program_weekday ?? weekday;
+  const rotation = variantIndexFor(day, data.settings.rotation_start, data.settings.rotation_offset);
+  const suggestion = suggestVariant(day, data.sessions, data.slots, rotation, programDay);
   const [picking, setPicking] = useState(false);
   const [editing, setEditing] = useState<CustomWorkout | 'new' | null>(null);
   const [restEnd, setRestEnd] = useState<number | null>(null);
@@ -94,24 +98,30 @@ export function SessionLogger({ day, data }: { day: string; data: FitnessData })
     extras: session?.extras ?? [],
   };
   const plan = useMemo(
-    () => buildDayPlan({ weekday, session: current, slots: data.slots, finishers: data.settings.finishers, workouts: data.workouts }),
+    () => buildDayPlan({ weekday: programDay, session: current, slots: data.slots, finishers: data.settings.finishers, workouts: data.workouts }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [weekday, session, suggestion.index, data.slots, data.settings.finishers, data.workouts],
+    [programDay, session, suggestion.index, data.slots, data.settings.finishers, data.workouts],
   );
   const daySets = useMemo(() => (session ? data.sets.filter((s) => s.session_id === session.id) : []), [data.sets, session]);
   const progress = dayProgress(plan, daySets);
   const workout = current.custom_workout_id ? data.workouts.find((w) => w.id === current.custom_workout_id) : undefined;
   const cardioThisWeek = data.sessions.filter((s) => s.cardio_done && s.day >= weekStart(day) && s.day <= addDays(weekStart(day), 6)).length;
-  const hasProgram = variantsFor(weekday, data.slots).length > 0;
-  const dayWorkouts = data.workouts.filter((w) => w.weekday === null || w.weekday === weekday);
-  const showPicker = picking || (!session && (hasProgram || dayWorkouts.length > 0));
+  const hasProgram = variantsFor(programDay, data.slots).length > 0;
+  const dayWorkouts = data.workouts.filter((w) => w.weekday === null || w.weekday === weekday || w.weekday === programDay);
+  const sessionDay = session ? (session.program_weekday ?? weekday) : null;
+  const showPicker = picking || (chosenDay !== null && chosenDay !== sessionDay) || (!session && (hasProgram || dayWorkouts.length > 0));
+  const focus = (d: number) => data.settings.day_focus[String(d)] ?? '';
 
-  if (weekday === 7 && !session && dayWorkouts.length === 0) {
+  if (programDay === 7 && !session && dayWorkouts.length === 0) {
     return (
       <Card title="😌 Rest day">
         <Typography color="text.secondary">Sunday: walk, stretch, {data.settings.steps_target.toLocaleString('en-IN')} steps.</Typography>
+        <Typography variant="body2" sx={{ mt: 1.5, mb: 0.75, fontWeight: 700 }}>
+          Training anyway? Pick a day’s workout:
+        </Typography>
+        <DayChooser data={data} value={null} today={weekday} onChange={setChosenDay} />
         <Button size="small" sx={{ mt: 1 }} startIcon={<AddRoundedIcon />} onClick={() => setEditing('new')}>
-          Make a Sunday card anyway
+          Make a Sunday card
         </Button>
         <WorkoutEditor open={editing !== null} workout={null} weekday={weekday} data={data} onClose={() => setEditing(null)} />
       </Card>
@@ -130,6 +140,8 @@ export function SessionLogger({ day, data }: { day: string; data: FitnessData })
         completed: patch.completed ?? session?.completed ?? false,
         slots_completed: patch.slots_completed ?? session?.slots_completed ?? 0,
         cardio_done: patch.cardio_done ?? session?.cardio_done ?? false,
+        program_weekday:
+          patch.program_weekday !== undefined ? patch.program_weekday : (session?.program_weekday ?? (programDay !== weekday && programDay <= 6 ? programDay : null)),
       });
     } catch (e) {
       toast(`Not saved: ${e instanceof Error ? e.message : 'error'}`, { severity: 'error' });
@@ -142,15 +154,18 @@ export function SessionLogger({ day, data }: { day: string; data: FitnessData })
   const confirmSwitch = (what: string) => daySets.length === 0 || window.confirm(`Switch today to ${what}? Sets already logged keep the exercises you did.`);
   const pickVariant = async (i: number) => {
     if (!confirmSwitch(`V${i + 1}`)) return;
-    if (await persist({ variant_index: i, slot_variants: {}, custom_workout_id: null })) {
+    const pd = programDay !== weekday && programDay <= 6 ? programDay : null;
+    if (await persist({ variant_index: i, slot_variants: {}, custom_workout_id: null, program_weekday: pd })) {
       setPicking(false);
-      toast(`💪 V${i + 1} today`);
+      setChosenDay(null);
+      toast(`💪 ${pd ? `${WEEKDAY[pd]}’s ${focus(pd) || 'workout'}, ` : ''}V${i + 1} today`);
     }
   };
   const pickWorkout = async (w: CustomWorkout) => {
     if (!confirmSwitch(`“${w.name}”`)) return;
-    if (await persist({ custom_workout_id: w.id, slot_variants: {} })) {
+    if (await persist({ custom_workout_id: w.id, slot_variants: {}, program_weekday: null })) {
       setPicking(false);
+      setChosenDay(null);
       toast(`💪 ${w.name} today`);
     }
   };
@@ -171,7 +186,7 @@ export function SessionLogger({ day, data }: { day: string; data: FitnessData })
 
   return (
     <Card
-      title={`${WEEKDAY[weekday]}${data.settings.day_focus[String(weekday)] ? ` · ${data.settings.day_focus[String(weekday)]}` : ''}`}
+      title={`${WEEKDAY[weekday]}${focus(programDay) ? ` · ${focus(programDay)}` : ''}${programDay !== weekday ? ` (${WEEKDAY[programDay].slice(0, 3)}’s)` : ''}`}
       aside={
         session && !showPicker ? (
           <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
@@ -204,16 +219,25 @@ export function SessionLogger({ day, data }: { day: string; data: FitnessData })
             <motion.div key="picker" initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
               <DayPicker
                 data={data}
-                weekday={weekday}
+                weekday={programDay}
+                calendarDay={weekday}
+                onDay={setChosenDay}
                 suggested={suggestion.index}
                 suggestedWhy={suggestion.reason}
-                current={session ? current : null}
+                current={session && sessionDay === programDay ? current : null}
                 disabled={saving}
                 onVariant={(i) => void pickVariant(i)}
                 onWorkout={(w) => void pickWorkout(w)}
                 onEdit={(w) => setEditing(w)}
                 onNew={() => setEditing('new')}
-                onCancel={session ? () => setPicking(false) : undefined}
+                onCancel={
+                  session
+                    ? () => {
+                        setPicking(false);
+                        setChosenDay(null);
+                      }
+                    : undefined
+                }
               />
             </motion.div>
           ) : (
@@ -255,7 +279,8 @@ export function SessionLogger({ day, data }: { day: string; data: FitnessData })
                         index={i}
                         count={plan.length}
                         item={p}
-                        groups={groupsFor(p, weekday, data, muscleMap)}
+                        groups={groupsFor(p, programDay, data, muscleMap)}
+                        programDay={programDay}
                         day={day}
                         data={data}
                         daySets={daySets}
@@ -323,11 +348,35 @@ export function SessionLogger({ day, data }: { day: string; data: FitnessData })
       <WorkoutEditor
         open={editing !== null}
         workout={editing === 'new' ? null : editing}
-        weekday={weekday}
+        weekday={programDay}
         data={data}
         onClose={() => setEditing(null)}
       />
     </Card>
+  );
+}
+
+/** Mon–Sat chips with each day's focus: train any day's program today. */
+function DayChooser({ data, value, today, onChange }: { data: FitnessData; value: number | null; today: number; onChange: (d: number) => void }) {
+  const days = [1, 2, 3, 4, 5, 6].filter((d) => variantsFor(d, data.slots).length > 0);
+  return (
+    <Box sx={{ display: 'flex', gap: 0.75, overflowX: 'auto', pb: 0.5, scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' } }} role="group" aria-label="Which day's workout">
+      {days.map((d) => {
+        const f = data.settings.day_focus[String(d)];
+        const active = d === value;
+        return (
+          <Chip
+            key={d}
+            label={`${WEEKDAY[d].slice(0, 3)}${f ? ` · ${f}` : ''}${d === today ? ' (today)' : ''}`}
+            color={active ? 'secondary' : 'default'}
+            variant={active ? 'filled' : 'outlined'}
+            onClick={() => onChange(d)}
+            aria-pressed={active}
+            sx={{ flexShrink: 0, fontWeight: active ? 700 : 500 }}
+          />
+        );
+      })}
+    </Box>
   );
 }
 
@@ -341,6 +390,8 @@ function groupsFor(p: PlanItem, weekday: number, data: FitnessData, map: Map<str
 function DayPicker({
   data,
   weekday,
+  calendarDay,
+  onDay,
   suggested,
   suggestedWhy,
   current,
@@ -352,7 +403,10 @@ function DayPicker({
   onCancel,
 }: {
   data: FitnessData;
+  /** The program day whose variants are shown. */
   weekday: number;
+  calendarDay: number;
+  onDay: (d: number) => void;
   suggested: number;
   suggestedWhy: 'next' | 'rotation';
   current: { variant_index: number; custom_workout_id: string | null } | null;
@@ -365,7 +419,7 @@ function DayPicker({
 }) {
   const slots = data.slots.filter((s) => s.weekday === weekday).sort((a, b) => a.slot - b.slot);
   const variants = variantsFor(weekday, data.slots);
-  const workouts = data.workouts.filter((w) => w.weekday === null || w.weekday === weekday);
+  const workouts = data.workouts.filter((w) => w.weekday === null || w.weekday === weekday || w.weekday === calendarDay);
   const activeVariant = current && !current.custom_workout_id ? current.variant_index : null;
   const ordered = [suggested, ...variants.filter((v) => v !== suggested)].filter((v) => variants.includes(v));
   const lastOnDay = suggestedWhy === 'next' ? 'next after last time' : 'from the rotation';
@@ -478,11 +532,14 @@ function DayPicker({
           </Button>
         )}
       </Box>
-      <SwipeRow label="Workouts for today" cardWidth="80%" desktopWidth={260}>
+      <Box sx={{ mb: 1 }}>
+        <DayChooser data={data} value={weekday} today={calendarDay} onChange={onDay} />
+      </Box>
+      <SwipeRow key={weekday} label="Workouts for today" cardWidth="80%" desktopWidth={260}>
         {cards}
       </SwipeRow>
       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-        Swipe to pick any variant. You can still swap single exercises (or their variant) on each card.
+        Pick any day’s workout above, then swipe to pick a variant. You can still swap single exercises (or their variant) on each card.
       </Typography>
     </Box>
   );
@@ -564,9 +621,9 @@ function AddExerciseCard({ data, full, onAdd }: { data: FitnessData; full: boole
 /** This week's direct sets per muscle vs the plan so far; flags what's falling behind. */
 function MuscleCoverageCard({ data, day, muscleMap }: { data: FitnessData; day: string; muscleMap: Map<string, Muscle> }) {
   const start = weekStart(day);
-  // Today only counts once it's done, so the warning doesn't fire before you start.
-  const doneToday = data.sessions.some((s) => s.day === day && s.completed);
-  const daysSoFar = [1, 2, 3, 4, 5, 6].filter((d) => (d < isoWeekday(day) || (d === isoWeekday(day) && doneToday)) && !isAway(addDays(start, d - 1), data.away));
+  // What you owe so far: each session's program (Tuesday's on a Monday counts as Tuesday's),
+  // missed past days on their own program; today only once it's done.
+  const daysSoFar = programDaysOwed(start, day, data.sessions, (d) => isAway(d, data.away));
   const weekSessions = new Map(data.sessions.filter((s) => s.day >= start && s.day <= addDays(start, 6)).map((s) => [s.id, s.day]));
   const logged = data.sets.filter((s) => weekSessions.has(s.session_id)).map((s) => ({ exercise: s.exercise, slot: s.slot, day: weekSessions.get(s.session_id) as string }));
   const coverage = weeklyCoverage(data.slots, data.settings.finishers, logged, daysSoFar, muscleMap);
@@ -619,6 +676,7 @@ function ExerciseCard({
   afterSet,
   onVariant,
   onRemove,
+  programDay,
 }: {
   index: number;
   count: number;
@@ -633,6 +691,7 @@ function ExerciseCard({
   afterSet: (index: number, item: PlanItem, setsAfter: WorkoutSetRow[], session: SessionRow, itemDone: boolean) => Promise<void>;
   onVariant?: (variant: number) => Promise<void>;
   onRemove?: () => Promise<void>;
+  programDay: number;
 }) {
   const { addSet, removeSet } = useFitness();
   const toast = useSnackbar();
@@ -649,7 +708,7 @@ function ExerciseCard({
   const checksMuscle = item.kind === 'program' || item.kind === 'custom';
   const warning = checksMuscle ? swapWarning(item.title, exercise, muscleMap) : null;
   const muscle = (exercise ? muscleOf(exercise, muscleMap) : null) ?? muscleOfCard(item.title, exercise, muscleMap);
-  const slot = item.kind === 'program' ? data.slots.find((s) => s.weekday === isoWeekday(day) && s.slot === item.slot) : undefined;
+  const slot = item.kind === 'program' ? data.slots.find((s) => s.weekday === programDay && s.slot === item.slot) : undefined;
   const slotVariants = slot ? slot.variants.map((v, i) => ({ i, first: exerciseOptions(v)[0] })).filter((v) => v.first) : [];
 
   // Re-fill the active row when the exercise or set number changes.

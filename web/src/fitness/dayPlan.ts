@@ -9,7 +9,7 @@
  */
 import type { FinisherDef, ProgramSlot } from './muscles';
 import { exerciseOptions } from './referenceImport';
-import { isCompoundSlot, isoWeekday } from './rules';
+import { addDays, isCompoundSlot, isoWeekday } from './rules';
 
 export const FINISHER_SLOT = 6;
 export const CUSTOM_SLOT_BASE = 7;
@@ -36,7 +36,12 @@ export interface DaySession {
   slot_variants: Record<string, number>;
   custom_workout_id: string | null;
   extras: CustomExercise[];
+  /** Whose program you trained (Mon = 1 … Sat = 6); null = the calendar day's own. */
+  program_weekday: number | null;
 }
+
+/** The program day a session trains: its own choice, else its calendar weekday. */
+export const programDayOf = (s: Pick<DaySession, 'day' | 'program_weekday'>): number => s.program_weekday ?? isoWeekday(s.day);
 
 export type PlanKind = 'program' | 'finisher' | 'custom' | 'extra';
 export interface PlanItem {
@@ -68,15 +73,17 @@ export function variantsFor(weekday: number, slots: ProgramSlot[]): number[] {
  */
 export function suggestVariant(
   day: string,
-  sessions: Pick<DaySession, 'day' | 'variant_index' | 'custom_workout_id'>[],
+  sessions: (Pick<DaySession, 'day' | 'variant_index' | 'custom_workout_id'> & { program_weekday?: number | null })[],
   slots: ProgramSlot[],
   rotationVariant: number,
+  /** Train another day's program (e.g. Tuesday's on a Monday). */
+  programDay: number = isoWeekday(day),
 ): { index: number; reason: 'next' | 'rotation' } {
-  const weekday = isoWeekday(day);
+  const weekday = programDay;
   const available = variantsFor(weekday, slots);
   if (available.length === 0) return { index: rotationVariant, reason: 'rotation' };
   const last = sessions
-    .filter((s) => s.day < day && !s.custom_workout_id && isoWeekday(s.day) === weekday)
+    .filter((s) => s.day < day && !s.custom_workout_id && programDayOf({ day: s.day, program_weekday: s.program_weekday ?? null }) === weekday)
     .sort((a, b) => b.day.localeCompare(a.day))[0];
   if (last) {
     const next = available.find((i) => i > last.variant_index) ?? available[0];
@@ -208,4 +215,33 @@ export function workoutFromVariant(weekday: number, variant: number, slots: Prog
     .filter((s) => s.weekday === weekday && (s.variants[variant] ?? '').trim())
     .sort((a, b) => a.slot - b.slot)
     .map((s) => ({ label: s.label, exercise: s.variants[variant], sets: s.default_sets }));
+}
+
+/**
+ * Program days you owe so far this week, for weekly muscle coverage:
+ * each session counts as the program day it trained (once it's done, or once
+ * the day is over); a past training day with no session counts as missed on
+ * its own program. Away days and your own cards don't count.
+ */
+export function programDaysOwed(
+  weekStartDay: string,
+  today: string,
+  sessions: (Pick<DaySession, 'day' | 'program_weekday' | 'custom_workout_id'> & { completed: boolean })[],
+  isAwayDay: (day: string) => boolean,
+): number[] {
+  const owed: number[] = [];
+  for (let i = 0; i < 7; i += 1) {
+    const d = addDays(weekStartDay, i);
+    if (d > today) break;
+    if (isAwayDay(d)) continue;
+    const s = sessions.find((x) => x.day === d);
+    if (s) {
+      if (s.custom_workout_id || (d === today && !s.completed)) continue;
+      const p = programDayOf(s);
+      if (p >= 1 && p <= 6) owed.push(p);
+    } else if (d < today && isoWeekday(d) <= 6) {
+      owed.push(isoWeekday(d));
+    }
+  }
+  return owed;
 }
