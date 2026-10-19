@@ -16,6 +16,7 @@ import { SetupRequired } from './pages/SetupRequired';
 import { FitnessProvider } from './fitness/FitnessContext';
 import { FitnessLayout } from './fitness/ui';
 import { FoodProvider } from './food/FoodContext';
+import { GoalsProvider } from './goals/GoalsContext';
 import { NutritionProvider } from './nutrition/NutritionContext';
 import { NutritionLayout } from './nutrition/ui';
 import { SnackbarProvider } from './layout/Snackbar';
@@ -38,6 +39,7 @@ const NutritionToday = lazy(() => import('./nutrition/TodayPage'));
 const NutritionFoods = lazy(() => import('./nutrition/FoodsPage'));
 const NutritionTrends = lazy(() => import('./nutrition/TrendsPage'));
 const NutritionData = lazy(() => import('./nutrition/DataPage'));
+const GoalsPage = lazy(() => import('./goals/GoalsPage'));
 const NutritionTargets = lazy(() => import('./nutrition/TargetsPage'));
 
 /** Tracker design system (cream, peach, rose, charcoal), dark by default. */
@@ -70,6 +72,7 @@ function SignedInApp({ client }: { client: SupabaseClient }) {
         <FoodProvider client={client}>
           <FitnessProvider client={client}>
           <NutritionProvider client={client}>
+          <GoalsProvider client={client}>
             <MotionConfig reducedMotion="user">
             <BrowserRouter>
               <Suspense fallback={<Splash />}>
@@ -101,7 +104,7 @@ function SignedInApp({ client }: { client: SupabaseClient }) {
                       path="finance"
                       element={<ModulePlaceholder module={MODULES.finance} />}
                     />
-                    <Route path="goals" element={<ModulePlaceholder module={MODULES.goals} />} />
+                    <Route path="goals" element={<GoalsPage />} />
                     <Route path="settings" element={<Settings />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Route>
@@ -109,6 +112,7 @@ function SignedInApp({ client }: { client: SupabaseClient }) {
               </Suspense>
             </BrowserRouter>
             </MotionConfig>
+          </GoalsProvider>
           </NutritionProvider>
           </FitnessProvider>
         </FoodProvider>
