@@ -10,6 +10,8 @@ import { useFitness } from '../fitness/FitnessContext';
 import { weekAdherence, weeklyAverages, weekStart } from '../fitness/rules';
 import { useFood } from '../food/FoodContext';
 import { todayKey } from '../food/foodModel';
+import { useFinance } from '../finance/FinanceContext';
+import { formatINR, monthTransactions } from '../finance/model';
 import { goalsHeadline } from '../goals/digest';
 import { GoalsDue } from '../goals/GoalsDue';
 import { useGoals } from '../goals/GoalsContext';
@@ -33,6 +35,7 @@ export default function Home() {
   const fitness = useFitness();
   const nutrition = useNutrition();
   const goals = useGoals();
+  const finance = useFinance();
   const overview = useGoalsOverview();
   const today = todayKey();
   const mealsToday = food.data.logs.filter((l) => l.log_date === today && l.kind === 'consumed').length;
@@ -56,6 +59,15 @@ export default function Home() {
       return t
         ? { chip: `${MODES[t.mode].emoji} ${MODES[t.mode].label}`, text: `Today ${eaten.kcal} / ${t.kcal} kcal · protein ${eaten.protein} / ${t.protein_min}–${t.protein_max} g` }
         : { chip: 'Set targets', text: eaten.kcal ? `Today ${eaten.kcal} kcal · protein ${eaten.protein} g` : undefined };
+    }
+    if (path === '/finance') {
+      if (finance.status === 'setup') return { chip: 'Set up', text: 'Encrypted on your devices; starts from your plan’s salary, costs and goals.' };
+      if (finance.status === 'locked') return { chip: '🔒 Locked', text: 'Unlock with your finance passphrase.' };
+      if (finance.status === 'ready' && finance.doc) {
+        const txs = monthTransactions(finance.doc, today.slice(0, 7));
+        return { chip: 'This month', text: `${formatINR(txs.reduce((a, t) => a + t.amount, 0))} spent · ${txs.length} transaction${txs.length === 1 ? '' : 's'}` };
+      }
+      return { chip: finance.status === 'error' ? 'Setup needed' : 'Loading' };
     }
     if (path === '/goals') {
       if (goals.error) return { chip: 'Setup needed' };

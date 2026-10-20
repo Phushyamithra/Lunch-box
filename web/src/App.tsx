@@ -11,11 +11,12 @@ import { SignIn } from './auth/SignIn';
 import { AppShell } from './layout/AppShell';
 import { supabase } from './lib/supabase';
 import Home from './pages/Home';
-import { MODULES, ModulePlaceholder } from './pages/ModulePlaceholder';
 import { SetupRequired } from './pages/SetupRequired';
 import { FitnessProvider } from './fitness/FitnessContext';
 import { FitnessLayout } from './fitness/ui';
 import { FoodProvider } from './food/FoodContext';
+import { FinanceProvider } from './finance/FinanceContext';
+import { FinanceLayout } from './finance/ui';
 import { GoalsProvider } from './goals/GoalsContext';
 import { GoalsLayout } from './goals/ui';
 import { NutritionProvider } from './nutrition/NutritionContext';
@@ -42,6 +43,9 @@ const NutritionTrends = lazy(() => import('./nutrition/TrendsPage'));
 const NutritionData = lazy(() => import('./nutrition/DataPage'));
 const GoalsPage = lazy(() => import('./goals/GoalsPage'));
 const GoalsTimeline = lazy(() => import('./goals/TimelinePage'));
+const FinanceToday = lazy(() => import('./finance/TodayPage'));
+const FinanceTransactions = lazy(() => import('./finance/TransactionsPage'));
+const FinanceSettingsPage = lazy(() => import('./finance/SettingsPage'));
 const NutritionTargets = lazy(() => import('./nutrition/TargetsPage'));
 
 /** Tracker design system (cream, peach, rose, charcoal), dark by default. */
@@ -66,7 +70,7 @@ function Splash() {
   );
 }
 
-function SignedInApp({ client }: { client: SupabaseClient }) {
+function SignedInApp({ client, userId }: { client: SupabaseClient; userId: string }) {
   const { settings } = useSettings();
   return (
     <Themed mode={settings.themeMode}>
@@ -75,6 +79,7 @@ function SignedInApp({ client }: { client: SupabaseClient }) {
           <FitnessProvider client={client}>
           <NutritionProvider client={client}>
           <GoalsProvider client={client}>
+          <FinanceProvider client={client} userId={userId}>
             <MotionConfig reducedMotion="user">
             <BrowserRouter>
               <Suspense fallback={<Splash />}>
@@ -102,10 +107,11 @@ function SignedInApp({ client }: { client: SupabaseClient }) {
                       <Route path="review" element={<FitnessReview />} />
                       <Route path="settings" element={<FitnessSettings />} />
                     </Route>
-                    <Route
-                      path="finance"
-                      element={<ModulePlaceholder module={MODULES.finance} />}
-                    />
+                    <Route path="finance" element={<FinanceLayout />}>
+                      <Route index element={<FinanceToday />} />
+                      <Route path="transactions" element={<FinanceTransactions />} />
+                      <Route path="settings" element={<FinanceSettingsPage />} />
+                    </Route>
                     <Route path="goals" element={<GoalsLayout />}>
                       <Route index element={<GoalsPage />} />
                       <Route path="timeline" element={<GoalsTimeline />} />
@@ -117,6 +123,7 @@ function SignedInApp({ client }: { client: SupabaseClient }) {
               </Suspense>
             </BrowserRouter>
             </MotionConfig>
+          </FinanceProvider>
           </GoalsProvider>
           </NutritionProvider>
           </FitnessProvider>
@@ -145,7 +152,7 @@ function AuthGate({ client }: { client: SupabaseClient }) {
   return (
     // Keyed by user so signing in as someone else never reuses state.
     <SettingsProvider key={session.user.id} client={client} userId={session.user.id}>
-      <SignedInApp client={client} />
+      <SignedInApp client={client} userId={session.user.id} />
     </SettingsProvider>
   );
 }
