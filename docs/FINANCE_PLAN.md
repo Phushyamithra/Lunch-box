@@ -105,13 +105,26 @@ module"), plus the decisions in `PLATFORM_PLAN.md`.
      afterwards.
    - The passkey is tied to the site address, so on a new address
      (production) you turn it on again.
-2. **Month engine and dashboard:**
-   - salary timing, fixed and periodic costs;
-   - budgets with rollover;
-   - card cycles, settlements and utilisation warnings at 80% and over
-     the limit;
-   - the savings waterfall;
-   - the monthly dashboard and card tracking.
+2. **Done — Month engine and dashboard** (`engine.ts`, tested against the
+   brief's numbers):
+   - **Plan:** October saves ₹7,830, November ₹11,000 and December
+     −₹6,750 (gym); from September 2027 (gold ended) ₹21,000.
+   - **Committed costs:** counted as paid even if not logged; when logged,
+     the larger of planned and logged counts (no double counting).
+   - **Budgets:** count what you logged, and what's left stays saved.
+     Everyday spending is planned at the card cap.
+   - **Two numbers:** "left in budgets" (keeps savings on plan) is kept
+     apart from "uncommitted cash" (which includes planned savings).
+   - **Cards:**
+     - cycles run statement to statement, with the bill due on the next
+       due day and counted as paid after it;
+     - utilisation shows a warning at 80% and a red flag over the limit;
+     - the combined cap is tracked per calendar month;
+     - a purchase and its bill are never two expenses.
+   - **Waterfall:** actual savings = saved before + finished months, poured
+     in order. Completion months are estimates from the plan, labelled.
+   - **Screens:** Today (left in budgets, expected savings), Month,
+     Cards, Savings.
 3. **Projections and reconciliation:**
    - month-by-month until the last goal, with actual and projected values
      clearly separated;

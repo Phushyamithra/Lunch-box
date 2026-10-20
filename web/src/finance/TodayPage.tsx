@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Metric } from '../fitness/ui';
+import { monthSummary } from './engine';
 import { useFinance } from './FinanceContext';
 import { formatINR, monthTransactions, type Transaction } from './model';
 import { EditTransactionDialog, QuickAdd, TransactionRow } from './TransactionForm';
@@ -27,6 +28,7 @@ export default function FinanceToday() {
   const total = txs.reduce((a, t) => a + t.amount, 0);
   const byCategory = [...txs.reduce((m, t) => m.set(t.category, (m.get(t.category) ?? 0) + t.amount), new Map<string, number>())].sort((a, b) => b[1] - a[1]);
   const gaps = setupGaps(doc.settings);
+  const summary = monthSummary(doc, month, dayjs().format('YYYY-MM-DD'));
 
   return (
     <Stack spacing={2} sx={{ maxWidth: 860 }}>
@@ -38,11 +40,14 @@ export default function FinanceToday() {
       <Card title="➕ Quick add">
         <QuickAdd />
       </Card>
-      <Card title={`📅 ${dayjs().format('MMMM')} so far`}>
+      <Card title={`📅 ${dayjs().format('MMMM')} so far`} aside={<Button size="small" onClick={() => navigate('/finance/month')}>Month</Button>}>
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: byCategory.length ? 2 : 0 }}>
-          <Metric value={formatINR(total)} caption="spent this month" />
-          <Metric value={String(txs.length)} caption={txs.length === 1 ? 'transaction' : 'transactions'} />
+          <Metric value={formatINR(summary.leftInBudgets)} caption="left in budgets this month" />
+          <Metric value={formatINR(summary.savings)} caption="expected to save" />
         </Box>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: byCategory.length ? 1 : 0 }}>
+          Logged {formatINR(total)} in {txs.length} transaction{txs.length === 1 ? '' : 's'}.
+        </Typography>
         {byCategory.length > 0 && (
           <Stack spacing={0.5}>
             {byCategory.map(([c, v]) => (

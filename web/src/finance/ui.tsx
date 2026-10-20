@@ -32,6 +32,9 @@ import { passphraseProblem, WrongPassphraseError } from './vault';
 
 const TABS = [
   { path: '/finance', label: 'Today' },
+  { path: '/finance/month', label: 'Month' },
+  { path: '/finance/cards', label: 'Cards' },
+  { path: '/finance/savings', label: 'Savings' },
   { path: '/finance/transactions', label: 'Transactions' },
   { path: '/finance/settings', label: 'Settings' },
 ];
