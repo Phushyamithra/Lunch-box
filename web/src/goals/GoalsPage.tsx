@@ -24,11 +24,8 @@ import {
 import dayjs from 'dayjs';
 import { motion } from 'framer-motion';
 import { useMemo, useState } from 'react';
-import { useFitness } from '../fitness/FitnessContext';
 import { Card } from '../fitness/ui';
-import { useFood } from '../food/FoodContext';
 import { useSnackbar } from '../layout/Snackbar';
-import { useNutrition } from '../nutrition/NutritionContext';
 import {
   CADENCE_LABEL,
   cycleStart,
@@ -46,8 +43,8 @@ import {
   type GoalSummary,
 } from './engine';
 import { useGoals } from './GoalsContext';
+import { useGoalContext } from './hooks';
 
-const KEY = 'YYYY-MM-DD';
 const MODULE_LABEL = { fitness: '🏋️ Fitness', nutrition: '🍛 Nutrition', meal_prep: '🚚 Meal prep', any: '✍️ Anything' } as const;
 const STATUS: Record<CycleStatus, { label: string; color: string; outline?: boolean }> = {
   met: { label: 'met', color: 'success.main' },
@@ -58,27 +55,7 @@ const STATUS: Record<CycleStatus, { label: string; color: string; outline?: bool
   no_data: { label: 'no data (not counted)', color: 'text.disabled', outline: true },
 };
 
-/** Everything a goal can be measured against, from the other modules. */
-export function useGoalContext(): GoalContext | null {
-  const { data: fitness } = useFitness();
-  const { data: nutrition } = useNutrition();
-  const food = useFood();
-  const { data } = useGoals();
-  const today = dayjs().format(KEY);
-  return useMemo(
-    () =>
-      data
-        ? {
-            today,
-            fitness,
-            nutrition,
-            mealPrepDays: food.error ? null : food.data.logs.filter((l) => !l.deleted_at && l.kind === 'consumed').map((l) => l.log_date),
-            checkins: data.checkins,
-          }
-        : null,
-    [data, fitness, nutrition, food.data.logs, food.error, today],
-  );
-}
+
 
 const periodName = (cadence: Cadence, start: string, today: string) => {
   if (cadence === 'daily') return start === today ? 'today' : dayjs(start).format('D MMM');

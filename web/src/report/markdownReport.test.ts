@@ -3,6 +3,7 @@ import type { FitnessData } from '../fitness/fitnessApi';
 import { LEAN_BULK_PRESET } from '../nutrition/engine';
 import type { Entry } from '../nutrition/foodLog';
 import type { NutritionData } from '../nutrition/nutritionApi';
+import { summariseGoal } from '../goals/engine';
 import { buildMarkdownReport, reportFileName } from './markdownReport';
 
 const settings = {
@@ -98,8 +99,17 @@ const nutrition: NutritionData = {
   entries: [entry('2026-10-12', 'Dal rice + 3 eggs', 2400, 145), entry('2026-10-13', 'Poha', 300, 6, 'breakfast')],
 };
 
-const report = (sections = { food: true, measurements: true, workouts: true }) =>
-  buildMarkdownReport({ fitness, nutrition, from: '2026-10-12', to: '2026-10-18', today: '2026-10-19', sections, now: new Date('2026-10-19T12:00:00Z') });
+const goalsInput = {
+  summaries: [
+    summariseGoal(
+      { id: 'g', title: 'Train 1 day a week', emoji: '🏋️', metric: 'fitness.sessions', params: {}, cadence: 'weekly', versions: [{ from: '2026-10-05', target: 1 }], starts_on: '2026-10-05', ends_on: null, sort_order: 0, archived_at: null, created_at: '' },
+      { today: '2026-10-19', fitness, nutrition, mealPrepDays: null, checkins: [] },
+    ),
+  ],
+  timeline: [{ key: 'm', date: '2027-06-17', approx: true, title: 'End of the bulk', emoji: '🏁', detail: null, kind: 'checkpoint' as const, status: 'upcoming' as const }],
+};
+const report = (sections = { food: true, measurements: true, workouts: true, goals: true }) =>
+  buildMarkdownReport({ fitness, nutrition, from: '2026-10-12', to: '2026-10-18', today: '2026-10-19', sections, now: new Date('2026-10-19T12:00:00Z'), goals: goalsInput });
 
 describe('markdown report', () => {
   const md = report();
@@ -144,11 +154,18 @@ describe('markdown report', () => {
   });
 
   it('leaves out sections you untick', () => {
-    const only = report({ food: false, measurements: true, workouts: false });
+    const only = report({ food: false, measurements: true, workouts: false, goals: false });
+    expect(only).not.toContain('PART 5 — GOALS');
     expect(only).not.toContain('PART 1 — EATING');
     expect(only).not.toContain('PART 2 — TRAINING');
     expect(only).toContain('PART 3 — MEASUREMENTS');
     expect(only).not.toContain('NUTRITION (fully logged days)');
+  });
+
+  it('adds goals: cycles in the period, streaks and what is coming', () => {
+    expect(md).toContain('# PART 5 — GOALS');
+    expect(md).toContain('| Train 1 day a week | Weekly | 1 sessions | 1 met · 0 missed | 2 | 2 |');
+    expect(md).toContain('- ~Jun 2027 — 🏁 End of the bulk');
   });
 
   it('names the file by range', () => {

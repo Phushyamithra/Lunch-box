@@ -14,11 +14,14 @@ import { MEALS, type Entry } from '../nutrition/foodLog';
 import { activeTarget, type NutritionData } from '../nutrition/nutritionApi';
 import { MODES } from '../nutrition/engine';
 import { periodStats, summariseDays, type DaySummary } from '../nutrition/trends';
+import { CADENCE_LABEL, type GoalSummary } from '../goals/engine';
+import type { TimelineItem } from '../goals/timeline';
 
 export interface ReportSections {
   food: boolean;
   measurements: boolean;
   workouts: boolean;
+  goals: boolean;
 }
 
 export interface ReportInput {
@@ -29,6 +32,8 @@ export interface ReportInput {
   today: string;
   sections: ReportSections;
   now: Date;
+  /** Goals and timeline (left out when Goals isn't set up). */
+  goals?: { summaries: GoalSummary[]; timeline: TimelineItem[] } | null;
 }
 
 const WEEKDAY = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -333,7 +338,44 @@ export function buildMarkdownReport(input: ReportInput): string {
   push('## Monthly', '');
   for (let m = dayjs(from).startOf('month'); m.format('YYYY-MM-DD') <= to; m = m.add(1, 'month')) push(monthlyBlock(input, m.format('YYYY-MM-DD'), allWeeks, baseline ? Number(baseline.weight_kg) : null, baseline?.day ?? null), '');
 
+  if (sections.goals && input.goals) push('---', '', goalsSection(input.goals, from, to, today));
+
   return out.join('\n').replace(/\n{3,}/g, '\n\n') + '\n';
+}
+
+/** Goals in the period: cycles met or missed, streaks, and the timeline around it. */
+function goalsSection(g: { summaries: GoalSummary[]; timeline: TimelineItem[] }, from: string, to: string, today: string): string {
+  const lines: string[] = ['# PART 5 — GOALS', ''];
+  const live = g.summaries.filter((s) => !s.goal.archived_at && s.metric);
+  if (!live.length) return [...lines, '*No goals set.*', ''].join('\n');
+  const rows = live.map((s) => {
+    const unit = s.metric?.unit ?? '';
+    const target = s.goal.versions[s.goal.versions.length - 1].target;
+    if (s.goal.cadence === 'one_off') {
+      return [s.goal.title, 'One-off', `${n1(target)} ${unit}`.trim(), s.achievedOn ? `reached ${d(s.achievedOn)}` : s.progress === null ? 'no data yet' : `at ${n1(s.progress)} ${unit}`.trim(), '', ''];
+    }
+    const inRange = s.cycles.filter((c) => c.end >= from && c.start <= to);
+    const met = inRange.filter((c) => c.status === 'met').length;
+    const missed = inRange.filter((c) => c.status === 'missed').length;
+    const neutral = inRange.filter((c) => ['away', 'partial', 'no_data'].includes(c.status)).length;
+    const fixed = s.metric?.fixedTarget !== undefined;
+    return [
+      s.goal.title,
+      CADENCE_LABEL[s.goal.cadence],
+      fixed ? 'yes' : `${n1(target)} ${unit}`.trim(),
+      `${met} met · ${missed} missed${neutral ? ` · ${neutral} not counted` : ''}${inRange.some((c) => c.status === 'in_progress') ? ' · 1 in progress' : ''}`,
+      String(s.streak),
+      String(s.best),
+    ];
+  });
+  lines.push(table(['Goal', 'How often', 'Target', 'In this period', 'Current streak', 'Best run'], rows), '');
+  lines.push('*Not counted = away, started mid-cycle, or no data (e.g. steps not entered). Targets shown are current; earlier cycles keep the target they had.*', '');
+  const events = g.timeline.filter((i) => i.date >= from && i.date <= to);
+  lines.push('## Timeline in this period', '');
+  lines.push(events.length ? events.map((i) => `- ${dShort(i.date)} — ${i.emoji} ${cell(i.title)}${i.status === 'past' ? ' (not marked done)' : ''}${i.detail ? `: ${cell(i.detail)}` : ''}`).join('\n') : '*Nothing dated in this period.*', '');
+  const ahead = g.timeline.filter((i) => i.date > (to < today ? to : today) && i.status !== 'done').slice(0, 5);
+  if (ahead.length) lines.push('## Coming up', '', ahead.map((i) => `- ${i.approx ? `~${dayjs(i.date).format('MMM YYYY')}` : d(i.date)} — ${i.emoji} ${cell(i.title)}`).join('\n'), '');
+  return lines.join('\n');
 }
 
 function weeklyBlock(input: ReportInput, ws: string, allWeeks: WeekAverage[], days: DaySummary[]): string {

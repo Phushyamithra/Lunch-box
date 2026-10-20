@@ -10,6 +10,10 @@ import { useFitness } from '../fitness/FitnessContext';
 import { weekAdherence, weeklyAverages, weekStart } from '../fitness/rules';
 import { useFood } from '../food/FoodContext';
 import { todayKey } from '../food/foodModel';
+import { goalsHeadline } from '../goals/digest';
+import { GoalsDue } from '../goals/GoalsDue';
+import { useGoals } from '../goals/GoalsContext';
+import { useGoalsOverview } from '../goals/hooks';
 import { GlassIcon } from '../layout/GlassIcon';
 import { NAV_ITEMS } from '../layout/navItems';
 import { MODULES } from './ModulePlaceholder';
@@ -28,6 +32,8 @@ export default function Home() {
   const food = useFood();
   const fitness = useFitness();
   const nutrition = useNutrition();
+  const goals = useGoals();
+  const overview = useGoalsOverview();
   const today = todayKey();
   const mealsToday = food.data.logs.filter((l) => l.log_date === today && l.kind === 'consumed').length;
   /** Live status for modules that exist; the rest are not built yet. */
@@ -51,6 +57,12 @@ export default function Home() {
         ? { chip: `${MODES[t.mode].emoji} ${MODES[t.mode].label}`, text: `Today ${eaten.kcal} / ${t.kcal} kcal · protein ${eaten.protein} / ${t.protein_min}–${t.protein_max} g` }
         : { chip: 'Set targets', text: eaten.kcal ? `Today ${eaten.kcal} kcal · protein ${eaten.protein} g` : undefined };
     }
+    if (path === '/goals') {
+      if (goals.error) return { chip: 'Setup needed' };
+      if (!overview) return { chip: 'Loading' };
+      const h = goalsHeadline(overview.summaries, overview.timeline, today);
+      return h ?? { chip: 'No goals yet', text: 'Start from your plan: training, weigh-ins, food logging and more.' };
+    }
     return { chip: 'Not set up' };
   };
   return (
@@ -58,6 +70,9 @@ export default function Home() {
       <Typography color="text.secondary" sx={{ mb: 2 }}>
         Summaries from each module appear here as they are built.
       </Typography>
+      <Box sx={{ mb: 2, '&:empty': { display: 'none' } }}>
+        <GoalsDue />
+      </Box>
       <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' } }}>
         {CARDS.map(({ path, module, metric }) => (
           <Paper

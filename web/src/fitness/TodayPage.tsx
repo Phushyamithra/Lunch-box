@@ -31,6 +31,7 @@ import {
 import { NumberStepper } from './NumberStepper';
 import { useNutrition } from '../nutrition/NutritionContext';
 import { activeTarget } from '../nutrition/nutritionApi';
+import { GoalsDue } from '../goals/GoalsDue';
 import { DueToday } from './RemindersUi';
 import { SessionLogger } from './SessionLogger';
 import { Card, kg } from './ui';
@@ -74,6 +75,7 @@ export default function TodayPage() {
         </Alert>
       )}
       {day === today && <DueToday data={data} today={today} />}
+      {day === today && <GoalsDue />}
       <WeightCard key={`w-${day}`} day={day} data={data} />
       <SessionLogger key={`t-${day}`} day={day} data={data} />
       <DietCard key={`d-${day}`} day={day} data={data} />

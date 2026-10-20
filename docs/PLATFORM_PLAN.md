@@ -106,12 +106,12 @@ Living record of the audit, the decisions taken, and phase status.
   → 5 restaurants → 6 trends and adjustments → 7 import/export.
   Food is renamed **Meal prep** (tracks the meal-prep deliveries) and moves
   to the end of the nav.
-- [ ] **Phase 5 — Goals.** Shared milestones across Fitness, Nutrition and
+- [x] **Phase 5 — Goals.** Shared milestones across Fitness, Nutrition and
   Meal prep (daily / weekly / monthly / one-off, cycle history, timeline;
   extension achievements carried over). Comes before Finance so goals can
   use the fitness and nutrition data already in place.
-  See `docs/GOALS_PLAN.md`. Stages 1 (engine, `0014_goals.sql`, Goals page)
-  and 2 (timeline) are done; integrations are next.
+  See `docs/GOALS_PLAN.md`. Stages 1 (engine, `0014_goals.sql`, Goals page), 2 (timeline) and
+  3 (Home, due list, report) are done.
 - [ ] **Phase 6 — Finance** (encrypted sync, phone primary).
 - [ ] **Phase 7 — Home dashboard, polish, PWA install/offline.**
 

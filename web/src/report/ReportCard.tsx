@@ -5,6 +5,7 @@ import { useFitness } from '../fitness/FitnessContext';
 import { Card } from '../fitness/ui';
 import { useSnackbar } from '../layout/Snackbar';
 import { useNutrition } from '../nutrition/NutritionContext';
+import { useGoalsOverview } from '../goals/hooks';
 import { buildMarkdownReport, reportFileName, type ReportSections } from './markdownReport';
 
 const KEY = 'YYYY-MM-DD';
@@ -48,12 +49,13 @@ export function ReportCard() {
   const today = dayjs().format(KEY);
   const [period, setPeriod] = useState<Period>('last_week');
   const [custom, setCustom] = useState({ from: dayjs().subtract(13, 'day').format(KEY), to: today });
-  const [sections, setSections] = useState<ReportSections>({ food: true, measurements: true, workouts: true });
+  const [sections, setSections] = useState<ReportSections>({ food: true, measurements: true, workouts: true, goals: true });
+  const goals = useGoalsOverview();
   if (!fitness) return null;
 
   const range = rangeFor(period, today, fitness.settings.phase_start, custom);
   const invalid = !range.from || !range.to || range.from > range.to || dayjs(range.to).diff(range.from, 'day') > 400;
-  const make = () => buildMarkdownReport({ fitness, nutrition, ...range, today, sections, now: new Date() });
+  const make = () => buildMarkdownReport({ fitness, nutrition, ...range, today, sections, now: new Date(), goals: goals ? { summaries: goals.summaries, timeline: goals.timeline } : null });
   const name = reportFileName(range.from, range.to);
 
   const download = () => {
@@ -111,6 +113,7 @@ export function ReportCard() {
               ['food', 'Food'],
               ['measurements', 'Measurements'],
               ['workouts', 'Workouts'],
+              ['goals', 'Goals'],
             ] as const
           ).map(([k, label]) => (
             <FormControlLabel key={k} control={<Checkbox size="small" checked={sections[k]} onChange={(e) => setSections((s) => ({ ...s, [k]: e.target.checked }))} />} label={label} />

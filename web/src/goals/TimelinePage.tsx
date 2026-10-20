@@ -23,7 +23,7 @@ import { useFood } from '../food/FoodContext';
 import { useSnackbar } from '../layout/Snackbar';
 import { summariseGoal } from './engine';
 import { useGoals } from './GoalsContext';
-import { useGoalContext } from './GoalsPage';
+import { useGoalContext } from './hooks';
 import { buildTimeline, phaseCheckpoints, splitTimeline, validateMilestone, type ItemKind, type ItemStatus, type Milestone, type MilestoneInput, type TimelineItem } from './timeline';
 
 type Filter = 'all' | 'plan' | 'wins';

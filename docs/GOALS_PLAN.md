@@ -67,7 +67,17 @@
    - extension achievements carried over;
    - one-off goals reached;
    - best streaks.
-3. **Integration:**
-   - goals on Home and in Today's "due" list;
-   - a goals section in the Markdown report;
-   - goals in the nutrition backup.
+3. **Done — Integration** (`goals/digest.ts`, tested):
+   - **Home:** the Goals card shows goals met this cycle, the best live
+     streak and the next dated item. A "Goals" strip (also on Fitness →
+     Today) lists:
+     - check-ins near the end of their cycle (tap to tick);
+     - checkpoints due today or passed in the last 14 days (tap to mark
+       done);
+     - counted goals that can no longer be met this cycle.
+   - **Markdown report:** a new Part 5 — Goals covers the cycles met or
+     missed in the period, streaks, the timeline in the period and what's
+     coming. It's a fifth checkbox.
+   - **Backup:** goals aren't in the nutrition backup, which stays
+     nutrition-only. A goals backup can come with the Phase 7 app-wide
+     backup.
