@@ -35,6 +35,8 @@ const TABS = [
   { path: '/finance/month', label: 'Month' },
   { path: '/finance/cards', label: 'Cards' },
   { path: '/finance/savings', label: 'Savings' },
+  { path: '/finance/plan', label: 'Plan' },
+  { path: '/finance/bank', label: 'Bank' },
   { path: '/finance/transactions', label: 'Transactions' },
   { path: '/finance/settings', label: 'Settings' },
 ];

@@ -125,11 +125,29 @@ module"), plus the decisions in `PLATFORM_PLAN.md`.
      in order. Completion months are estimates from the plan, labelled.
    - **Screens:** Today (left in budgets, expected savings), Month,
      Cards, Savings.
-3. **Projections and reconciliation:**
-   - month-by-month until the last goal, with actual and projected values
-     clearly separated;
-   - charts;
-   - bank-balance check with discrepancies flagged.
+3. **Done — Projections and reconciliation** (`projection.ts`, tested):
+   - **Plan tab:** month by month from tracking start until every goal is
+     full (10 years at most).
+     - Each row is labelled Actual, This month (part estimate) or
+       Estimate, and shows insurance, gym and the gold scheme's last month.
+     - Each goal's completion month is marked.
+     - A chart shows the running total (solid = actual, dashed =
+       estimate), monthly bars (faded = estimate, red = dips) and dotted
+       lines where each goal fills. A "by goal" view stacks the waterfall.
+     - Pending obligations (committed costs not yet paid plus card bills
+       owed) are shown as already counted, not extra.
+   - **Bank tab:** what the bank should hold today:
+     - opening balance (on the 1st of the start month) + salaries − logged
+       UPI and debit − card bills on their due dates − earlier months'
+       committed costs that weren't logged (assumed paid). Each assumption
+       is starred.
+     - This month's unlogged committed costs are shown as pending, with
+       both figures.
+     - "What it's for" splits the balance into savings, cards owed,
+       committed and free, so nothing is counted twice.
+     - Balance checks you enter are judged as matching (within ₹500),
+       explained (lower by no more than the pending costs) or "check this",
+       with likely causes.
 4. **Affordability and what-if:** test a purchase, or change salary, card
    cap, SIP, rent or the gold end date. Nothing changes until you apply it.
 5. **Vouchers and one-off events:**

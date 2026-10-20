@@ -343,7 +343,7 @@ export default function FinanceSettingsPage() {
       <Card title="📍 Starting point">
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
           <TextField type="month" label="Tracking starts" value={form.startMonth} onChange={(e) => set({ startMonth: e.target.value })} InputLabelProps={{ shrink: true }} />
-          <AmountField label="Bank balance at the start" value={form.openingBalance} onChange={(v) => set({ openingBalance: v })} helperText="From your banking app; used to check balances later." />
+          <AmountField label="Bank balance at the start" value={form.openingBalance} onChange={(v) => set({ openingBalance: v })} helperText="What the bank held on the 1st of the start month (after the previous salary landed). Used for Finance → Bank." />
         </Stack>
       </Card>
 
