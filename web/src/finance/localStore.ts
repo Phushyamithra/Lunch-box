@@ -4,6 +4,7 @@
  * store; values are structured-cloned, so a CryptoKey can be kept without
  * its bytes ever being readable.
  */
+import type { BioRecord } from './biometric';
 import type { FinanceDoc } from './model';
 import type { KdfParams, Sealed } from './vault';
 
@@ -59,6 +60,7 @@ export const saveKey = (userId: string, key: CryptoKey) => run<void>('readwrite'
 export const forgetKey = (userId: string) => run<void>('readwrite', (s) => s.delete(keyKey(userId)));
 /** Removes this device's copy (the encrypted cloud copy stays). */
 export const forgetLocal = async (userId: string) => {
+  await run<void>('readwrite', (s) => s.delete(`bio:${userId}`));
   await run<void>('readwrite', (s) => s.delete(docKey(userId)));
   await forgetKey(userId);
 };
@@ -79,3 +81,8 @@ export function deviceLabel(): string {
     return 'Device';
   }
 }
+
+const bioKey = (userId: string) => `bio:${userId}`;
+export const loadBio = (userId: string) => run<BioRecord | undefined>('readonly', (s) => s.get(bioKey(userId)));
+export const saveBio = (userId: string, rec: BioRecord) => run<void>('readwrite', (s) => s.put(rec, bioKey(userId)));
+export const forgetBio = (userId: string) => run<void>('readwrite', (s) => s.delete(bioKey(userId)));

@@ -92,6 +92,19 @@ module"), plus the decisions in `PLATFORM_PLAN.md`.
      - a second device unlocks and downloads;
      - a simultaneous save from another device is merged, with no entry
        lost.
+1b. **Done — Fingerprint lock (Finance only; Settings → Security):** a
+   passkey through WebAuthn.
+   - **PRF mode** (Chrome on Android with a Google Password Manager
+     passkey): the finance key on the phone is encrypted with a secret the
+     passkey releases only after your fingerprint (HKDF → AES-GCM wrap).
+   - **Gate mode** (devices without PRF): a fingerprint check guards the
+     stored, non-extractable key.
+   - Finance locks again after 5 minutes in the background, and the
+     passphrase always works as a fallback.
+   - Changing the passphrase switches PRF mode off; turn it on again
+     afterwards.
+   - The passkey is tied to the site address, so on a new address
+     (production) you turn it on again.
 2. **Month engine and dashboard:**
    - salary timing, fixed and periodic costs;
    - budgets with rollover;

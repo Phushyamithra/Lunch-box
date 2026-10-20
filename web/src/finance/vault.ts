@@ -108,3 +108,17 @@ export function mergeDocs(local: FinanceDoc, remote: FinanceDoc): FinanceDoc {
     balances: mergeRecords(local.balances, remote.balances).sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id)),
   };
 }
+
+/**
+ * The same key as `deriveKey`, as raw bytes, so it can be wrapped for
+ * fingerprint unlock. (PBKDF2 → 256 bits is exactly what deriveKey uses.)
+ */
+export async function deriveRawKey(passphrase: string, kdf: KdfParams): Promise<Uint8Array<ArrayBuffer>> {
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(passphrase.normalize('NFC')), 'PBKDF2', false, ['deriveBits']);
+  return new Uint8Array(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: kdf.hash, iterations: kdf.iterations, salt: unb64(kdf.salt) }, base, 256));
+}
+
+/** Raw bytes → the usable, non-extractable vault key. */
+export const importVaultKey = (raw: Uint8Array<ArrayBuffer>) => crypto.subtle.importKey('raw', raw, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+
+export { b64 as toBase64, unb64 as fromBase64 };

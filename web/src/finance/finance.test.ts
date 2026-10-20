@@ -133,3 +133,26 @@ describe('merging two devices', () => {
     expect(mergeDocs(phone, base()).settings.salary).toBe(rupees(65000));
   });
 });
+
+describe('fingerprint key wrapping', () => {
+  const kdf = newKdfParams(1000);
+  it('the raw key is the same key the passphrase derives', async () => {
+    const { deriveRawKey, importVaultKey } = await import('./vault');
+    const doc = emptyDoc('2026-10-20');
+    const sealed = await seal(doc, await deriveKey('correct horse battery', kdf), kdf);
+    const fromRaw = await importVaultKey(await deriveRawKey('correct horse battery', kdf));
+    expect(await open(sealed, fromRaw)).toEqual(doc);
+  });
+  it('wraps with the fingerprint secret; another secret cannot unwrap', async () => {
+    const { deriveRawKey } = await import('./vault');
+    const { unwrapVaultKey, wrapVaultKey } = await import('./biometric');
+    const raw = await deriveRawKey('correct horse battery', kdf);
+    const secret = crypto.getRandomValues(new Uint8Array(32));
+    const wrapped = await wrapVaultKey(raw, secret);
+    expect(wrapped.data).not.toContain(btoa(String.fromCharCode(...raw)).slice(0, 12));
+    const doc = emptyDoc('2026-10-20');
+    const sealed = await seal(doc, await deriveKey('correct horse battery', kdf), kdf);
+    expect(await open(sealed, await unwrapVaultKey(wrapped, secret))).toEqual(doc);
+    await expect(unwrapVaultKey(wrapped, crypto.getRandomValues(new Uint8Array(32)))).rejects.toThrow(/didn’t match/);
+  });
+});

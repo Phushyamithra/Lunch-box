@@ -2,6 +2,7 @@ import CloudDoneRoundedIcon from '@mui/icons-material/CloudDoneRounded';
 import CloudOffRoundedIcon from '@mui/icons-material/CloudOffRounded';
 import CloudSyncRoundedIcon from '@mui/icons-material/CloudSyncRounded';
 import ErrorOutlineRoundedIcon from '@mui/icons-material/ErrorOutlineRounded';
+import FingerprintRoundedIcon from '@mui/icons-material/FingerprintRounded';
 import LockRoundedIcon from '@mui/icons-material/LockRounded';
 import {
   Alert,
@@ -22,8 +23,9 @@ import {
 } from '@mui/material';
 import dayjs from 'dayjs';
 import { motion } from 'framer-motion';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { fingerprintError } from './biometric';
 import { useFinance } from './FinanceContext';
 import { parseINR, toRupees, type Paise } from './model';
 import { passphraseProblem, WrongPassphraseError } from './vault';
@@ -156,11 +158,31 @@ function SetupScreen() {
 }
 
 function UnlockScreen() {
-  const { unlock } = useFinance();
+  const { unlock, fingerprint, unlockWithFingerprint } = useFinance();
   const [p, setP] = useState('');
   const [remember, setRemember] = useState(true);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [usePass, setUsePass] = useState(!fingerprint.mode);
+  const tried = useRef(false);
+  const touch = async () => {
+    setBusy(true);
+    setErr(null);
+    try {
+      await unlockWithFingerprint();
+    } catch (e) {
+      setErr(fingerprintError(e));
+      setBusy(false);
+    }
+  };
+  // Ask for the fingerprint straight away once; if the phone wants a tap first, the button is there.
+  useEffect(() => {
+    if (fingerprint.mode && !tried.current) {
+      tried.current = true;
+      void touch();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fingerprint.mode]);
   const go = async () => {
     setBusy(true);
     setErr(null);
@@ -179,17 +201,43 @@ function UnlockScreen() {
           Finance is locked
         </Typography>
       </Stack>
+      {fingerprint.mode && !usePass ? (
+        <Stack spacing={2} alignItems="center" sx={{ py: 1 }}>
+          <Button
+            variant="contained"
+            size="large"
+            onClick={() => void touch()}
+            disabled={busy}
+            startIcon={<FingerprintRoundedIcon sx={{ fontSize: '32px !important' }} />}
+            sx={{ py: 1.5, px: 3, borderRadius: 999 }}
+          >
+            {busy ? 'Waiting for fingerprint…' : 'Unlock with fingerprint'}
+          </Button>
+          {err && <Alert severity="warning" sx={{ width: '100%' }}>{err}</Alert>}
+          <Button size="small" onClick={() => (setUsePass(true), setErr(null))}>
+            Use passphrase instead
+          </Button>
+        </Stack>
+      ) : (
+      <>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Enter your finance passphrase to decrypt your data on this device.
       </Typography>
       <Stack spacing={2} component="form" onSubmit={(e) => (e.preventDefault(), void go())}>
         <TextField label="Passphrase" type="password" value={p} onChange={(e) => setP(e.target.value)} autoComplete="current-password" autoFocus />
-        <FormControlLabel control={<Checkbox checked={remember} onChange={(e) => setRemember(e.target.checked)} />} label="Remember on this device" />
+        {!fingerprint.mode && <FormControlLabel control={<Checkbox checked={remember} onChange={(e) => setRemember(e.target.checked)} />} label="Remember on this device" />}
         {err && <Alert severity="error">{err}</Alert>}
         <Button type="submit" variant="contained" size="large" disabled={!p || busy}>
           {busy ? 'Unlocking…' : 'Unlock'}
         </Button>
+        {fingerprint.mode && (
+          <Button size="small" startIcon={<FingerprintRoundedIcon />} onClick={() => (setUsePass(false), void touch())}>
+            Use fingerprint
+          </Button>
+        )}
       </Stack>
+      </>
+      )}
     </Centered>
   );
 }

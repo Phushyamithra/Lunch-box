@@ -23,6 +23,7 @@ import dayjs from 'dayjs';
 import { useRef, useState } from 'react';
 import { Card } from '../fitness/ui';
 import { useSnackbar } from '../layout/Snackbar';
+import { fingerprintError } from './biometric';
 import { useFinance } from './FinanceContext';
 import { formatINR, validateSettings, type FinanceSettings } from './model';
 import { AmountField } from './ui';
@@ -42,6 +43,50 @@ function DaySelect({ label, value, onChange }: { label: string; value: number | 
         </MenuItem>
       ))}
     </TextField>
+  );
+}
+
+function FingerprintDialog({ onClose }: { onClose: () => void }) {
+  const { enableFingerprint } = useFinance();
+  const toast = useSnackbar();
+  const [p, setP] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  return (
+    <Dialog open onClose={onClose} fullWidth maxWidth="xs">
+      <DialogTitle>Lock Finance with your fingerprint</DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} sx={{ pt: 1 }}>
+          <Typography variant="body2" color="text.secondary">
+            Your phone will offer to save a passkey for Tracker; confirm with your fingerprint (it may ask twice). Finance then opens with a touch and locks again after 5 minutes
+            in the background. Your passphrase keeps working as a fallback.
+          </Typography>
+          <TextField label="Finance passphrase" type="password" value={p} onChange={(e) => setP(e.target.value)} autoComplete="current-password" autoFocus />
+          {err && <Alert severity="error">{err}</Alert>}
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button
+          variant="contained"
+          disabled={!p || busy}
+          onClick={async () => {
+            setBusy(true);
+            setErr(null);
+            try {
+              const mode = await enableFingerprint(p);
+              toast(mode === 'prf' ? '🔒 Fingerprint on: your key is now encrypted with it' : '🔒 Fingerprint check on');
+              onClose();
+            } catch (e) {
+              setErr(e instanceof WrongPassphraseError ? 'That passphrase is wrong.' : fingerprintError(e));
+              setBusy(false);
+            }
+          }}
+        >
+          {busy ? 'Follow the prompts…' : 'Turn on'}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
 
@@ -100,6 +145,7 @@ export default function FinanceSettingsPage() {
   const [form, setForm] = useState<FinanceSettings>(() => structuredClone(finance.doc!.settings));
   const [formKey, setFormKey] = useState(0);
   const [changing, setChanging] = useState(false);
+  const [enablingBio, setEnablingBio] = useState(false);
   const [confirmForget, setConfirmForget] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const error = validateSettings(form);
@@ -306,6 +352,27 @@ export default function FinanceSettingsPage() {
           <Typography variant="body2" color="text.secondary">
             Synced only in encrypted form. Last synced: {finance.sync.lastSyncedAt ? dayjs(finance.sync.lastSyncedAt).format('D MMM YYYY, HH:mm') : 'not yet'}.
           </Typography>
+          <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: (t) => t.tracker.tonal }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={!!finance.fingerprint.mode}
+                  disabled={!finance.fingerprint.available && !finance.fingerprint.mode}
+                  onChange={(e) => (e.target.checked ? setEnablingBio(true) : void finance.disableFingerprint().then(() => toast('Fingerprint lock off')))}
+                />
+              }
+              label={<Typography sx={{ fontWeight: 600 }}>Fingerprint lock</Typography>}
+            />
+            <Typography variant="body2" color="text.secondary">
+              {finance.fingerprint.mode === 'prf'
+                ? 'On. Your finance key on this phone is encrypted with your fingerprint passkey; without the fingerprint (or passphrase) it can’t be read. Locks after 5 minutes in the background.'
+                : finance.fingerprint.mode === 'gate'
+                  ? 'On. This phone can’t encrypt with the fingerprint, so it asks for it before opening (the key stays stored on this device). Locks after 5 minutes in the background.'
+                  : finance.fingerprint.available
+                    ? 'Open Finance with your fingerprint instead of the passphrase. Only Finance is locked; the rest of the app is unchanged.'
+                    : 'This device or browser has no fingerprint passkey support (use Chrome on your phone).'}
+            </Typography>
+          </Box>
           <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap', rowGap: 1 }}>
             <Button variant="outlined" onClick={() => setChanging(true)}>
               Change passphrase
@@ -348,6 +415,7 @@ export default function FinanceSettingsPage() {
       )}
 
       {changing && <PassphraseDialog onClose={() => setChanging(false)} />}
+      {enablingBio && <FingerprintDialog onClose={() => setEnablingBio(false)} />}
       <Dialog open={confirmForget} onClose={() => setConfirmForget(false)}>
         <DialogTitle>Remove Finance from this device?</DialogTitle>
         <DialogContent>
