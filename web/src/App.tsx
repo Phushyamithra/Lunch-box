@@ -17,6 +17,7 @@ import { FitnessProvider } from './fitness/FitnessContext';
 import { FitnessLayout } from './fitness/ui';
 import { FoodProvider } from './food/FoodContext';
 import { GoalsProvider } from './goals/GoalsContext';
+import { GoalsLayout } from './goals/ui';
 import { NutritionProvider } from './nutrition/NutritionContext';
 import { NutritionLayout } from './nutrition/ui';
 import { SnackbarProvider } from './layout/Snackbar';
@@ -40,6 +41,7 @@ const NutritionFoods = lazy(() => import('./nutrition/FoodsPage'));
 const NutritionTrends = lazy(() => import('./nutrition/TrendsPage'));
 const NutritionData = lazy(() => import('./nutrition/DataPage'));
 const GoalsPage = lazy(() => import('./goals/GoalsPage'));
+const GoalsTimeline = lazy(() => import('./goals/TimelinePage'));
 const NutritionTargets = lazy(() => import('./nutrition/TargetsPage'));
 
 /** Tracker design system (cream, peach, rose, charcoal), dark by default. */
@@ -104,7 +106,10 @@ function SignedInApp({ client }: { client: SupabaseClient }) {
                       path="finance"
                       element={<ModulePlaceholder module={MODULES.finance} />}
                     />
-                    <Route path="goals" element={<GoalsPage />} />
+                    <Route path="goals" element={<GoalsLayout />}>
+                      <Route index element={<GoalsPage />} />
+                      <Route path="timeline" element={<GoalsTimeline />} />
+                    </Route>
                     <Route path="settings" element={<Settings />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Route>

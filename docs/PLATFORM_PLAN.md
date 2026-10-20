@@ -110,8 +110,8 @@ Living record of the audit, the decisions taken, and phase status.
   Meal prep (daily / weekly / monthly / one-off, cycle history, timeline;
   extension achievements carried over). Comes before Finance so goals can
   use the fitness and nutrition data already in place.
-  See `docs/GOALS_PLAN.md`. Stage 1 (engine, `0014_goals.sql`, Goals page)
-  is done; the timeline and integrations are next.
+  See `docs/GOALS_PLAN.md`. Stages 1 (engine, `0014_goals.sql`, Goals page)
+  and 2 (timeline) are done; integrations are next.
 - [ ] **Phase 6 — Finance** (encrypted sync, phone primary).
 - [ ] **Phase 7 — Home dashboard, polish, PWA install/offline.**
 

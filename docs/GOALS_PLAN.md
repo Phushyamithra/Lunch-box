@@ -53,9 +53,16 @@
    - check-ins;
    - new and edit dialogs, with versioned targets and archive or restore;
    - suggestions from your plan.
-2. **Timeline:** dated checkpoints generated from the phase (baseline, first
-   check, monthly reviews, end of bulk, mini-cut, end state), plus your own
-   milestones. It also shows:
+2. **Done — Timeline** (`goals/timeline.ts`, tested; Goals → Timeline):
+   - "Lay out your phase" adds editable checkpoints from Fitness settings:
+     baseline (marked done once weighed), first real check, end of bulk,
+     mini-cut, end state. Long-range dates are approximate.
+   - Monthly reviews are derived: past ones carry the gain reading at
+     that date, and only the next one shows ahead. The next waist check
+     comes from the interval.
+   - Your own checkpoints (planned, approximate, mark done) and
+     achievements; removing archives them.
+   - Coming up / So far, with All / Plan / Wins filters. It also shows:
    - meal-plan completions;
    - extension achievements carried over;
    - one-off goals reached;

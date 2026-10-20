@@ -1,14 +1,17 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Cadence, Checkin, Goal, GoalVersion } from './engine';
+import type { Milestone, MilestoneInput } from './timeline';
 
 export interface GoalsData {
   /** All goals, archived included (history is kept). */
   goals: Goal[];
   checkins: Checkin[];
+  milestones: Milestone[];
 }
 
 const GOAL_COLUMNS = 'id, title, emoji, metric, params, cadence, versions, starts_on, ends_on, sort_order, archived_at, created_at';
 const CHECKIN_COLUMNS = 'id, goal_id, period_start, note, deleted_at';
+const MILESTONE_COLUMNS = 'id, title, emoji, notes, due_on, approx, done_on, kind, source, archived_at, created_at';
 
 const check = <T>(r: { data: T | null; error: { message: string } | null }): T => {
   if (r.error) throw new Error(r.error.message);
@@ -22,11 +25,16 @@ const normaliseGoal = (r: Goal): Goal => ({
 });
 
 export async function loadGoals(client: SupabaseClient): Promise<GoalsData> {
-  const [goals, checkins] = await Promise.all([
+  const [goals, checkins, milestones] = await Promise.all([
     client.from('goals').select(GOAL_COLUMNS).order('sort_order').order('created_at'),
     client.from('goal_checkins').select(CHECKIN_COLUMNS).is('deleted_at', null).order('period_start'),
+    client.from('milestones').select(MILESTONE_COLUMNS).order('created_at'),
   ]);
-  return { goals: ((check(goals) ?? []) as Goal[]).map(normaliseGoal), checkins: (check(checkins) ?? []) as Checkin[] };
+  return {
+    goals: ((check(goals) ?? []) as Goal[]).map(normaliseGoal),
+    checkins: (check(checkins) ?? []) as Checkin[],
+    milestones: (check(milestones) ?? []) as Milestone[],
+  };
 }
 
 export interface NewGoal {
@@ -56,4 +64,13 @@ export async function addCheckin(client: SupabaseClient, goalId: string, periodS
 /** Soft delete (undo-able). */
 export async function removeCheckin(client: SupabaseClient, id: string): Promise<void> {
   check(await client.from('goal_checkins').update({ deleted_at: new Date().toISOString() }).eq('id', id).select('id').single());
+}
+
+export async function addMilestones(client: SupabaseClient, rows: MilestoneInput[]): Promise<Milestone[]> {
+  return (check(await client.from('milestones').insert(rows).select(MILESTONE_COLUMNS)) ?? []) as Milestone[];
+}
+
+export type MilestonePatch = Partial<MilestoneInput & { archived_at: string | null }>;
+export async function updateMilestone(client: SupabaseClient, id: string, patch: MilestonePatch): Promise<Milestone> {
+  return check(await client.from('milestones').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id).select(MILESTONE_COLUMNS).single()) as Milestone;
 }

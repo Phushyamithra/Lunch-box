@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { Checkin, Goal } from './engine';
+import type { Milestone, MilestoneInput } from './timeline';
 import * as api from './goalsApi';
 
 interface GoalsValue {
@@ -12,6 +13,8 @@ interface GoalsValue {
   updateGoal: (id: string, patch: api.GoalPatch) => Promise<Goal>;
   addCheckin: (goalId: string, periodStart: string, note?: string | null) => Promise<Checkin>;
   removeCheckin: (id: string) => Promise<void>;
+  addMilestones: (rows: MilestoneInput[]) => Promise<Milestone[]>;
+  updateMilestone: (id: string, patch: api.MilestonePatch) => Promise<Milestone>;
 }
 
 const GoalsContext = createContext<GoalsValue | null>(null);
@@ -62,6 +65,16 @@ export function GoalsProvider({ client, children }: { client: SupabaseClient; ch
       async removeCheckin(id) {
         await api.removeCheckin(client, id);
         setData((d) => (d ? { ...d, checkins: d.checkins.filter((c) => c.id !== id) } : d));
+      },
+      async addMilestones(rows) {
+        const added = await api.addMilestones(client, rows);
+        setData((d) => (d ? { ...d, milestones: [...d.milestones, ...added] } : d));
+        return added;
+      },
+      async updateMilestone(id, patch) {
+        const row = await api.updateMilestone(client, id, patch);
+        setData((d) => (d ? { ...d, milestones: d.milestones.map((m) => (m.id === id ? row : m)) } : d));
+        return row;
       },
     }),
     [client, loading, error, data, reload],
