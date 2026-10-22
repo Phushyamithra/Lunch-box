@@ -76,6 +76,18 @@ export default function MonthPage() {
           {isCurrent && m.stillToPay > 0 ? `; committed costs still to pay: ${formatINR(m.stillToPay)}` : ''}.
           {isCurrent && ` Uncommitted cash: ${formatINR(m.available)} (this includes what you plan to save).`}
         </Typography>
+        {(m.eventsIn > 0 || m.eventsOut > 0) && (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Settled refunds and one-offs: {m.eventsIn ? `+${formatINR(m.eventsIn)}` : ''}
+            {m.eventsIn && m.eventsOut ? ' · ' : ''}
+            {m.eventsOut ? `−${formatINR(m.eventsOut)}` : ''} (included above).
+          </Typography>
+        )}
+        {m.voucherSpend > 0 && (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Paid with Amazon Pay vouchers: {formatINR(m.voucherSpend)}. Not cash, so not in these figures.
+          </Typography>
+        )}
         <Button size="small" onClick={() => setHow((v) => !v)} sx={{ mt: 0.5, px: 0 }}>
           {how ? 'Hide' : 'How this is worked out'}
         </Button>

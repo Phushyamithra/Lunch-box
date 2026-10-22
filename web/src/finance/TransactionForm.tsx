@@ -3,7 +3,8 @@ import dayjs from 'dayjs';
 import { useState, type Dispatch, type SetStateAction } from 'react';
 import { useSnackbar } from '../layout/Snackbar';
 import { useFinance } from './FinanceContext';
-import { formatINR, newTransaction, validateTransaction, type Transaction, type TransactionInput } from './model';
+import { voucherState } from './extras';
+import { formatINR, newTransaction, VOUCHER_METHOD, validateTransaction, type Transaction, type TransactionInput } from './model';
 import { AmountField } from './ui';
 
 const KEY = 'YYYY-MM-DD';
@@ -65,11 +66,25 @@ export function QuickAdd() {
   return (
     <Box component="form" onSubmit={(e) => (e.preventDefault(), form.amount !== null && !error && void add())}>
       <TransactionFields key={key} value={form} onChange={setForm} />
+      {form.method === VOUCHER_METHOD && <VoucherHint amount={form.amount} />}
       {error && <Alert severity="warning" sx={{ mt: 1.5 }}>{error}</Alert>}
       <Button type="submit" variant="contained" size="large" fullWidth sx={{ mt: 2 }} disabled={form.amount === null || !!error}>
         Add {form.amount ? formatINR(form.amount) : ''}
       </Button>
     </Box>
+  );
+}
+
+/** Amazon Pay purchases use voucher value, not cash; say how much is left. */
+function VoucherHint({ amount }: { amount: number | null }) {
+  const { doc } = useFinance();
+  const v = voucherState(doc!, dayjs().format(KEY));
+  const short = amount !== null && amount > v.balance;
+  return (
+    <Alert severity={short ? 'warning' : 'info'} sx={{ mt: 1.5 }}>
+      Paid from your Amazon Pay voucher balance ({formatINR(v.balance)}): not cash, so it doesn’t touch budgets or savings.
+      {short ? ` That’s ${formatINR((amount as number) - v.balance)} more than the balance; add the gift card under Vouchers & refunds.` : ''}
+    </Alert>
   );
 }
 

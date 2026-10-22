@@ -163,12 +163,51 @@ export interface BalanceCheck extends Stamped {
   note: string | null;
 }
 
+/** Payments with this method come out of the Amazon Pay voucher balance: not cash. */
+export const VOUCHER_METHOD = 'Amazon Pay';
+
+/** Money put on the Amazon Pay balance (gift card, cashback) or a correction. Spending is a transaction paid with Amazon Pay. */
+export interface VoucherEntry extends Stamped {
+  date: string;
+  kind: 'load' | 'adjust';
+  /** Loads are positive; an adjustment can be negative. */
+  amount: Paise;
+  /** Loads only: the last day it can be used. */
+  expiresOn: string | null;
+  note: string | null;
+}
+
+export type EventKind = 'refund' | 'exchange' | 'cashback' | 'income' | 'expense';
+export const EVENT_KINDS: { key: EventKind; label: string; inflow: boolean }[] = [
+  { key: 'refund', label: 'Refund', inflow: true },
+  { key: 'exchange', label: 'Exchange amount', inflow: true },
+  { key: 'cashback', label: 'Cashback', inflow: true },
+  { key: 'income', label: 'Other money in', inflow: true },
+  { key: 'expense', label: 'Other money out', inflow: false },
+];
+
+/** A one-off: counted in actual figures only once settled; pending ones are shown, labelled, never added. */
+export interface MoneyEvent extends Stamped {
+  date: string;
+  kind: EventKind;
+  amount: Paise;
+  description: string;
+  status: 'pending' | 'settled';
+  settledOn: string | null;
+  /** Where the money lands (or leaves from). Voucher credit is never cash. */
+  account: 'bank' | 'card' | 'voucher';
+  /** account = 'card': which card's method. */
+  cardMethod: string | null;
+}
+
 export interface FinanceDoc {
   schema: typeof FINANCE_SCHEMA;
   version: number;
   settings: FinanceSettings;
   transactions: Transaction[];
   balances: BalanceCheck[];
+  vouchers: VoucherEntry[];
+  events: MoneyEvent[];
 }
 
 const id = () => crypto.randomUUID();
@@ -214,7 +253,7 @@ export function defaultSettings(today: string, now = new Date().toISOString()): 
 }
 
 export function emptyDoc(today: string, now?: string): FinanceDoc {
-  return { schema: FINANCE_SCHEMA, version: FINANCE_VERSION, settings: defaultSettings(today, now), transactions: [], balances: [] };
+  return { schema: FINANCE_SCHEMA, version: FINANCE_VERSION, settings: defaultSettings(today, now), transactions: [], balances: [], vouchers: [], events: [] };
 }
 
 export interface TransactionInput {
@@ -280,7 +319,16 @@ export function parseFinanceDoc(raw: unknown): { doc: FinanceDoc } | { error: st
   for (const b of d.balances) {
     if (!b || typeof b.id !== 'string' || !Number.isInteger(b.amount) || !isDay(String(b.date))) return { error: 'A balance entry in the file is damaged.' };
   }
-  return { doc: d as FinanceDoc };
+  // Older copies (before vouchers and events) simply have none.
+  const vouchers = Array.isArray(d.vouchers) ? d.vouchers : [];
+  const events = Array.isArray(d.events) ? d.events : [];
+  for (const v of vouchers) {
+    if (!v || typeof v.id !== 'string' || !Number.isInteger(v.amount) || !isDay(String(v.date))) return { error: 'A voucher entry in the file is damaged.' };
+  }
+  for (const e of events) {
+    if (!e || typeof e.id !== 'string' || !Number.isInteger(e.amount) || e.amount <= 0 || !isDay(String(e.date)) || !['pending', 'settled'].includes(e.status)) return { error: 'An event in the file is damaged.' };
+  }
+  return { doc: { ...(d as FinanceDoc), vouchers, events } };
 }
 
 /** Live transactions for a month (YYYY-MM), newest first. */

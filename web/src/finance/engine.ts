@@ -14,7 +14,8 @@
  * - A card purchase is spending when it happens; paying the card bill
  *   later is a settlement, never a second expense.
  */
-import { planFor, type Card, type FinanceDoc, type FinanceSettings, type Paise, type SavingsGoal, type Transaction } from './model';
+import { cardEventsBetween, settledCashIn } from './extras';
+import { planFor, VOUCHER_METHOD, type Card, type FinanceDoc, type FinanceSettings, type Paise, type SavingsGoal, type Transaction } from './model';
 
 // ---------- dates ----------
 
@@ -105,6 +106,11 @@ export interface MonthSummary {
   available: Paise;
   /** What's left within plan: budgets left + everyday allowance left. Spending this keeps planned savings intact. */
   leftInBudgets: Paise;
+  /** Paid from Amazon Pay voucher value: not cash, so not in any figure above. */
+  voucherSpend: Paise;
+  /** Settled refunds and other one-offs (cash: bank or card) this month. */
+  eventsIn: Paise;
+  eventsOut: Paise;
 }
 
 const live = (t: Transaction[]) => t.filter((x) => !x.deletedAt);
@@ -118,7 +124,11 @@ export function monthSummary(doc: FinanceDoc, ym: string, today: string): MonthS
   const s = planFor(doc.settings, ym);
   const current = monthOf(today);
   const final = ym < current;
-  const txs = live(doc.transactions).filter((t) => monthOf(t.date) === ym);
+  const monthTxs = live(doc.transactions).filter((t) => monthOf(t.date) === ym);
+  // Voucher value isn't cash: it doesn't use budgets or touch savings.
+  const txs = monthTxs.filter((t) => t.method !== VOUCHER_METHOD);
+  const voucherSpend = monthTxs.filter((t) => t.method === VOUCHER_METHOD).reduce((a, t) => a + t.amount, 0);
+  const ev = settledCashIn(doc, ym);
   const logged = sumBy(txs);
   const take = (c: string) => {
     const v = logged.get(c) ?? 0;
@@ -153,10 +163,13 @@ export function monthSummary(doc: FinanceDoc, ym: string, today: string): MonthS
     everyday,
     loggedTotal,
     spend,
-    savings: funding - spend,
+    savings: funding + ev.in - ev.out - spend,
     stillToPay,
-    available: funding - loggedTotal - stillToPay,
+    available: funding + ev.in - ev.out - loggedTotal - stillToPay,
     leftInBudgets: budgets.reduce((a, b) => a + b.remaining, 0) + Math.max(0, everyday.planned - everyday.logged),
+    voucherSpend,
+    eventsIn: ev.in,
+    eventsOut: ev.out,
   };
 }
 
@@ -285,7 +298,8 @@ export function dueDateAfter(card: Card, close: string): string | null {
 export function cardStatus(doc: FinanceDoc, card: Card, today: string): CardStatus {
   const { current, previous } = cardCycles(card, today);
   const txs = live(doc.transactions).filter((t) => t.method === card.method);
-  const inRange = (c: CardCycle) => txs.filter((t) => t.date >= c.start && t.date <= c.end).reduce((a, t) => a + t.amount, 0);
+  // Purchases plus settled refunds/charges on this card (a refund lowers the bill).
+  const inRange = (c: CardCycle) => txs.filter((t) => t.date >= c.start && t.date <= c.end).reduce((a, t) => a + t.amount, 0) + cardEventsBetween(doc, card.method, c.start, c.end);
   const spent = inRange(current);
   const billAmount = inRange(previous);
   const dueDate = dueDateAfter(card, previous.end);

@@ -11,6 +11,7 @@
  * so it can be compared with the real balance you type in.
  */
 import { addMonths, allocate, cardCycles, commitmentsFor, dueDateAfter, monthOf, monthSummary, plannedSavings, salaryDate } from './engine';
+import { bankEventsUntil, cardEventsBetween } from './extras';
 import { planFor, type Card, type FinanceDoc, type FinanceSettings, type Paise } from './model';
 
 // ---------- projection ----------
@@ -129,7 +130,7 @@ function cardBills(doc: FinanceDoc, card: Card, from: string, to: string): { pai
   // Walk statements from the one covering `from` until bills fall after `to`.
   let { current } = cardCycles(card, from);
   for (let i = 0; i < 240; i++) {
-    const amount = txs.filter((t) => t.date >= current.start && t.date <= current.end).reduce((a, t) => a + t.amount, 0);
+    const amount = txs.filter((t) => t.date >= current.start && t.date <= current.end).reduce((a, t) => a + t.amount, 0) + cardEventsBetween(doc, card.method, current.start, current.end);
     let due = dueDateAfter(card, current.end);
     if (!due) {
       assumedDue = true;
@@ -188,9 +189,11 @@ export function reconcile(doc: FinanceDoc, date: string, opts: { savingsPot: Pai
     assumedDue ||= r.assumedDue;
   }
   if (billsPaid) lines.push({ label: assumedDue ? 'Card bills paid (some due dates assumed: 5th)' : 'Card bills paid on their due dates', amount: -billsPaid, assumed: true });
+  const events = bankEventsUntil(doc, start, date);
+  if (events) lines.push({ label: 'Refunds and one-offs settled to the bank', amount: events });
   if (assumedPaid) lines.push({ label: 'Committed costs not logged in earlier months (assumed paid)', amount: -assumedPaid, assumed: true });
   const other = live.filter((t) => !BANK_METHODS.includes(t.method) && !s.cards.some((c) => c.method === t.method)).reduce((a, t) => a + t.amount, 0);
-  if (other) lines.push({ label: 'Paid from wallets (e.g. Amazon Pay): not from the bank', amount: 0 });
+  if (other) lines.push({ label: 'Paid with Amazon Pay vouchers: not from the bank', amount: 0 });
 
   const expected = lines.reduce((a, l) => a + l.amount, 0);
   const free = expected - opts.savingsPot - opts.cardsOwed - pendingThisMonth;

@@ -106,6 +106,8 @@ export function mergeDocs(local: FinanceDoc, remote: FinanceDoc): FinanceDoc {
     settings: local.settings.updatedAt > remote.settings.updatedAt ? local.settings : remote.settings,
     transactions: mergeRecords(local.transactions, remote.transactions).sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id)),
     balances: mergeRecords(local.balances, remote.balances).sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id)),
+    vouchers: mergeRecords(local.vouchers ?? [], remote.vouchers ?? []).sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id)),
+    events: mergeRecords(local.events ?? [], remote.events ?? []).sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id)),
   };
 }
 

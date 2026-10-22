@@ -168,9 +168,24 @@ module"), plus the decisions in `PLATFORM_PLAN.md`.
      scenarios keep the earlier values for earlier months, so history and
      actual savings never get rewritten. Settings offers "All months (fix a
      mistake)" for genuine corrections.
-5. **Vouchers and one-off events:**
-   - Amazon Pay voucher balance, history and expiry (never counted as
-     cash);
-   - refunds, pending exchanges and cashbacks, marked pending or settled.
+5. **Done — Vouchers and one-off events** (`extras.ts`, tested;
+   Finance → Vouchers & refunds):
+   - **Amazon Pay balance:** gift cards with an optional expiry, and
+     corrections.
+     - Purchases paid with "Amazon Pay" use the earliest-expiring value
+       first.
+     - Value that expires unused is shown as lost, and value expiring
+       within 30 days gets a warning.
+     - Spending that the balance can't cover is flagged.
+     - Voucher value is never cash: it isn't in budgets, savings or the
+       bank, and the Month page lists it separately.
+   - **Refunds, exchange amounts, cashback and other money in or out:**
+     - Pending ones are listed with "if they all come through" and are
+       labelled "not included" on Plan.
+     - Settled ones count in the month they settle: to the bank (savings
+       and the Bank check), to a card (lowering that card's bill) or to
+       Amazon Pay (voucher value).
+   - **Older copies:** saved finance data without these lists still opens
+     and merges normally.
 6. **Reports:** monthly summaries, trends, CSV export and finance in the
    Markdown report (opt-in).

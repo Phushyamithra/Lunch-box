@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { Area, Bar, CartesianGrid, Cell, ComposedChart, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Card, Metric } from '../fitness/ui';
 import { cardStatus } from './engine';
+import { pendingCash } from './extras';
 import { useFinance } from './FinanceContext';
 import { formatINR } from './model';
 import { projection, type RowKind } from './projection';
@@ -53,6 +54,13 @@ export default function PlanPage() {
           <Metric value={done ? ym(last.month, 'MMM YYYY') : '10 yrs+'} caption="every goal funded (estimate)" />
           <Metric value={formatINR(goals.reduce((a, g) => a + g.target, 0))} caption={`across ${goals.length} goals`} />
         </Box>
+        {pendingCash(doc).in + pendingCash(doc).out > 0 && (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+            Not included: pending refunds and one-offs ({pendingCash(doc).in ? `+${formatINR(pendingCash(doc).in)}` : ''}
+            {pendingCash(doc).in && pendingCash(doc).out ? ', ' : ''}
+            {pendingCash(doc).out ? `−${formatINR(pendingCash(doc).out)}` : ''}). They count once settled.
+          </Typography>
+        )}
         {current && current.pending > 0 && (
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
             Pending now: {formatINR(current.pending)} (committed costs not yet paid and card bills owed). Already counted in this month’s figures, not extra.
