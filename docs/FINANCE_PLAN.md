@@ -234,3 +234,26 @@ module"), plus the decisions in `PLATFORM_PLAN.md`.
    The Markdown report gains an opt-in **Finance** checkbox (off by
    default, available only while Finance is unlocked, with a plain-text
    warning) that adds "Part 6 — Finance".
+
+## Importing a month (Markdown)
+
+Finance → Settings → **Import a month (Markdown)** (`mdImport.ts`, tested).
+Paste or pick a month summary with front matter (`month: 2026-10`,
+optional `generated:`) and these sections:
+
+| Section | Becomes |
+|---|---|
+| Balances (as of <date>) | a balance check (total of the accounts); "Opening balance <date>: X" sets Settings → Starting point |
+| Fixed and recurring | expenses on the 1st (rent, gold and SIP → Bills, insurance → Health); "card bill (old cycle)" → one-off money out |
+| Logged purchases and expenses | expenses (Item, ₹, Category, Paid via, Notes): unknown categories are guessed and editable, and "Amazon Pay" means voucher value; skipped by default: returned/net 0, reserves, approximate (~) amounts |
+| Income | bonus-only → income, received or expected (month names like "December" are read); salary and voucher rows are skipped |
+| Amazon Pay voucher | "Received: X (Mon D), expires about Mon YYYY" → voucher value (expiry set to the 1st of that month) |
+| Pending reimbursements | "- [ ] … amount …" → reimbursement claims (pending/filed/received) |
+| Open checklist | checklist items |
+
+Other sections are listed as not imported. Undated rows share one date you
+choose in the preview. Importing the same file again adds nothing twice.
+
+The current month's everyday ("needs") projection is now what's logged
+plus the allowance for the days left, not the full allowance.
+Affordability judges a purchase against the plan's savings.

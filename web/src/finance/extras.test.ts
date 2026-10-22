@@ -77,17 +77,20 @@ describe('Amazon Pay vouchers', () => {
   });
 });
 
+/** October's projection on 22 Oct: plan without needs (₹17,830) − needs allowance for the 10 days left. */
+const OCT22 = rupees(17830) - Math.round((rupees(10000) * 10) / 31 / 100) * 100;
+
 describe('one-off events', () => {
   it('pending: listed for forecasts, never counted', () => {
     const d = doc((x) => (x.events = [ev({}), ev({ kind: 'expense', amount: rupees(400), description: 'Repair deposit' })]));
     expect(pendingCash(d)).toMatchObject({ in: rupees(1200), out: rupees(400) });
-    expect(monthSummary(d, '2026-10', '2026-10-22')).toMatchObject({ eventsIn: 0, eventsOut: 0, savings: rupees(7830) });
+    expect(monthSummary(d, '2026-10', '2026-10-22')).toMatchObject({ eventsIn: 0, eventsOut: 0, savings: OCT22 });
     expect(reconcile(d, '2026-10-22', { savingsPot: 0, cardsOwed: 0 }).expected).toBe(rupees(80000));
   });
 
   it('settled to the bank: counts in the month it settled, and in the bank', () => {
     const d = doc((x) => (x.events = [ev({ status: 'settled', settledOn: '2026-10-20' })]));
-    expect(monthSummary(d, '2026-10', '2026-10-22')).toMatchObject({ eventsIn: rupees(1200), savings: rupees(7830 + 1200) });
+    expect(monthSummary(d, '2026-10', '2026-10-22')).toMatchObject({ eventsIn: rupees(1200), savings: OCT22 + rupees(1200) });
     expect(monthSummary(d, '2026-11', '2026-11-02').eventsIn).toBe(0);
     const r = reconcile(d, '2026-10-22', { savingsPot: 0, cardsOwed: 0 });
     expect(r.expected).toBe(rupees(81200));

@@ -20,10 +20,11 @@ import {
   Typography,
 } from '@mui/material';
 import dayjs from 'dayjs';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Card } from '../fitness/ui';
 import { useSnackbar } from '../layout/Snackbar';
 import { fingerprintError } from './biometric';
+import { MonthImportDialog } from './MonthImportDialog';
 import { useFinance } from './FinanceContext';
 import { formatINR, planValues, validateSettings, withPlanFrom, type FinanceSettings } from './model';
 import { AmountField } from './ui';
@@ -146,6 +147,15 @@ export default function FinanceSettingsPage() {
   const [formKey, setFormKey] = useState(0);
   const [changing, setChanging] = useState(false);
   const [enablingBio, setEnablingBio] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [reloadForm, setReloadForm] = useState(false);
+  // After an import (which may set the opening balance), start the form from the saved settings.
+  useEffect(() => {
+    if (!reloadForm || !finance.doc) return;
+    setForm(structuredClone(finance.doc.settings));
+    setFormKey((k) => k + 1);
+    setReloadForm(false);
+  }, [reloadForm, finance.doc]);
   const [confirmForget, setConfirmForget] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const error = validateSettings(form);
@@ -419,6 +429,9 @@ export default function FinanceSettingsPage() {
             <Button variant="outlined" onClick={() => fileRef.current?.click()}>
               Restore from file
             </Button>
+            <Button variant="contained" onClick={() => setImporting(true)}>
+              Import a month (Markdown)
+            </Button>
           </Stack>
           <Button color="error" onClick={() => setConfirmForget(true)} sx={{ alignSelf: 'flex-start' }}>
             Remove Finance from this device
@@ -448,6 +461,7 @@ export default function FinanceSettingsPage() {
 
       {changing && <PassphraseDialog onClose={() => setChanging(false)} />}
       {enablingBio && <FingerprintDialog onClose={() => setEnablingBio(false)} />}
+      {importing && <MonthImportDialog onClose={() => (setImporting(false), setReloadForm(true))} />}
       <Dialog open={confirmForget} onClose={() => setConfirmForget(false)}>
         <DialogTitle>Remove Finance from this device?</DialogTitle>
         <DialogContent>

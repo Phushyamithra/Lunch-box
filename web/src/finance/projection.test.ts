@@ -25,7 +25,8 @@ describe('projection', () => {
   const rows = projection(doc(), '2026-10-20');
 
   it('labels each month and stops when the last goal is full', () => {
-    expect(rows[0]).toMatchObject({ month: '2026-10', kind: 'current', savings: rupees(7830) });
+    // 20 Oct: needs counted for the 12 days left.
+    expect(rows[0]).toMatchObject({ month: '2026-10', kind: 'current', savings: rupees(17830) - Math.round((rupees(10000) * 12) / 31 / 100) * 100 });
     expect(rows[1]).toMatchObject({ month: '2026-11', kind: 'projected', savings: rupees(11000) });
     const last = rows[rows.length - 1];
     expect(last.total).toBeGreaterThanOrEqual(rupees(634000));

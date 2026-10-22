@@ -54,7 +54,8 @@ describe('a month with logs', () => {
     const dinner = m.committed.find((c) => c.category === 'Dinner')!;
     expect(dinner.counted).toBe(rupees(4200)); // over the ₹3,500 plan
     expect(m.budgets.find((b) => b.category === 'Wants')).toMatchObject({ logged: rupees(800), remaining: rupees(200) });
-    expect(m.everyday).toMatchObject({ logged: rupees(1500), counted: rupees(10000) }); // current month: expect the cap
+    // Current month: logged + the allowance for the 12 days left (20–31 Oct).
+    expect(m.everyday).toMatchObject({ logged: rupees(1500), counted: rupees(1500) + Math.round((rupees(10000) * 12) / 31 / 100) * 100 });
     expect(m.loggedTotal).toBe(rupees(26500)); // deleted one ignored
     // Still to pay: gold 10,000 + SIP 3,000 (Bills) + protein 2,500 + insurance 3,170.
     expect(m.stillToPay).toBe(rupees(18670));
@@ -62,8 +63,8 @@ describe('a month with logs', () => {
     // Wants 200 + Unplanned 1,000 + everyday 10,000 − 1,500.
     expect(m.leftInBudgets).toBe(rupees(9700));
     expect(m.final).toBe(false);
-    // Projected: committed (42,170 + 700 dinner over) + budgets 2,000 + cap 10,000.
-    expect(m.savings).toBe(rupees(62000 - 42870 - 2000 - 10000));
+    // Projected: committed (42,170 + 700 dinner over) + budgets 2,000 + needs (1,500 + 12/31 of 10,000).
+    expect(m.savings).toBe(rupees(62000 - 42870 - 2000 - 1500) - Math.round((rupees(10000) * 12) / 31 / 100) * 100);
   });
 
   it('a finished month counts what really happened: unspent budgets stay saved', () => {

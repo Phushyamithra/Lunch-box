@@ -4,7 +4,8 @@
  * scenario only changes your settings when you apply it (from a month on,
  * so past months stay as they were).
  */
-import { cardCycles, cardStatus, combinedCap, commitmentsFor, dueDateAfter, monthOf, monthSummary } from './engine';
+import { cardCycles, cardStatus, combinedCap, commitmentsFor, dueDateAfter, monthOf, monthSummary, plannedSavings } from './engine';
+import { reliableIncome } from './extras';
 import { formatINR, newTransaction, planFor, withPlanFrom, type FinanceDoc, type FinanceSettings, type Paise, type TransactionInput } from './model';
 import { finishMonth, projection, type ProjectionRow } from './projection';
 
@@ -103,8 +104,12 @@ export function affordability(doc: FinanceDoc, today: string, input: Transaction
   }
 
   const savings = { before: m0.savings, after: m1.savings };
-  if (m1.savings < m0.savings) verdict.push(`This month saves ${rs(m0.savings - m1.savings)} less (${formatINR(m1.savings)} instead of ${formatINR(m0.savings)}).`);
-  else if (kind !== 'committed') verdict.push('Savings this month stay on plan.');
+  // Judged against the plan: spending within the allowance is what the plan already expects.
+  const planned = plannedSavings(doc.settings, ym).savings + reliableIncome(doc, ym);
+  if (m1.savings < planned) {
+    verdict.push(`This month would save ${formatINR(m1.savings)}: ${rs(planned - m1.savings)} below the plan’s ${formatINR(planned)}.`);
+    if (level === 'fine') level = 'stretch';
+  } else if (kind !== 'committed') verdict.push(`Savings this month stay on plan (${formatINR(m1.savings)} expected).`);
 
   const p0 = projection(doc, today);
   const p1 = projection(after, today);

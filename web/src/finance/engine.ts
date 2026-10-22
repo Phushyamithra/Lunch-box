@@ -149,7 +149,15 @@ export function monthSummary(doc: FinanceDoc, ym: string, today: string): MonthS
   });
   const everydayByCategory = [...logged].map(([category, amount]) => ({ category, amount })).sort((a, b) => b.amount - a.amount);
   const everydayLogged = everydayByCategory.reduce((a, x) => a + x.amount, 0);
-  const everyday = { planned: s.combinedCardCap, logged: everydayLogged, counted: final ? everydayLogged : Math.max(s.combinedCardCap, everydayLogged), byCategory: everydayByCategory };
+  // Everyday ("needs") spending still to come this month: the allowance for the days left (today included).
+  const days = daysInMonth(ym);
+  const daysLeft = ym === current ? days - Number(today.slice(8, 10)) + 1 : days;
+  const everyday = {
+    planned: s.combinedCardCap,
+    logged: everydayLogged,
+    counted: final ? everydayLogged : everydayLogged + Math.round((s.combinedCardCap * daysLeft) / days / 100) * 100, // whole rupees
+    byCategory: everydayByCategory,
+  };
 
   const spend = committed.reduce((a, c) => a + c.counted, 0) + budgets.reduce((a, b) => a + b.counted, 0) + everyday.counted;
   const loggedTotal = txs.reduce((a, t) => a + t.amount, 0);

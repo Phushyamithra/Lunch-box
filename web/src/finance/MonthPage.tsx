@@ -101,7 +101,7 @@ export default function MonthPage() {
             <li>The salary credited at the end of a month pays the next month.</li>
             <li>Committed costs (rent, gold, SIP, dinner, protein, and insurance or gym in their months) count as paid even if not logged. If you log them, the bigger of planned and logged counts, so nothing is counted twice.</li>
             <li>Wants and Unplanned count what you logged; whatever is left over stays saved.</li>
-            <li>Everything else is everyday spending. {m.final ? 'Finished months count what you logged.' : `This month it’s expected at the card cap (${formatINR(doc.settings.combinedCardCap)}) unless you go over.`}</li>
+            <li>Everything else is everyday spending. {m.final ? 'Finished months count what you logged.' : `This month counts what you’ve logged plus the everyday allowance (${formatINR(doc.settings.combinedCardCap)} a month) for the days left.`}</li>
             <li>Card purchases count once, when you buy. Paying the card bill later isn’t a second expense.</li>
           </Box>
         </Collapse>
