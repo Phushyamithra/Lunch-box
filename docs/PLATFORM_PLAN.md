@@ -114,7 +114,32 @@ Living record of the audit, the decisions taken, and phase status.
   3 (Home, due list, report) are done.
 - [x] **Phase 6 — Finance** (encrypted sync, phone primary). See
   `docs/FINANCE_PLAN.md`: all stages done (migration `0015_finance_vault.sql`).
-- [ ] **Phase 7 — Home dashboard, polish, PWA install/offline.**
+- [x] **Phase 7 — Home dashboard, polish, PWA install/offline.**
+  - **Home:**
+    - a greeting with the date;
+    - quick actions: weigh in (scrolls to the weight card), log food,
+      workout, expense;
+    - "Due today" across Fitness and Finance reminders, plus the Goals
+      strip;
+    - a tile per module with live mini bars: calories and protein,
+      sessions, budgets or the weekly card-free cap, goals met.
+  - **Offline** (`lib/offlineCache.ts`, tested):
+    - each module keeps its last copy on the device (per account, cleared
+      on sign-out) and shows it when the server can't be reached, under a
+      banner with the time of that copy;
+    - real server errors are never hidden;
+    - it refreshes when the connection returns;
+    - network failures read "No connection: try again once you're
+      online";
+    - Finance already works fully offline;
+    - the service worker still caches only the app shell, never API data.
+  - **Install:** an "Install Tracker" button wherever Chrome offers it
+    (Home banner and Settings → App), with menu instructions otherwise.
+  - **Export everything** (Settings): one JSON with Fitness, Nutrition,
+    Goals and Meal prep, plus Finance only when ticked. It's export-only;
+    Nutrition and Finance restore from their own screens.
+  - **Not done (needs a decision):** saving while offline (a write queue
+    for weigh-ins and sets) and push notifications.
 
 ## Rollback
 

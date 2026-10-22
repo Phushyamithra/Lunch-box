@@ -3,6 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import type { Profile } from './engine';
 import type { Entry, Food, FoodInput } from './foodLog';
 import * as api from './nutritionApi';
+import { cachedLoad, onReconnect, sessionUserId } from '../lib/offlineCache';
 
 interface NutritionValue {
   loading: boolean;
@@ -31,7 +32,7 @@ export function NutritionProvider({ client, children }: { client: SupabaseClient
   const reload = useCallback(async () => {
     setLoading(true);
     try {
-      setData(await api.loadNutrition(client));
+      setData(await cachedLoad('nutrition', await sessionUserId(client), () => api.loadNutrition(client)));
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load nutrition data.');
@@ -43,6 +44,9 @@ export function NutritionProvider({ client, children }: { client: SupabaseClient
   useEffect(() => {
     void reload();
   }, [reload]);
+
+  // Back online: refresh from the server.
+  useEffect(() => onReconnect(() => void reload()), [reload]);
 
   const value = useMemo<NutritionValue>(
     () => ({

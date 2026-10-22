@@ -14,6 +14,7 @@ import { useState, type ReactNode } from 'react';
 import type { ThemeMode } from '../../../src/models';
 import { describeAuthError, useAuth } from '../auth/AuthContext';
 import { useSettings } from '../settings/SettingsContext';
+import { AppSection, ExportSection } from './AppSections';
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -75,6 +76,9 @@ export default function Settings() {
         )}
         {(syncState === 'loading' || syncState === 'saving') && <Alert severity="info">Syncing…</Alert>}
       </Section>
+
+      <AppSection />
+      <ExportSection />
 
       <Section title="Account">
         <Typography>Signed in as {session?.user.email}</Typography>

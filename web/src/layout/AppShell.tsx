@@ -26,6 +26,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useSettings, type SyncState } from '../settings/SettingsContext';
 import { GlassIcon, type IconTint } from './GlassIcon';
 import { NAV_ITEMS, activeNavPath } from './navItems';
+import { OfflineBanner } from './OfflineBanner';
 
 const RAIL_WIDTH = 232;
 const APP_TINT: IconTint = { from: '#4A7A86', to: '#335C67', ink: '#FFF3B0' };
@@ -143,6 +144,7 @@ export function AppShell() {
             pb: wide ? 4 : 'calc(104px + env(safe-area-inset-bottom))',
           }}
         >
+          <OfflineBanner />
           {/* Each section fades/slides in; reduced-motion users get no movement (MotionConfig). */}
           <motion.div key={section} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28, ease: [0.2, 0.8, 0.2, 1] }}>
             <Outlet />

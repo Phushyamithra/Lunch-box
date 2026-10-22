@@ -3,6 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import type { Checkin, Goal } from './engine';
 import type { Milestone, MilestoneInput } from './timeline';
 import * as api from './goalsApi';
+import { cachedLoad, onReconnect, sessionUserId } from '../lib/offlineCache';
 
 interface GoalsValue {
   loading: boolean;
@@ -28,7 +29,7 @@ export function GoalsProvider({ client, children }: { client: SupabaseClient; ch
   const reload = useCallback(async () => {
     setLoading(true);
     try {
-      setData(await api.loadGoals(client));
+      setData(await cachedLoad('goals', await sessionUserId(client), () => api.loadGoals(client)));
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load goals.');
@@ -40,6 +41,9 @@ export function GoalsProvider({ client, children }: { client: SupabaseClient; ch
   useEffect(() => {
     void reload();
   }, [reload]);
+
+  // Back online: refresh from the server.
+  useEffect(() => onReconnect(() => void reload()), [reload]);
 
   const value = useMemo<GoalsValue>(
     () => ({

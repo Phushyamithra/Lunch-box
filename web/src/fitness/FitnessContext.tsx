@@ -5,6 +5,7 @@ import type { FitnessData, FitnessSettings, SessionRow, SlotRow, WorkoutSetRow }
 import type { CustomWorkout } from './dayPlan';
 import { deriveKeyLifts, type ParsedReference } from './referenceImport';
 import type { AwayPeriod, DietDay, WeighIn } from './rules';
+import { cachedLoad, onReconnect, sessionUserId } from '../lib/offlineCache';
 
 interface FitnessValue {
   loading: boolean;
@@ -47,7 +48,7 @@ export function FitnessProvider({ client, children }: { client: SupabaseClient; 
   const reload = useCallback(async () => {
     setLoading(true);
     try {
-      setData(await api.loadFitness(client));
+      setData(await cachedLoad('fitness', await sessionUserId(client), () => api.loadFitness(client)));
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load fitness data.');
@@ -59,6 +60,9 @@ export function FitnessProvider({ client, children }: { client: SupabaseClient; 
   useEffect(() => {
     void reload();
   }, [reload]);
+
+  // Back online: refresh from the server.
+  useEffect(() => onReconnect(() => void reload()), [reload]);
 
   const patch = (fn: (d: FitnessData) => FitnessData) => setData((d) => (d ? fn(d) : d));
   const upsertBy = <T,>(rows: T[], row: T, same: (a: T) => boolean): T[] => [...rows.filter((r) => !same(r)), row];

@@ -40,6 +40,7 @@ import {
   type PlanState,
   type QuotaRow,
 } from './plans';
+import { cachedLoad, onReconnect, sessionUserId } from '../lib/offlineCache';
 
 export interface LogResult {
   row: LogRow;
@@ -107,7 +108,7 @@ export function FoodProvider({ client, children }: { client: SupabaseClient; chi
   const reload = useCallback(async () => {
     setLoading(true);
     try {
-      setData(await loadFoodData(client));
+      setData(await cachedLoad('mealprep', await sessionUserId(client), () => loadFoodData(client)));
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load food data.');
@@ -119,6 +120,9 @@ export function FoodProvider({ client, children }: { client: SupabaseClient; chi
   useEffect(() => {
     void reload();
   }, [reload]);
+
+  // Back online: refresh from the server.
+  useEffect(() => onReconnect(() => void reload()), [reload]);
 
   const mealById = useMemo(() => new Map(data.meals.map((m) => [m.id, m])), [data.meals]);
   const categoryOf = useCallback((mealId: string) => mealById.get(mealId)?.category_id, [mealById]);

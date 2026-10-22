@@ -1,5 +1,6 @@
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { clearOfflineCache } from '../lib/offlineCache';
 
 interface AuthValue {
   /** True until the stored session (or a magic-link token) is resolved. */
@@ -77,6 +78,8 @@ export function AuthProvider({ client, children }: { client: SupabaseClient; chi
         // Local scope: signs this device out without ending other devices.
         const { error } = await client.auth.signOut({ scope: 'local' });
         if (error) throw error;
+        // The offline copies belong to this account: don't leave them on the device.
+        await clearOfflineCache();
       },
     }),
     [client, loading, session],
