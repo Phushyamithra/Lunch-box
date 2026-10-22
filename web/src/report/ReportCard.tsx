@@ -5,6 +5,8 @@ import { useFitness } from '../fitness/FitnessContext';
 import { Card } from '../fitness/ui';
 import { useSnackbar } from '../layout/Snackbar';
 import { useNutrition } from '../nutrition/NutritionContext';
+import { useFinance } from '../finance/FinanceContext';
+import { financeMarkdown } from '../finance/reports';
 import { useGoalsOverview } from '../goals/hooks';
 import { buildMarkdownReport, reportFileName, type ReportSections } from './markdownReport';
 
@@ -49,13 +51,25 @@ export function ReportCard() {
   const today = dayjs().format(KEY);
   const [period, setPeriod] = useState<Period>('last_week');
   const [custom, setCustom] = useState({ from: dayjs().subtract(13, 'day').format(KEY), to: today });
-  const [sections, setSections] = useState<ReportSections>({ food: true, measurements: true, workouts: true, goals: true });
+  const [sections, setSections] = useState<ReportSections>({ food: true, measurements: true, workouts: true, goals: true, finance: false });
+  const finance = useFinance();
+  const financeReady = finance.status === 'ready' && !!finance.doc;
   const goals = useGoalsOverview();
   if (!fitness) return null;
 
   const range = rangeFor(period, today, fitness.settings.phase_start, custom);
   const invalid = !range.from || !range.to || range.from > range.to || dayjs(range.to).diff(range.from, 'day') > 400;
-  const make = () => buildMarkdownReport({ fitness, nutrition, ...range, today, sections, now: new Date(), goals: goals ? { summaries: goals.summaries, timeline: goals.timeline } : null });
+  const make = () =>
+    buildMarkdownReport({
+      fitness,
+      nutrition,
+      ...range,
+      today,
+      sections,
+      now: new Date(),
+      goals: goals ? { summaries: goals.summaries, timeline: goals.timeline } : null,
+      finance: sections.finance && financeReady ? financeMarkdown(finance.doc!, range.from, range.to, today) : null,
+    });
   const name = reportFileName(range.from, range.to);
 
   const download = () => {
@@ -88,7 +102,7 @@ export function ReportCard() {
     <Card title="📝 Report for analysis (.md)">
       <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
         Laid out like your daily reference: snapshot, eating, training and measurements, then the weekly and monthly log templates filled in from what you recorded.
-        Blanks stay blank. Finance is never included.
+        Blanks stay blank. Finance is left out unless you tick it.
       </Typography>
       <Stack spacing={1.5}>
         <TextField select size="small" label="Period" value={period} onChange={(e) => setPeriod(e.target.value as Period)}>
@@ -118,7 +132,21 @@ export function ReportCard() {
           ).map(([k, label]) => (
             <FormControlLabel key={k} control={<Checkbox size="small" checked={sections[k]} onChange={(e) => setSections((s) => ({ ...s, [k]: e.target.checked }))} />} label={label} />
           ))}
+          <FormControlLabel
+            control={<Checkbox size="small" checked={!!sections.finance && financeReady} disabled={!financeReady} onChange={(e) => setSections((s) => ({ ...s, finance: e.target.checked }))} />}
+            label="Finance"
+          />
         </FormGroup>
+        {sections.finance && financeReady && (
+          <Typography variant="caption" color="warning.main">
+            The file will contain your salary, spending and savings in plain text. Share it only where you’re comfortable.
+          </Typography>
+        )}
+        {!financeReady && (
+          <Typography variant="caption" color="text.secondary">
+            Finance can be added once it’s unlocked on this device.
+          </Typography>
+        )}
         <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
           <Button variant="contained" disabled={invalid} onClick={download}>
             Download

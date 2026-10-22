@@ -221,5 +221,16 @@ module"), plus the decisions in `PLATFORM_PLAN.md`.
      the check prefilled, and "Bought" records it under Wants.
    - **Lists:** reminders, an open checklist (due dates, tick off, or
      turn into an expense) and buy-later wants.
-6. **Reports:** monthly summaries, trends, CSV export and finance in the
-   Markdown report (opt-in).
+6. **Done — Reports** (`reports.ts`, tested; Finance → Reports):
+   - periods of 3, 6 or 12 months, or since start;
+   - actual vs plan (a chart and the gap);
+   - a monthly summary (committed, budgets, needs, saved, vs plan);
+   - spending by category with monthly figures;
+   - each card by month against its limit;
+   - goal progress with estimated dates;
+   - CSV exports of transactions and the monthly summary (UTF-8 with BOM,
+     formula-safe, labelled as not encrypted).
+
+   The Markdown report gains an opt-in **Finance** checkbox (off by
+   default, available only while Finance is unlocked, with a plain-text
+   warning) that adds "Part 6 — Finance".

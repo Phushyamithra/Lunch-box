@@ -4,7 +4,7 @@
  * Laid out like the daily reference file: a snapshot, then eating,
  * training and measurements, then the weekly and monthly log templates
  * filled in from recorded data. Only what was logged is reported; blanks
- * stay blank. Nothing from Finance is ever included.
+ * stay blank. Finance is included only when you tick it (it's off by default).
  */
 import dayjs from 'dayjs';
 import type { FitnessData, SessionRow } from '../fitness/fitnessApi';
@@ -22,6 +22,8 @@ export interface ReportSections {
   measurements: boolean;
   workouts: boolean;
   goals: boolean;
+  /** Opt-in: finance figures in plain text. */
+  finance?: boolean;
 }
 
 export interface ReportInput {
@@ -34,6 +36,8 @@ export interface ReportInput {
   now: Date;
   /** Goals and timeline (left out when Goals isn't set up). */
   goals?: { summaries: GoalSummary[]; timeline: TimelineItem[] } | null;
+  /** Pre-built finance section (only passed when finance is unlocked and ticked). */
+  finance?: string | null;
 }
 
 const WEEKDAY = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -339,6 +343,7 @@ export function buildMarkdownReport(input: ReportInput): string {
   for (let m = dayjs(from).startOf('month'); m.format('YYYY-MM-DD') <= to; m = m.add(1, 'month')) push(monthlyBlock(input, m.format('YYYY-MM-DD'), allWeeks, baseline ? Number(baseline.weight_kg) : null, baseline?.day ?? null), '');
 
   if (sections.goals && input.goals) push('---', '', goalsSection(input.goals, from, to, today));
+  if (sections.finance && input.finance) push('---', '', input.finance);
 
   return out.join('\n').replace(/\n{3,}/g, '\n\n') + '\n';
 }

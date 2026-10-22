@@ -112,8 +112,8 @@ Living record of the audit, the decisions taken, and phase status.
   use the fitness and nutrition data already in place.
   See `docs/GOALS_PLAN.md`. Stages 1 (engine, `0014_goals.sql`, Goals page), 2 (timeline) and
   3 (Home, due list, report) are done.
-- [ ] **Phase 6 — Finance** (encrypted sync, phone primary). See
-  `docs/FINANCE_PLAN.md`; stage 1 (foundation, `0015_finance_vault.sql`) done.
+- [x] **Phase 6 — Finance** (encrypted sync, phone primary). See
+  `docs/FINANCE_PLAN.md`: all stages done (migration `0015_finance_vault.sql`).
 - [ ] **Phase 7 — Home dashboard, polish, PWA install/offline.**
 
 ## Rollback

@@ -40,6 +40,7 @@ const TABS = [
   { path: '/finance/what-if', label: 'What if' },
   { path: '/finance/extras', label: 'Income & extras' },
   { path: '/finance/lists', label: 'Lists' },
+  { path: '/finance/reports', label: 'Reports' },
   { path: '/finance/transactions', label: 'Transactions' },
   { path: '/finance/settings', label: 'Settings' },
 ];
