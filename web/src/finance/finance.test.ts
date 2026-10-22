@@ -156,3 +156,27 @@ describe('fingerprint key wrapping', () => {
     await expect(unwrapVaultKey(wrapped, crypto.getRandomValues(new Uint8Array(32)))).rejects.toThrow(/didn’t match/);
   });
 });
+
+describe('dated plan changes', () => {
+  it('a change from November leaves October as it was; "all months" rewrites', async () => {
+    const { plannedSavings } = await import('./engine');
+    const { withPlanFrom, planFor } = await import('./model');
+    const s = { ...defaultSettings('2026-10-20'), startMonth: '2026-09' };
+    const raised = withPlanFrom(s, { ...s, salary: rupees(70000) }, '2026-11');
+    expect(plannedSavings(raised, '2026-10').salary).toBe(rupees(62000));
+    expect(plannedSavings(raised, '2026-11').salary).toBe(rupees(70000));
+    expect(planFor(raised, '2026-09').salary).toBe(rupees(62000));
+    // A second change in December keeps both earlier eras.
+    const again = withPlanFrom(raised, { ...raised, fixed: raised.fixed.map((f) => (f.id === 'rent' ? { ...f, amount: rupees(22000) } : f)) }, '2026-12');
+    expect(planFor(again, '2026-10').salary).toBe(rupees(62000));
+    expect(planFor(again, '2026-11')).toMatchObject({ salary: rupees(70000) });
+    expect(planFor(again, '2026-11').fixed.find((f) => f.id === 'rent')?.amount).toBe(rupees(20000));
+    expect(planFor(again, '2027-01').fixed.find((f) => f.id === 'rent')?.amount).toBe(rupees(22000));
+    // Fixing a mistake everywhere drops the history.
+    const fixed = withPlanFrom(again, { ...again, salary: rupees(61000) }, again.startMonth);
+    expect(fixed.planHistory).toEqual([]);
+    expect(planFor(fixed, '2026-09').salary).toBe(rupees(61000));
+    // Changing only non-plan settings (a goal) adds no history.
+    expect(withPlanFrom(s, { ...s, openingBalance: rupees(5) }, '2026-11').planHistory).toEqual([]);
+  });
+});

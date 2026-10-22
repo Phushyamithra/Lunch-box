@@ -11,7 +11,7 @@
  * so it can be compared with the real balance you type in.
  */
 import { addMonths, allocate, cardCycles, commitmentsFor, dueDateAfter, monthOf, monthSummary, plannedSavings, salaryDate } from './engine';
-import type { Card, FinanceDoc, FinanceSettings, Paise } from './model';
+import { planFor, type Card, type FinanceDoc, type FinanceSettings, type Paise } from './model';
 
 // ---------- projection ----------
 
@@ -41,7 +41,8 @@ export interface ProjectionRow {
 
 const MAX_MONTHS = 120;
 
-function monthNotes(s: FinanceSettings, ym: string): string[] {
+function monthNotes(s0: FinanceSettings, ym: string): string[] {
+  const s = planFor(s0, ym);
   const m = Number(ym.slice(5));
   const notes: string[] = [];
   for (const p of s.periodic) if (p.months.includes(m)) notes.push(p.name);
@@ -169,9 +170,10 @@ export function reconcile(doc: FinanceDoc, date: string, opts: { savingsPot: Pai
   let salaries = 0;
   let count = 0;
   for (let m = s.startMonth; m <= dateMonth; m = addMonths(m, 1)) {
-    const d = salaryDate(s, m);
+    const p = planFor(s, m);
+    const d = salaryDate(p, m);
     if (d >= start && d <= date) {
-      salaries += s.salary;
+      salaries += p.salary;
       count++;
     }
   }

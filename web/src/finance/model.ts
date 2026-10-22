@@ -121,6 +121,40 @@ export interface FinanceSettings {
   startMonth: string;
   /** Bank balance when tracking started (null until set). */
   openingBalance: Paise | null;
+  /**
+   * Earlier plan values, so a change never rewrites past months: each entry
+   * holds the values that applied up to and including `until` (YYYY-MM).
+   * Oldest first.
+   */
+  planHistory?: { until: string; values: PlanValues }[];
+}
+
+/** The parts of the settings that decide a month's numbers. */
+export const PLAN_KEYS = ['salary', 'salaryDay', 'fixed', 'periodic', 'budgets', 'combinedCardCap'] as const;
+export type PlanValues = Pick<FinanceSettings, (typeof PLAN_KEYS)[number]>;
+export const planValues = (s: FinanceSettings): PlanValues => Object.fromEntries(PLAN_KEYS.map((k) => [k, s[k]])) as unknown as PlanValues;
+
+/** Settings as they applied in month `ym` (later changes don't reach back). */
+export function planFor(s: FinanceSettings, ym: string): FinanceSettings {
+  const h = s.planHistory?.find((e) => ym <= e.until);
+  return h ? { ...s, ...h.values } : s;
+}
+
+/**
+ * New settings whose plan values change from month `from` on; the values in
+ * force before it are kept for the months before. Same-month repeats just
+ * replace (nothing to keep).
+ */
+export function withPlanFrom(old: FinanceSettings, next: FinanceSettings, from: string): FinanceSettings {
+  const changed = JSON.stringify(planValues(old)) !== JSON.stringify(planValues(next));
+  const until = (() => {
+    const [y, m] = from.split('-').map(Number);
+    const t = y * 12 + (m - 1) - 1;
+    return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, '0')}`;
+  })();
+  if (!changed || until < old.startMonth) return { ...next, planHistory: (old.planHistory ?? []).filter((e) => e.until < from) };
+  const kept = (old.planHistory ?? []).filter((e) => e.until < until);
+  return { ...next, planHistory: [...kept, { until, values: planValues(old) }] };
 }
 
 export interface BalanceCheck extends Stamped {

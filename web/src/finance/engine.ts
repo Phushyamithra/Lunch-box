@@ -14,7 +14,7 @@
  * - A card purchase is spending when it happens; paying the card bill
  *   later is a settlement, never a second expense.
  */
-import type { Card, FinanceDoc, FinanceSettings, Paise, SavingsGoal, Transaction } from './model';
+import { planFor, type Card, type FinanceDoc, type FinanceSettings, type Paise, type SavingsGoal, type Transaction } from './model';
 
 // ---------- dates ----------
 
@@ -49,7 +49,8 @@ export interface Commitment {
 }
 
 /** Fixed costs still running and periodic costs due in `ym`, by category. */
-export function commitmentsFor(s: FinanceSettings, ym: string): Commitment[] {
+export function commitmentsFor(s0: FinanceSettings, ym: string): Commitment[] {
+  const s = planFor(s0, ym);
   const month = Number(ym.slice(5));
   const by = new Map<string, Commitment>();
   const add = (category: string, item: PlannedItem) => {
@@ -64,7 +65,8 @@ export function commitmentsFor(s: FinanceSettings, ym: string): Commitment[] {
 }
 
 /** What the plan says a month should save (no logs involved). */
-export function plannedSavings(s: FinanceSettings, ym: string): { salary: Paise; committed: Paise; budgets: Paise; everyday: Paise; savings: Paise } {
+export function plannedSavings(s0: FinanceSettings, ym: string): { salary: Paise; committed: Paise; budgets: Paise; everyday: Paise; savings: Paise } {
+  const s = planFor(s0, ym);
   const committed = commitmentsFor(s, ym).reduce((a, c) => a + c.planned, 0);
   const budgets = s.budgets.reduce((a, b) => a + b.amount, 0);
   const everyday = s.combinedCardCap;
@@ -113,7 +115,7 @@ const sumBy = (txs: Transaction[]) => {
 };
 
 export function monthSummary(doc: FinanceDoc, ym: string, today: string): MonthSummary {
-  const s = doc.settings;
+  const s = planFor(doc.settings, ym);
   const current = monthOf(today);
   const final = ym < current;
   const txs = live(doc.transactions).filter((t) => monthOf(t.date) === ym);
@@ -145,7 +147,7 @@ export function monthSummary(doc: FinanceDoc, ym: string, today: string): MonthS
     tracked: ym >= s.startMonth,
     final,
     funding,
-    fundingDate: salaryDate(s, addMonths(ym, -1)),
+    fundingDate: salaryDate(planFor(doc.settings, addMonths(ym, -1)), addMonths(ym, -1)),
     committed,
     budgets,
     everyday,
@@ -311,7 +313,7 @@ export function combinedCap(doc: FinanceDoc, today: string): { spent: Paise; cap
   const spent = live(doc.transactions)
     .filter((t) => methods.has(t.method) && monthOf(t.date) === ym)
     .reduce((a, t) => a + t.amount, 0);
-  const cap = doc.settings.combinedCardCap;
+  const cap = planFor(doc.settings, ym).combinedCardCap;
   return { spent, cap, level: spent > cap ? 'over' : cap > 0 && spent / cap >= 0.8 ? 'warn' : 'ok' };
 }
 
@@ -328,8 +330,8 @@ export interface Upcoming {
 
 /** Bills and salary from today to the end of next month. */
 export function upcoming(doc: FinanceDoc, today: string): Upcoming[] {
-  const s = doc.settings;
   const ym = monthOf(today);
+  const s = planFor(doc.settings, ym);
   const out: Upcoming[] = [];
   for (const card of s.cards) {
     const st = cardStatus(doc, card, today);

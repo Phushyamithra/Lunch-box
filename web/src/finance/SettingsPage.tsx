@@ -25,7 +25,7 @@ import { Card } from '../fitness/ui';
 import { useSnackbar } from '../layout/Snackbar';
 import { fingerprintError } from './biometric';
 import { useFinance } from './FinanceContext';
-import { formatINR, validateSettings, type FinanceSettings } from './model';
+import { formatINR, planValues, validateSettings, withPlanFrom, type FinanceSettings } from './model';
 import { AmountField } from './ui';
 import { passphraseProblem, WrongPassphraseError } from './vault';
 
@@ -158,8 +158,12 @@ export default function FinanceSettingsPage() {
     return next;
   };
 
+  const [applyAll, setApplyAll] = useState(false);
+  const planChanged = JSON.stringify(planValues(form)) !== JSON.stringify(planValues(finance.doc!.settings));
   const save = async () => {
-    await finance.updateSettings(form);
+    const from = applyAll ? form.startMonth : dayjs().format('YYYY-MM');
+    await finance.updateSettings(withPlanFrom(finance.doc!.settings, form, from));
+    setApplyAll(false);
     toast('Settings saved');
   };
   const download = () => {
@@ -402,10 +406,16 @@ export default function FinanceSettingsPage() {
 
       {dirty && (
         <Box sx={{ position: 'sticky', bottom: { xs: 88, md: 16 }, zIndex: 2 }}>
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ p: 1.25, borderRadius: 3, bgcolor: 'background.paper', boxShadow: 6 }}>
+          <Stack direction="row" spacing={1} useFlexGap alignItems="center" sx={{ p: 1.25, borderRadius: 3, bgcolor: 'background.paper', boxShadow: 6, flexWrap: 'wrap', rowGap: 1 }}>
             <Typography variant="body2" sx={{ flexGrow: 1 }} color={error ? 'warning.main' : 'text.secondary'}>
               {error ?? 'Unsaved changes'}
             </Typography>
+            {!error && planChanged && (
+              <TextField select size="small" value={applyAll ? 'all' : 'now'} onChange={(e) => setApplyAll(e.target.value === 'all')} aria-label="Apply changes from" sx={{ minWidth: 150 }}>
+                <MenuItem value="now">From this month</MenuItem>
+                <MenuItem value="all">All months (fix a mistake)</MenuItem>
+              </TextField>
+            )}
             <Button onClick={() => (setForm(structuredClone(finance.doc!.settings)), setFormKey((k) => k + 1))}>Discard</Button>
             <Button variant="contained" disabled={!!error} onClick={() => void save()}>
               Save

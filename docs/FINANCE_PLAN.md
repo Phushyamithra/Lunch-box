@@ -148,8 +148,26 @@ module"), plus the decisions in `PLATFORM_PLAN.md`.
      - Balance checks you enter are judged as matching (within ₹500),
        explained (lower by no more than the pending costs) or "check this",
        with likely causes.
-4. **Affordability and what-if:** test a purchase, or change salary, card
-   cap, SIP, rent or the gold end date. Nothing changes until you apply it.
+4. **Done — Affordability and what-if** (`scenarios.ts`, tested;
+   Finance → What if):
+   - **Can I afford it?** Test an amount, category, payment method and
+     date. You see:
+     - the effect on the budget or everyday allowance, with this month's
+       savings before and after;
+     - the card cycle and which bill it lands on;
+     - the combined card cap;
+     - every goal's date before and after.
+
+     The verdict is "fits your plan", "costs savings" or "breaks a limit".
+     It only becomes a transaction after you confirm.
+   - **Change the plan:** sliders for salary, card cap, SIP and rent, plus
+     the gold scheme's last month. It compares a normal month's savings,
+     the date all goals are funded and each goal's date. Apply (with
+     confirmation) takes effect from this month only.
+   - **Dated plan changes** (`planHistory`): Settings saves and applied
+     scenarios keep the earlier values for earlier months, so history and
+     actual savings never get rewritten. Settings offers "All months (fix a
+     mistake)" for genuine corrections.
 5. **Vouchers and one-off events:**
    - Amazon Pay voucher balance, history and expiry (never counted as
      cash);
