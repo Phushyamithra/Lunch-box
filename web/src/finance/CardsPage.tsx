@@ -6,6 +6,7 @@ import { cardStatus, combinedCap } from './engine';
 import { useFinance } from './FinanceContext';
 import { formatINR } from './model';
 import { Bar } from './MonthPage';
+import { WeeklyCapBar } from './PlannerCards';
 
 const d = (s: string) => dayjs(s).format('D MMM');
 
@@ -20,6 +21,7 @@ export default function CardsPage() {
 
   return (
     <Stack spacing={2} sx={{ maxWidth: 860 }}>
+      <WeeklyCapBar />
       <Card title="💳 Both cards">
         <Bar label={`Combined, ${dayjs().format('MMMM')}`} value={cap.spent} max={cap.cap} detail={cap.level === 'over' ? 'Over the combined cap.' : `${formatINR(Math.max(0, cap.cap - cap.spent))} left this month`} />
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
@@ -43,7 +45,7 @@ export default function CardsPage() {
               {formatINR(c.spent - c.card.limit)} over the {formatINR(c.card.limit)} limit this cycle.
             </Alert>
           )}
-          <Bar label={`This cycle: ${d(c.current.start)} – ${d(c.current.end)}`} value={c.spent} max={c.card.limit} detail={`${formatINR(Math.max(0, c.available))} available · ${Math.round(c.utilisation * 100)}% used`} />
+          <Bar label={`This cycle: ${d(c.current.start)} – ${d(c.current.end)}`} value={c.spent} max={c.card.limit} detail={`${formatINR(Math.max(0, c.available))} available · ${Math.round(c.utilisation * 100)}% used${c.oneOffSpent ? ` · incl. ${formatINR(c.oneOffSpent)} planned one-off (no warning)` : ''}`} />
           <Box sx={{ mt: 1.5 }}>
             {c.lastBill ? (
               <Stack direction="row" justifyContent="space-between" spacing={1}>

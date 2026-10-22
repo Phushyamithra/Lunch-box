@@ -187,5 +187,39 @@ module"), plus the decisions in `PLATFORM_PLAN.md`.
        Amazon Pay (voucher value).
    - **Older copies:** saved finance data without these lists still opens
      and merges normally.
+5b. **Done — Extra features (requested 2026-10-22)** (`planner.ts`,
+   `extras.ts`, tested). Already present before this and not rebuilt:
+   periodic bills, "salary pays next month", the voucher balance and
+   expiry, separate Wants and Unplanned bars, pending vs settled events.
+   - **Yearly bills:** a monthly set-aside per periodic bill, with what
+     should be put by now (Plan tab). "Peak months ahead" flags months more
+     than 5% above a usual month.
+   - **Salary day** (Bank tab):
+     - shows what the salary must cover next month (committed costs,
+       budgets, last month's card bill or same-month spending if
+       card-free) and what is safe to move to savings;
+     - enter a planned transfer to get a warning if it leaves bills
+       uncovered.
+   - **Card-free mode** (Settings):
+     - a start month and a weekly cap;
+     - the switch month shows the one-time double payment, and Plan notes
+       it (savings don't change; only the timing does);
+     - a weekly bar on Today and Cards counts everyday categories only.
+   - **Planned one-off** on card purchases: still counted as spending, but
+     it doesn't trigger card or combined-cap warnings. "Check cashback on
+     next statement" adds a reminder once that statement has closed
+     (Lists).
+   - **Vouchers:** an "earmarked for" note, with the earmarked amounts
+     still available shown.
+   - **Reimbursement claims:** Pending → Filed → Received. Only Received
+     counts as cash.
+   - **Other income** (Income & extras): tagged Reliable or Bonus-only,
+     and Confirmed or Estimate. Reliable income is projected; bonus-only
+     income is left out (and labelled on Plan) until it's marked received.
+   - **Needs:** everyday spending is labelled "Needs (everyday)" and never
+     draws from Wants. "Buy later" keeps deferred wants: "Afford?" opens
+     the check prefilled, and "Bought" records it under Wants.
+   - **Lists:** reminders, an open checklist (due dates, tick off, or
+     turn into an expense) and buy-later wants.
 6. **Reports:** monthly summaries, trends, CSV export and finance in the
    Markdown report (opt-in).

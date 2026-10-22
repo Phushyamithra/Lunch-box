@@ -83,6 +83,11 @@ export default function MonthPage() {
             {m.eventsOut ? `−${formatINR(m.eventsOut)}` : ''} (included above).
           </Typography>
         )}
+        {m.otherIncome > 0 && (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Other income this month: +{formatINR(m.otherIncome)} (included above).
+          </Typography>
+        )}
         {m.voucherSpend > 0 && (
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
             Paid with Amazon Pay vouchers: {formatINR(m.voucherSpend)}. Not cash, so not in these figures.
@@ -134,7 +139,7 @@ export default function MonthPage() {
             />
           ))}
           <Bar
-            label="Everyday spending"
+            label="Needs (everyday)"
             value={m.everyday.logged}
             max={m.everyday.planned}
             detail={m.everyday.byCategory.length ? m.everyday.byCategory.map((x) => `${x.category} ${formatINR(x.amount)}`).join(' · ') : 'Groceries, fuel, pet and the rest, against the card cap'}

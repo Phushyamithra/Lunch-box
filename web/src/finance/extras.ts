@@ -11,7 +11,7 @@
  * it counts in the month it settled: to the bank or a card as cash, to
  * Amazon Pay as voucher value.
  */
-import { VOUCHER_METHOD, type FinanceDoc, type MoneyEvent, type Paise } from './model';
+import { VOUCHER_METHOD, type FinanceDoc, type IncomeSource, type MoneyEvent, type Paise } from './model';
 
 export const vouchersOf = (d: FinanceDoc) => (d.vouchers ?? []).filter((v) => !v.deletedAt);
 export const eventsOf = (d: FinanceDoc) => (d.events ?? []).filter((e) => !e.deletedAt);
@@ -38,18 +38,21 @@ export interface VoucherState {
   /** Amazon Pay spending with no voucher value left to cover it (check your logs). */
   shortfall: Paise;
   lines: VoucherLine[];
+  /** What's left, by lot: amount, expiry and what it's earmarked for. */
+  remaining: { amount: Paise; expiresOn: string | null; earmark: string | null }[];
 }
 
 interface Lot {
   amount: Paise;
   expiresOn: string | null;
+  earmark: string | null;
 }
 
 export function voucherState(doc: FinanceDoc, today: string): VoucherState {
-  type Step = { date: string; order: number; label: string; amount: Paise; kind: VoucherLine['kind']; expiresOn: string | null };
+  type Step = { date: string; order: number; label: string; amount: Paise; kind: VoucherLine['kind']; expiresOn: string | null; earmark?: string | null };
   const steps: Step[] = [];
   for (const v of vouchersOf(doc)) {
-    steps.push({ date: v.date, order: 0, label: v.note || (v.kind === 'load' ? 'Added to Amazon Pay' : 'Correction'), amount: v.amount, kind: v.kind === 'load' ? 'load' : 'adjust', expiresOn: v.kind === 'load' ? v.expiresOn : null });
+    steps.push({ date: v.date, order: 0, label: `${v.note || (v.kind === 'load' ? 'Added to Amazon Pay' : 'Correction')}${v.earmark ? ` (for ${v.earmark})` : ''}`, amount: v.amount, kind: v.kind === 'load' ? 'load' : 'adjust', expiresOn: v.kind === 'load' ? v.expiresOn : null, earmark: v.earmark ?? null });
   }
   for (const e of eventsOf(doc)) {
     if (e.status !== 'settled' || e.account !== 'voucher' || !e.settledOn) continue;
@@ -92,7 +95,7 @@ export function voucherState(doc: FinanceDoc, today: string): VoucherState {
 
   for (const s of steps) {
     expireBefore(s.date);
-    if (s.amount >= 0) lots.push({ amount: s.amount, expiresOn: s.expiresOn });
+    if (s.amount >= 0) lots.push({ amount: s.amount, expiresOn: s.expiresOn, earmark: s.earmark ?? null });
     else take(-s.amount);
     lines.push({ date: s.date, label: s.label, amount: s.amount, balance: total(), kind: s.kind });
   }
@@ -102,7 +105,7 @@ export function voucherState(doc: FinanceDoc, today: string): VoucherState {
     .filter((l) => l.expiresOn && l.expiresOn <= soon)
     .map((l) => ({ amount: l.amount, expiresOn: l.expiresOn as string }))
     .sort((a, b) => a.expiresOn.localeCompare(b.expiresOn));
-  return { balance: total(), expiringSoon, expired, shortfall, lines: lines.sort((a, b) => a.date.localeCompare(b.date)) };
+  return { balance: total(), expiringSoon, expired, shortfall, lines: lines.sort((a, b) => a.date.localeCompare(b.date)), remaining: lots.map((l) => ({ ...l })) };
 }
 
 // ---------- events ----------
@@ -133,7 +136,7 @@ export function bankEventsUntil(doc: FinanceDoc, from: string, to: string): Pais
 
 /** Pending cash events, for clearly labelled forecasts only. */
 export function pendingCash(doc: FinanceDoc): { in: Paise; out: Paise; list: MoneyEvent[] } {
-  const list = eventsOf(doc).filter((e) => e.status === 'pending' && e.account !== 'voucher');
+  const list = eventsOf(doc).filter((e) => e.status !== 'settled' && e.account !== 'voucher');
   return { in: list.filter(isInflow).reduce((a, e) => a + e.amount, 0), out: list.filter((e) => !isInflow(e)).reduce((a, e) => a + e.amount, 0), list };
 }
 
@@ -147,3 +150,25 @@ export function validateEvent(e: Pick<MoneyEvent, 'date' | 'amount' | 'descripti
   if (e.account === 'card' && !e.cardMethod) return 'Pick the card.';
   return null;
 }
+
+// ---------- other income ----------
+
+
+export const incomesOf = (d: FinanceDoc): IncomeSource[] => (d.incomes ?? []).filter((i) => !i.deletedAt);
+
+/** Reliable income for a month: monthly sources running then, plus reliable one-offs due that month. Planned, so projections include it. */
+export function reliableIncome(doc: FinanceDoc, ym: string): Paise {
+  return incomesOf(doc)
+    .filter((i) => i.reliability === 'reliable' && (i.cadence === 'monthly' ? i.month <= ym && (!i.until || ym <= i.until) : i.month === ym))
+    .reduce((a, i) => a + (i.cadence === 'once' && i.receivedOn && i.receivedAmount !== null ? i.receivedAmount : i.amount), 0);
+}
+
+/** Bonus-only income actually received in a month (counts only once it's in). */
+export function receivedBonus(doc: FinanceDoc, ym: string): Paise {
+  return incomesOf(doc)
+    .filter((i) => i.reliability === 'bonus' && i.receivedOn?.startsWith(ym))
+    .reduce((a, i) => a + (i.receivedAmount ?? i.amount), 0);
+}
+
+/** Bonuses not received yet: shown, labelled, never projected. */
+export const awaitedBonuses = (doc: FinanceDoc) => incomesOf(doc).filter((i) => i.reliability === 'bonus' && !i.receivedOn);

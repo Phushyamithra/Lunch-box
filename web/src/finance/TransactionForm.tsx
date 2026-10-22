@@ -1,4 +1,4 @@
-import { Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Stack, Switch, TextField, Typography } from '@mui/material';
 import dayjs from 'dayjs';
 import { useState, type Dispatch, type SetStateAction } from 'react';
 import { useSnackbar } from '../layout/Snackbar';
@@ -39,6 +39,18 @@ export function TransactionFields({ value, onChange, autoFocus }: { value: Draft
         <TextField label="Date" type="date" value={value.date} onChange={(e) => onChange((v) => ({ ...v, date: e.target.value }))} InputLabelProps={{ shrink: true }} sx={{ minWidth: 150 }} />
         <TextField label="Note (optional)" value={value.note ?? ''} onChange={(e) => onChange((v) => ({ ...v, note: e.target.value }))} fullWidth inputProps={{ maxLength: 200 }} />
       </Stack>
+      {s.cards.some((c) => c.method === value.method) && (
+        <Stack direction="row" useFlexGap sx={{ flexWrap: 'wrap', columnGap: 2 }}>
+          <FormControlLabel
+            control={<Switch size="small" checked={!!value.oneOff} onChange={(e) => onChange((v) => ({ ...v, oneOff: e.target.checked }))} />}
+            label={<Typography variant="body2">Planned one-off (no limit warning)</Typography>}
+          />
+          <FormControlLabel
+            control={<Switch size="small" checked={!!value.cashbackCheck} onChange={(e) => onChange((v) => ({ ...v, cashbackCheck: e.target.checked }))} />}
+            label={<Typography variant="body2">Check cashback on next statement</Typography>}
+          />
+        </Stack>
+      )}
     </Stack>
   );
 }
@@ -60,7 +72,7 @@ export function QuickAdd() {
       action: { label: 'Undo', run: () => void update((d) => ({ ...d, transactions: d.transactions.map((x) => (x.id === t.id ? { ...x, deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() } : x)) })) },
     });
     // Keep category, method and date: the next entry is often similar.
-    setForm((f) => ({ ...f, amount: null, note: null }));
+    setForm((f) => ({ ...f, amount: null, note: null, oneOff: false, cashbackCheck: false }));
     setKey((k) => k + 1);
   };
   return (
@@ -91,7 +103,7 @@ function VoucherHint({ amount }: { amount: number | null }) {
 export function EditTransactionDialog({ tx, onClose }: { tx: Transaction; onClose: () => void }) {
   const { doc, update } = useFinance();
   const toast = useSnackbar();
-  const [form, setForm] = useState<DraftTx>({ date: tx.date, amount: tx.amount, category: tx.category, method: tx.method, note: tx.note });
+  const [form, setForm] = useState<DraftTx>({ date: tx.date, amount: tx.amount, category: tx.category, method: tx.method, note: tx.note, oneOff: tx.oneOff, cashbackCheck: tx.cashbackCheck });
   const input = { ...form, amount: form.amount ?? 0 };
   const error = validateTransaction(input, doc!.settings);
   const stamp = () => new Date().toISOString();
@@ -141,6 +153,7 @@ export function TransactionRow({ tx, onOpen }: { tx: Transaction; onOpen: () => 
         <Typography sx={{ fontWeight: 600 }}>{tx.category}</Typography>
         <Typography variant="body2" color="text.secondary" noWrap>
           {dayjs(tx.date).format('ddd D MMM')} · {tx.method}
+          {tx.oneOff ? ' · one-off' : ''}
           {tx.note ? ` · ${tx.note}` : ''}
         </Typography>
       </Box>

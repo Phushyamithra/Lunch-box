@@ -6,6 +6,7 @@ import { Card, Metric } from '../fitness/ui';
 import { monthSummary } from './engine';
 import { useFinance } from './FinanceContext';
 import { formatINR, monthTransactions, type Transaction } from './model';
+import { WeeklyCapBar } from './PlannerCards';
 import { EditTransactionDialog, QuickAdd, TransactionRow } from './TransactionForm';
 
 /** What's still unknown from setup (asked, never guessed). */
@@ -37,6 +38,7 @@ export default function FinanceToday() {
           To finish setup, add {gaps.join(', ')}.
         </Alert>
       )}
+      <WeeklyCapBar />
       <Card title="➕ Quick add">
         <QuickAdd />
       </Card>

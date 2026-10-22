@@ -38,7 +38,8 @@ const TABS = [
   { path: '/finance/plan', label: 'Plan' },
   { path: '/finance/bank', label: 'Bank' },
   { path: '/finance/what-if', label: 'What if' },
-  { path: '/finance/extras', label: 'Vouchers & refunds' },
+  { path: '/finance/extras', label: 'Income & extras' },
+  { path: '/finance/lists', label: 'Lists' },
   { path: '/finance/transactions', label: 'Transactions' },
   { path: '/finance/settings', label: 'Settings' },
 ];

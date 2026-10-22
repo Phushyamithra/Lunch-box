@@ -11,7 +11,7 @@
  * so it can be compared with the real balance you type in.
  */
 import { addMonths, allocate, cardCycles, commitmentsFor, dueDateAfter, monthOf, monthSummary, plannedSavings, salaryDate } from './engine';
-import { bankEventsUntil, cardEventsBetween } from './extras';
+import { bankEventsUntil, cardEventsBetween, incomesOf, reliableIncome } from './extras';
 import { planFor, type Card, type FinanceDoc, type FinanceSettings, type Paise } from './model';
 
 // ---------- projection ----------
@@ -70,6 +70,8 @@ export function projection(doc: FinanceDoc, today: string, opts: { cardOwed?: Pa
     if (kind === 'projected') {
       const p = plannedSavings(s, m);
       ({ salary, committed, budgets, everyday, savings } = p);
+      // Reliable other income is planned; bonus-only income never is.
+      savings += reliableIncome(doc, m);
     } else {
       const sum = monthSummary(doc, m, today);
       salary = sum.funding;
@@ -84,7 +86,9 @@ export function projection(doc: FinanceDoc, today: string, opts: { cardOwed?: Pa
     const completes = goals.map((g, gi) => (alloc[gi] >= g.target && prevAlloc[gi] < g.target ? gi : -1)).filter((gi) => gi >= 0);
     prevAlloc = alloc;
     const filling = goals.findIndex((g, gi) => alloc[gi] < g.target);
-    rows.push({ month: m, kind, salary, committed, budgets, everyday, savings, total, goals: alloc, filling, completes, notes: monthNotes(s, m), pending });
+    const notes = monthNotes(s, m);
+    if (s.cardFree && s.cardFree.from === m) notes.push('card-free starts: last card bill + this month in cash');
+    rows.push({ month: m, kind, salary, committed, budgets, everyday, savings, total, goals: alloc, filling, completes, notes, pending });
     if (kind === 'projected' && total >= allTarget) break;
   }
   return rows;
@@ -189,6 +193,18 @@ export function reconcile(doc: FinanceDoc, date: string, opts: { savingsPot: Pai
     assumedDue ||= r.assumedDue;
   }
   if (billsPaid) lines.push({ label: assumedDue ? 'Card bills paid (some due dates assumed: 5th)' : 'Card bills paid on their due dates', amount: -billsPaid, assumed: true });
+  // Other income: reliable sources for finished months (assumed in), bonuses on the day received.
+  let otherIncome = 0;
+  for (const i of incomesOf(doc)) {
+    if (i.reliability === 'bonus') {
+      if (i.receivedOn && i.receivedOn >= start && i.receivedOn <= date) otherIncome += i.receivedAmount ?? i.amount;
+    } else {
+      for (let m = s.startMonth; m < dateMonth; m = addMonths(m, 1)) {
+        if (i.cadence === 'monthly' ? i.month <= m && (!i.until || m <= i.until) : i.month === m) otherIncome += i.cadence === 'once' && i.receivedAmount !== null && i.receivedOn ? i.receivedAmount : i.amount;
+      }
+    }
+  }
+  if (otherIncome) lines.push({ label: 'Other income (reliable months assumed; bonuses when received)', amount: otherIncome, assumed: true });
   const events = bankEventsUntil(doc, start, date);
   if (events) lines.push({ label: 'Refunds and one-offs settled to the bank', amount: events });
   if (assumedPaid) lines.push({ label: 'Committed costs not logged in earlier months (assumed paid)', amount: -assumedPaid, assumed: true });

@@ -14,7 +14,7 @@
  * - A card purchase is spending when it happens; paying the card bill
  *   later is a settlement, never a second expense.
  */
-import { cardEventsBetween, settledCashIn } from './extras';
+import { cardEventsBetween, receivedBonus, reliableIncome, settledCashIn } from './extras';
 import { planFor, VOUCHER_METHOD, type Card, type FinanceDoc, type FinanceSettings, type Paise, type SavingsGoal, type Transaction } from './model';
 
 // ---------- dates ----------
@@ -111,6 +111,8 @@ export interface MonthSummary {
   /** Settled refunds and other one-offs (cash: bank or card) this month. */
   eventsIn: Paise;
   eventsOut: Paise;
+  /** Reliable other income for the month + bonuses received in it. */
+  otherIncome: Paise;
 }
 
 const live = (t: Transaction[]) => t.filter((x) => !x.deletedAt);
@@ -129,6 +131,7 @@ export function monthSummary(doc: FinanceDoc, ym: string, today: string): MonthS
   const txs = monthTxs.filter((t) => t.method !== VOUCHER_METHOD);
   const voucherSpend = monthTxs.filter((t) => t.method === VOUCHER_METHOD).reduce((a, t) => a + t.amount, 0);
   const ev = settledCashIn(doc, ym);
+  const otherIncome = reliableIncome(doc, ym) + receivedBonus(doc, ym);
   const logged = sumBy(txs);
   const take = (c: string) => {
     const v = logged.get(c) ?? 0;
@@ -163,13 +166,14 @@ export function monthSummary(doc: FinanceDoc, ym: string, today: string): MonthS
     everyday,
     loggedTotal,
     spend,
-    savings: funding + ev.in - ev.out - spend,
+    savings: funding + otherIncome + ev.in - ev.out - spend,
     stillToPay,
-    available: funding + ev.in - ev.out - loggedTotal - stillToPay,
+    available: funding + otherIncome + ev.in - ev.out - loggedTotal - stillToPay,
     leftInBudgets: budgets.reduce((a, b) => a + b.remaining, 0) + Math.max(0, everyday.planned - everyday.logged),
     voucherSpend,
     eventsIn: ev.in,
     eventsOut: ev.out,
+    otherIncome,
   };
 }
 
@@ -265,7 +269,10 @@ export interface CardStatus {
   spent: Paise;
   available: Paise;
   utilisation: number;
+  /** Warnings ignore purchases marked as planned one-offs. */
   level: 'ok' | 'warn' | 'over';
+  /** Planned one-offs in this cycle (included in `spent`). */
+  oneOffSpent: Paise;
   /** Last closed statement. */
   lastBill: { cycle: CardCycle; amount: Paise; dueDate: string | null; paid: boolean } | null;
   /** Unpaid closed bill plus the current cycle so far. */
@@ -301,6 +308,8 @@ export function cardStatus(doc: FinanceDoc, card: Card, today: string): CardStat
   // Purchases plus settled refunds/charges on this card (a refund lowers the bill).
   const inRange = (c: CardCycle) => txs.filter((t) => t.date >= c.start && t.date <= c.end).reduce((a, t) => a + t.amount, 0) + cardEventsBetween(doc, card.method, c.start, c.end);
   const spent = inRange(current);
+  const oneOffSpent = txs.filter((t) => t.oneOff && t.date >= current.start && t.date <= current.end).reduce((a, t) => a + t.amount, 0);
+  const warnSpent = spent - oneOffSpent;
   const billAmount = inRange(previous);
   const dueDate = dueDateAfter(card, previous.end);
   const paid = dueDate ? today > dueDate : false;
@@ -314,7 +323,8 @@ export function cardStatus(doc: FinanceDoc, card: Card, today: string): CardStat
     spent,
     available: card.limit - spent,
     utilisation,
-    level: spent > card.limit ? 'over' : utilisation >= 0.8 ? 'warn' : 'ok',
+    level: warnSpent > card.limit ? 'over' : card.limit > 0 && warnSpent / card.limit >= 0.8 ? 'warn' : 'ok',
+    oneOffSpent,
     lastBill,
     outstanding: spent + (lastBill && !lastBill.paid ? lastBill.amount : 0),
   };
@@ -328,7 +338,11 @@ export function combinedCap(doc: FinanceDoc, today: string): { spent: Paise; cap
     .filter((t) => methods.has(t.method) && monthOf(t.date) === ym)
     .reduce((a, t) => a + t.amount, 0);
   const cap = planFor(doc.settings, ym).combinedCardCap;
-  return { spent, cap, level: spent > cap ? 'over' : cap > 0 && spent / cap >= 0.8 ? 'warn' : 'ok' };
+  const oneOff = live(doc.transactions)
+    .filter((t) => t.oneOff && methods.has(t.method) && monthOf(t.date) === ym)
+    .reduce((a, t) => a + t.amount, 0);
+  const w = spent - oneOff;
+  return { spent, cap, level: w > cap ? 'over' : cap > 0 && w / cap >= 0.8 ? 'warn' : 'ok' };
 }
 
 // ---------- upcoming ----------

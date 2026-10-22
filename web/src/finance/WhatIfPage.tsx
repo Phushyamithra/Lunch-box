@@ -1,6 +1,7 @@
 import { Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Slider, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from '@mui/material';
 import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Card } from '../fitness/ui';
 import { useSnackbar } from '../layout/Snackbar';
 import { useFinance } from './FinanceContext';
@@ -46,7 +47,8 @@ function Afford() {
   const { doc, update } = useFinance();
   const toast = useSnackbar();
   const today = dayjs().format('YYYY-MM-DD');
-  const [form, setForm] = useState<DraftTx>(blankInput('Wants', 'UPI'));
+  const prefill = (useLocation().state ?? null) as { amount?: number; category?: string; note?: string } | null;
+  const [form, setForm] = useState<DraftTx>(() => ({ ...blankInput(prefill?.category ?? 'Wants', 'UPI'), amount: prefill?.amount ?? null, note: prefill?.note ?? null }));
   const [formKey, setFormKey] = useState(0);
   const [confirm, setConfirm] = useState(false);
   const input = form.amount === null ? null : { ...form, amount: form.amount };

@@ -7,6 +7,7 @@ import { useSnackbar } from '../layout/Snackbar';
 import { eventsOf, isInflow, pendingCash, validateEvent, voucherState } from './extras';
 import { useFinance } from './FinanceContext';
 import { EVENT_KINDS, formatINR, type MoneyEvent, type Paise, type VoucherEntry } from './model';
+import { IncomeCard } from './IncomeCard';
 import { AmountField } from './ui';
 
 const KEY = 'YYYY-MM-DD';
@@ -23,9 +24,10 @@ function VoucherDialog({ onClose }: { onClose: () => void }) {
   const [date, setDate] = useState(dayjs().format(KEY));
   const [expires, setExpires] = useState('');
   const [note, setNote] = useState('');
+  const [earmark, setEarmark] = useState('');
   const save = async () => {
     if (amount === null) return;
-    const row: VoucherEntry = { id: crypto.randomUUID(), date, kind, amount: kind === 'adjust' && minus ? -amount : amount, expiresOn: kind === 'load' && expires ? expires : null, note: note.trim() || null, updatedAt: now(), deletedAt: null };
+    const row: VoucherEntry = { id: crypto.randomUUID(), date, kind, amount: kind === 'adjust' && minus ? -amount : amount, expiresOn: kind === 'load' && expires ? expires : null, note: note.trim() || null, earmark: kind === 'load' ? earmark.trim() || null : null, updatedAt: now(), deletedAt: null };
     await update((x) => ({ ...x, vouchers: [...(x.vouchers ?? []), row] }));
     toast(kind === 'load' ? `Added ${formatINR(amount)} to Amazon Pay` : 'Balance corrected');
     onClose();
@@ -59,6 +61,7 @@ function VoucherDialog({ onClose }: { onClose: () => void }) {
             {kind === 'load' && <TextField type="date" label="Expires (optional)" value={expires} onChange={(e) => setExpires(e.target.value)} InputLabelProps={{ shrink: true }} fullWidth />}
           </Stack>
           <TextField label="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} inputProps={{ maxLength: 120 }} />
+          {kind === 'load' && <TextField label="Earmarked for (optional)" value={earmark} onChange={(e) => setEarmark(e.target.value)} placeholder="e.g. pet food" inputProps={{ maxLength: 60 }} />}
           <Typography variant="caption" color="text.secondary">
             Spending it: log a purchase paid with “Amazon Pay” (Today → Quick add). Cashback to Amazon Pay: add it under refunds and one-offs, landing in Amazon Pay.
           </Typography>
@@ -136,13 +139,18 @@ function EventDialog({ event, onClose }: { event: MoneyEvent | 'new'; onClose: (
             <ToggleButton value="pending" sx={{ textTransform: 'none', px: 2 }}>
               Pending
             </ToggleButton>
+            {f.kind === 'reimbursement' && (
+              <ToggleButton value="filed" sx={{ textTransform: 'none', px: 2 }}>
+                Filed
+              </ToggleButton>
+            )}
             <ToggleButton value="settled" sx={{ textTransform: 'none', px: 2 }}>
-              Settled
+              {f.kind === 'reimbursement' ? 'Received' : 'Settled'}
             </ToggleButton>
           </ToggleButtonGroup>
           {f.status === 'settled' && <TextField type="date" label="Settled on" value={f.settledOn ?? ''} onChange={(e) => set({ settledOn: e.target.value || null })} InputLabelProps={{ shrink: true }} />}
           <Typography variant="caption" color="text.secondary">
-            {f.status === 'pending'
+            {f.status !== 'settled'
               ? 'Pending: shown and labelled, but not added to savings, cards or the bank until settled.'
               : f.account === 'voucher'
                 ? 'Lands as Amazon Pay value: not cash, never counted as savings.'
@@ -175,7 +183,7 @@ function EventRow({ e, onOpen, onSettle }: { e: MoneyEvent; onOpen: () => void; 
           {e.description}
         </Typography>
         <Typography variant="body2" color="text.secondary" noWrap>
-          {kind} · {e.status === 'settled' && e.settledOn ? `settled ${d(e.settledOn)}` : `since ${d(e.date)}`} · {ACCOUNT_LABEL[e.account]}
+          {kind} · {e.status === 'settled' && e.settledOn ? `${e.kind === 'reimbursement' ? 'received' : 'settled'} ${d(e.settledOn)}` : `${e.status === 'filed' ? 'filed' : 'since'} ${d(e.date)}`} · {ACCOUNT_LABEL[e.account]}
         </Typography>
       </Box>
       <Typography sx={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }} color={isInflow(e) ? 'success.main' : undefined}>
@@ -184,7 +192,7 @@ function EventRow({ e, onOpen, onSettle }: { e: MoneyEvent; onOpen: () => void; 
       </Typography>
       {onSettle && (
         <Button size="small" variant="outlined" onClick={onSettle}>
-          Settled
+          {e.kind === 'reimbursement' ? 'Received' : 'Settled'}
         </Button>
       )}
     </Stack>
@@ -202,7 +210,7 @@ export default function ExtrasPage() {
   const v = useMemo(() => (doc ? voucherState(doc, today) : null), [doc, today]);
   if (!doc || !v) return null;
   const events = eventsOf(doc).sort((a, b) => (b.settledOn ?? b.date).localeCompare(a.settledOn ?? a.date));
-  const pending = events.filter((e) => e.status === 'pending');
+  const pending = events.filter((e) => e.status !== 'settled');
   const settled = events.filter((e) => e.status === 'settled');
   const pc = pendingCash(doc);
   const settle = (e: MoneyEvent) =>
@@ -212,6 +220,7 @@ export default function ExtrasPage() {
 
   return (
     <Stack spacing={2} sx={{ maxWidth: 860 }}>
+      <IncomeCard />
       <Card title="🎟️ Amazon Pay balance" aside={<Chip size="small" variant="outlined" label="Not cash" />}>
         <Typography sx={{ fontSize: 32, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{formatINR(v.balance)}</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
@@ -226,6 +235,15 @@ export default function ExtrasPage() {
           <Alert severity="info" sx={{ mb: 1 }}>
             {formatINR(v.shortfall)} of Amazon Pay spending had no voucher value to cover it. Add the missing gift card, or correct the balance.
           </Alert>
+        )}
+        {v.remaining.some((r) => r.earmark) && (
+          <Stack direction="row" useFlexGap sx={{ flexWrap: 'wrap', gap: 0.75, mb: 1 }}>
+            {v.remaining
+              .filter((r) => r.earmark)
+              .map((r, i) => (
+                <Chip key={i} size="small" variant="outlined" label={`${formatINR(r.amount)} for ${r.earmark}`} />
+              ))}
+          </Stack>
         )}
         {v.expired > 0 && (
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
@@ -266,7 +284,7 @@ export default function ExtrasPage() {
         {pending.length > 0 && (
           <Box sx={{ mb: 2 }}>
             <Typography variant="subtitle2" sx={{ mt: 1 }}>
-              Pending
+              Pending and filed
             </Typography>
             {pending.map((e) => (
               <EventRow key={e.id} e={e} onOpen={() => setEditing(e)} onSettle={() => settle(e)} />

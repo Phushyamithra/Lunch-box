@@ -8,6 +8,7 @@ import { cardStatus, savingsState } from './engine';
 import { useFinance } from './FinanceContext';
 import { formatINR, type BalanceCheck, type Paise } from './model';
 import { compareBalance, reconcile, type Verdict } from './projection';
+import { SalaryDayCard } from './PlannerCards';
 import { AmountField } from './ui';
 
 const VERDICT: Record<Verdict, { color: 'success' | 'info' | 'warning'; label: string }> = {
@@ -38,9 +39,12 @@ export default function BankPage() {
 
   if (now.expected === null) {
     return (
-      <Alert severity="info" action={<Button color="inherit" onClick={() => navigate('/finance/settings')}>Settings</Button>}>
-        Add your bank balance when tracking started (Settings → Starting point) to see what your account should hold.
-      </Alert>
+      <Stack spacing={2} sx={{ maxWidth: 860 }}>
+        <SalaryDayCard />
+        <Alert severity="info" action={<Button color="inherit" onClick={() => navigate('/finance/settings')}>Settings</Button>}>
+          Add your bank balance when tracking started (Settings → Starting point) to see what your account should hold.
+        </Alert>
+      </Stack>
     );
   }
 
@@ -59,6 +63,7 @@ export default function BankPage() {
 
   return (
     <Stack spacing={2} sx={{ maxWidth: 860 }}>
+      <SalaryDayCard />
       <Card title="🏦 Your bank should hold">
         <Typography sx={{ fontSize: 32, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{formatINR(now.expected)}</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>

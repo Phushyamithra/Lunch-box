@@ -53,6 +53,12 @@ export interface Transaction extends Stamped {
   method: Method;
   note: string | null;
   createdAt: string;
+  /** A planned one-off (e.g. a big card purchase for cashback): spending still counts, but card limit warnings ignore it. */
+  oneOff?: boolean;
+  /** Remind me to check the cashback on the next statement. */
+  cashbackCheck?: boolean;
+  /** Cashback checked (the reminder is done). */
+  cashbackVerified?: boolean;
 }
 
 export interface Card {
@@ -127,6 +133,44 @@ export interface FinanceSettings {
    * Oldest first.
    */
   planHistory?: { until: string; values: PlanValues }[];
+  /**
+   * Card-free mode: from this month, everyday spending is paid the same
+   * month (UPI/debit) instead of on cards paid next month. The switch month
+   * pays twice once (last month's card bill + this month's spending).
+   */
+  cardFree?: { from: string; weeklyCap: Paise } | null;
+}
+
+/** Income besides salary. Bonus-only income never enters projections until received. */
+export interface IncomeSource extends Stamped {
+  name: string;
+  amount: Paise;
+  cadence: 'monthly' | 'once';
+  /** Monthly: first month; once: the month it's expected (YYYY-MM). */
+  month: string;
+  /** Monthly only: last month (YYYY-MM) or null. */
+  until: string | null;
+  reliability: 'reliable' | 'bonus';
+  /** Is the amount confirmed or an estimate? */
+  certainty: 'confirmed' | 'estimated';
+  /** Bonus (or one-time) income: the day it actually arrived. */
+  receivedOn: string | null;
+  /** Actual amount received, if different. */
+  receivedAmount: Paise | null;
+}
+
+/** Open checklist items and "buy later" wants. */
+export interface ListItem extends Stamped {
+  kind: 'task' | 'want';
+  title: string;
+  status: 'open' | 'done';
+  due: string | null;
+  amount: Paise | null;
+  category: string | null;
+  note: string | null;
+  createdAt: string;
+  /** Set when converted into an expense. */
+  transactionId: string | null;
 }
 
 /** The parts of the settings that decide a month's numbers. */
@@ -175,11 +219,14 @@ export interface VoucherEntry extends Stamped {
   /** Loads only: the last day it can be used. */
   expiresOn: string | null;
   note: string | null;
+  /** What it's set aside for (e.g. "pet food"). */
+  earmark?: string | null;
 }
 
-export type EventKind = 'refund' | 'exchange' | 'cashback' | 'income' | 'expense';
+export type EventKind = 'refund' | 'reimbursement' | 'exchange' | 'cashback' | 'income' | 'expense';
 export const EVENT_KINDS: { key: EventKind; label: string; inflow: boolean }[] = [
   { key: 'refund', label: 'Refund', inflow: true },
+  { key: 'reimbursement', label: 'Reimbursement claim', inflow: true },
   { key: 'exchange', label: 'Exchange amount', inflow: true },
   { key: 'cashback', label: 'Cashback', inflow: true },
   { key: 'income', label: 'Other money in', inflow: true },
@@ -192,7 +239,8 @@ export interface MoneyEvent extends Stamped {
   kind: EventKind;
   amount: Paise;
   description: string;
-  status: 'pending' | 'settled';
+  /** 'filed' (claims): submitted, still not money. Only 'settled' (received) counts. */
+  status: 'pending' | 'filed' | 'settled';
   settledOn: string | null;
   /** Where the money lands (or leaves from). Voucher credit is never cash. */
   account: 'bank' | 'card' | 'voucher';
@@ -208,6 +256,8 @@ export interface FinanceDoc {
   balances: BalanceCheck[];
   vouchers: VoucherEntry[];
   events: MoneyEvent[];
+  incomes: IncomeSource[];
+  lists: ListItem[];
 }
 
 const id = () => crypto.randomUUID();
@@ -253,7 +303,7 @@ export function defaultSettings(today: string, now = new Date().toISOString()): 
 }
 
 export function emptyDoc(today: string, now?: string): FinanceDoc {
-  return { schema: FINANCE_SCHEMA, version: FINANCE_VERSION, settings: defaultSettings(today, now), transactions: [], balances: [], vouchers: [], events: [] };
+  return { schema: FINANCE_SCHEMA, version: FINANCE_VERSION, settings: defaultSettings(today, now), transactions: [], balances: [], vouchers: [], events: [], incomes: [], lists: [] };
 }
 
 export interface TransactionInput {
@@ -262,6 +312,8 @@ export interface TransactionInput {
   category: string;
   method: Method;
   note: string | null;
+  oneOff?: boolean;
+  cashbackCheck?: boolean;
 }
 
 const isDay = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(`${s}T00:00:00Z`)) && new Date(`${s}T00:00:00Z`).toISOString().slice(0, 10) === s;
@@ -300,6 +352,7 @@ export function validateSettings(s: FinanceSettings): string | null {
   for (const g of s.goals) if (!g.name.trim() || !money(g.target) || g.target === 0 || !money(g.savedAtStart)) return `Check the goal “${g.name || '?'}”.`;
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(s.startMonth)) return 'Start month must look like 2026-10.';
   if (s.openingBalance !== null && !Number.isInteger(s.openingBalance)) return 'Check the opening balance.';
+  if (s.cardFree && (!/^\d{4}-(0[1-9]|1[0-2])$/.test(s.cardFree.from) || !money(s.cardFree.weeklyCap))) return 'Check the card-free start month and weekly cap.';
   return null;
 }
 
@@ -326,9 +379,17 @@ export function parseFinanceDoc(raw: unknown): { doc: FinanceDoc } | { error: st
     if (!v || typeof v.id !== 'string' || !Number.isInteger(v.amount) || !isDay(String(v.date))) return { error: 'A voucher entry in the file is damaged.' };
   }
   for (const e of events) {
-    if (!e || typeof e.id !== 'string' || !Number.isInteger(e.amount) || e.amount <= 0 || !isDay(String(e.date)) || !['pending', 'settled'].includes(e.status)) return { error: 'An event in the file is damaged.' };
+    if (!e || typeof e.id !== 'string' || !Number.isInteger(e.amount) || e.amount <= 0 || !isDay(String(e.date)) || !['pending', 'filed', 'settled'].includes(e.status)) return { error: 'An event in the file is damaged.' };
   }
-  return { doc: { ...(d as FinanceDoc), vouchers, events } };
+  const incomes = Array.isArray(d.incomes) ? d.incomes : [];
+  const lists = Array.isArray(d.lists) ? d.lists : [];
+  for (const i of incomes) {
+    if (!i || typeof i.id !== 'string' || !Number.isInteger(i.amount) || !/^\d{4}-\d{2}$/.test(String(i.month))) return { error: 'An income entry in the file is damaged.' };
+  }
+  for (const l of lists) {
+    if (!l || typeof l.id !== 'string' || typeof l.title !== 'string') return { error: 'A list item in the file is damaged.' };
+  }
+  return { doc: { ...(d as FinanceDoc), vouchers, events, incomes, lists } };
 }
 
 /** Live transactions for a month (YYYY-MM), newest first. */

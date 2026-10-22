@@ -52,6 +52,7 @@ const FinancePlan = lazy(() => import('./finance/PlanPage'));
 const FinanceBank = lazy(() => import('./finance/BankPage'));
 const FinanceWhatIf = lazy(() => import('./finance/WhatIfPage'));
 const FinanceExtras = lazy(() => import('./finance/ExtrasPage'));
+const FinanceLists = lazy(() => import('./finance/ListsPage'));
 const FinanceSettingsPage = lazy(() => import('./finance/SettingsPage'));
 const NutritionTargets = lazy(() => import('./nutrition/TargetsPage'));
 
@@ -123,6 +124,7 @@ function SignedInApp({ client, userId }: { client: SupabaseClient; userId: strin
                       <Route path="bank" element={<FinanceBank />} />
                       <Route path="what-if" element={<FinanceWhatIf />} />
                       <Route path="extras" element={<FinanceExtras />} />
+                      <Route path="lists" element={<FinanceLists />} />
                       <Route path="transactions" element={<FinanceTransactions />} />
                       <Route path="settings" element={<FinanceSettingsPage />} />
                     </Route>

@@ -233,6 +233,28 @@ export default function FinanceSettingsPage() {
         </Stack>
       </Card>
 
+      <Card title="🚫💳 Card-free mode">
+        <FormControlLabel
+          control={
+            <Switch
+              checked={!!form.cardFree}
+              onChange={(e) => set({ cardFree: e.target.checked ? { from: dayjs().add(1, 'month').format('YYYY-MM'), weeklyCap: Math.round(form.combinedCardCap / 4.33 / 10000) * 10000 } : null })}
+            />
+          }
+          label={<Typography sx={{ fontWeight: 600 }}>Stop using cards for everyday spending</Typography>}
+        />
+        <Typography variant="body2" color="text.secondary" sx={{ mb: form.cardFree ? 1.5 : 0 }}>
+          From the start month, everyday spending is paid the same month (UPI or debit) instead of on cards paid next month. That month pays twice once: last month’s card bill
+          plus its own spending. A weekly cap keeps everyday spending in check.
+        </Typography>
+        {form.cardFree && (
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+            <TextField type="month" label="Starting" value={form.cardFree.from} onChange={(e) => e.target.value && set({ cardFree: { ...form.cardFree!, from: e.target.value } })} InputLabelProps={{ shrink: true }} />
+            <AmountField label="Weekly cap (everyday)" value={form.cardFree.weeklyCap} onChange={(v) => v !== null && set({ cardFree: { ...form.cardFree!, weeklyCap: v } })} helperText="Groceries, fuel, pet and the rest; not rent, bills or Wants" />
+          </Stack>
+        )}
+      </Card>
+
       <Card title="🏠 Fixed monthly costs">
         <Stack spacing={1.5}>
           {form.fixed.map((f, i) => (

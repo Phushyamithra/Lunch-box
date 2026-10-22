@@ -4,7 +4,8 @@ import { useMemo, useState } from 'react';
 import { Area, Bar, CartesianGrid, Cell, ComposedChart, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Card, Metric } from '../fitness/ui';
 import { cardStatus } from './engine';
-import { pendingCash } from './extras';
+import { awaitedBonuses, pendingCash } from './extras';
+import { YearlyBillsCard } from './PlannerCards';
 import { useFinance } from './FinanceContext';
 import { formatINR } from './model';
 import { projection, type RowKind } from './projection';
@@ -59,6 +60,13 @@ export default function PlanPage() {
             Not included: pending refunds and one-offs ({pendingCash(doc).in ? `+${formatINR(pendingCash(doc).in)}` : ''}
             {pendingCash(doc).in && pendingCash(doc).out ? ', ' : ''}
             {pendingCash(doc).out ? `−${formatINR(pendingCash(doc).out)}` : ''}). They count once settled.
+          </Typography>
+        )}
+        {awaitedBonuses(doc).length > 0 && (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Not included: bonus income until received ({awaitedBonuses(doc)
+              .map((b) => `${b.name} ${formatINR(b.amount)}${b.certainty === 'estimated' ? ' est.' : ''}`)
+              .join(', ')}).
           </Typography>
         )}
         {current && current.pending > 0 && (
@@ -127,6 +135,8 @@ export default function PlanPage() {
             : 'Each colour is a goal, filled in order: the next one starts only when the one below is full.'}
         </Typography>
       </Card>
+
+      <YearlyBillsCard />
 
       <Card title="🗓️ Month by month">
         <Box sx={{ overflowX: 'auto', mx: -1 }}>
