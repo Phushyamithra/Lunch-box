@@ -1,7 +1,6 @@
-import { Alert, Box, Button, Chip, Divider, Stack, TextField, Typography } from '@mui/material';
+import { Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Stack, TextField, Typography } from '@mui/material';
 import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Card } from '../fitness/ui';
 import { useSnackbar } from '../layout/Snackbar';
 import { cardStatus, savingsState } from './engine';
@@ -10,6 +9,87 @@ import { formatINR, type BalanceCheck, type Paise } from './model';
 import { compareBalance, reconcile, type Verdict } from './projection';
 import { SalaryDayCard } from './PlannerCards';
 import { AmountField } from './ui';
+
+/** Opening balance and start month: the starting point everything is measured from. Editable any time. */
+function OpeningCard() {
+  const { doc, updateSettings } = useFinance();
+  const toast = useSnackbar();
+  const s = doc!.settings;
+  const [open, setOpen] = useState(false);
+  const [amount, setAmount] = useState<Paise | null>(s.openingBalance);
+  const [month, setMonth] = useState(s.startMonth);
+  const save = async () => {
+    await updateSettings({ openingBalance: amount, startMonth: month });
+    toast('Starting point saved');
+    setOpen(false);
+  };
+  return (
+    <Card title="📍 Starting point" aside={<Button size="small" onClick={() => (setAmount(s.openingBalance), setMonth(s.startMonth), setOpen(true))}>{s.openingBalance === null ? 'Set' : 'Edit'}</Button>}>
+      <Typography variant="body2" color={s.openingBalance === null ? 'warning.main' : 'text.secondary'}>
+        {s.openingBalance === null
+          ? 'Add what your bank held on the 1st of the month you started tracking, so the app can work out what it should hold now.'
+          : `${formatINR(s.openingBalance)} in the bank on 1 ${dayjs(`${s.startMonth}-01`).format('MMM YYYY')} (after the previous salary). Tracking starts that month.`}
+      </Typography>
+      <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="xs">
+        <DialogTitle>Starting point</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            <TextField type="month" label="Tracking starts" value={month} onChange={(e) => setMonth(e.target.value)} InputLabelProps={{ shrink: true }} />
+            <AmountField label="Bank balance on the 1st of that month" value={amount} onChange={setAmount} helperText="All your accounts together, after the previous month’s salary landed." />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="contained" disabled={!/^\d{4}-\d{2}$/.test(month)} onClick={() => void save()}>
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Card>
+  );
+}
+
+/** Edit or delete a balance you entered. */
+function BalanceDialog({ check, onClose }: { check: BalanceCheck; onClose: () => void }) {
+  const { update } = useFinance();
+  const toast = useSnackbar();
+  const [amount, setAmount] = useState<Paise | null>(check.amount);
+  const [date, setDate] = useState(check.date);
+  const [note, setNote] = useState(check.note ?? '');
+  const stamp = () => new Date().toISOString();
+  const save = async () => {
+    if (amount === null) return;
+    await update((d) => ({ ...d, balances: d.balances.map((x) => (x.id === check.id ? { ...x, amount, date, note: note.trim() || null, updatedAt: stamp() } : x)) }));
+    toast('Balance updated');
+    onClose();
+  };
+  const remove = async () => {
+    await update((d) => ({ ...d, balances: d.balances.map((x) => (x.id === check.id ? { ...x, deletedAt: stamp(), updatedAt: stamp() } : x)) }));
+    toast('Balance removed', { action: { label: 'Undo', run: () => void update((d) => ({ ...d, balances: d.balances.map((x) => (x.id === check.id ? { ...x, deletedAt: null, updatedAt: stamp() } : x)) })) } });
+    onClose();
+  };
+  return (
+    <Dialog open onClose={onClose} fullWidth maxWidth="xs">
+      <DialogTitle>Edit balance</DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} sx={{ pt: 1 }}>
+          <AmountField label="Balance" value={amount} onChange={setAmount} />
+          <TextField type="date" label="On" value={date} onChange={(e) => setDate(e.target.value)} InputLabelProps={{ shrink: true }} />
+          <TextField label="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} inputProps={{ maxLength: 200 }} placeholder="e.g. Main 2,013.05 + Savings 5,197.92" />
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button color="error" onClick={() => void remove()} sx={{ mr: 'auto' }}>
+          Delete
+        </Button>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="contained" disabled={amount === null || !date} onClick={() => void save()}>
+          Save
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
 
 const VERDICT: Record<Verdict, { color: 'success' | 'info' | 'warning'; label: string }> = {
   match: { color: 'success', label: 'Matches' },
@@ -21,11 +101,11 @@ const VERDICT: Record<Verdict, { color: 'success' | 'info' | 'warning'; label: s
 export default function BankPage() {
   const { doc, update } = useFinance();
   const toast = useSnackbar();
-  const navigate = useNavigate();
   const today = dayjs().format('YYYY-MM-DD');
   const [amount, setAmount] = useState<Paise | null>(null);
   const [date, setDate] = useState(today);
   const [formKey, setFormKey] = useState(0);
+  const [editing, setEditing] = useState<BalanceCheck | null>(null);
 
   const ctx = useMemo(() => {
     if (!doc) return null;
@@ -41,9 +121,7 @@ export default function BankPage() {
     return (
       <Stack spacing={2} sx={{ maxWidth: 860 }}>
         <SalaryDayCard />
-        <Alert severity="info" action={<Button color="inherit" onClick={() => navigate('/finance/settings')}>Settings</Button>}>
-          Add your bank balance when tracking started (Settings → Starting point) to see what your account should hold.
-        </Alert>
+        <OpeningCard />
       </Stack>
     );
   }
@@ -58,12 +136,11 @@ export default function BankPage() {
     setAmount(null);
     setFormKey((k) => k + 1);
   };
-  const remove = (b: BalanceCheck) =>
-    void update((d) => ({ ...d, balances: d.balances.map((x) => (x.id === b.id ? { ...x, deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() } : x)) }));
 
   return (
     <Stack spacing={2} sx={{ maxWidth: 860 }}>
       <SalaryDayCard />
+      <OpeningCard />
       <Card title="🏦 Your bank should hold">
         <Typography sx={{ fontSize: 32, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{formatINR(now.expected)}</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
@@ -137,10 +214,15 @@ export default function BankPage() {
                   <Stack direction="row" alignItems="center" spacing={1}>
                     <Typography variant="body2" sx={{ fontWeight: 600, flexGrow: 1 }}>
                       {dayjs(b.date).format('ddd D MMM YYYY')} · {formatINR(b.amount)}
+                      {b.note && (
+                        <Typography component="span" variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 400 }}>
+                          {b.note}
+                        </Typography>
+                      )}
                     </Typography>
                     {r && <Chip size="small" color={VERDICT[r.verdict].color} label={VERDICT[r.verdict].label} />}
-                    <Button size="small" color="inherit" onClick={() => remove(b)}>
-                      Remove
+                    <Button size="small" color="inherit" onClick={() => setEditing(b)}>
+                      Edit
                     </Button>
                   </Stack>
                   {r && (
@@ -154,6 +236,7 @@ export default function BankPage() {
           </Stack>
         )}
       </Card>
+      {editing && <BalanceDialog check={editing} onClose={() => setEditing(null)} />}
     </Stack>
   );
 }

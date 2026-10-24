@@ -177,3 +177,61 @@ export function financeMarkdown(doc: FinanceDoc, from: string, to: string, today
   if (v.balance || v.expired) out.push('## Amazon Pay (not cash)', '', `Balance ${formatINR(v.balance)}${v.expired ? `; expired unused ${formatINR(v.expired)}` : ''}.`, '');
   return out.join('\n');
 }
+
+// ---------- by payment method, and budget timelines ----------
+
+export interface MethodTotal {
+  method: string;
+  total: Paise;
+  count: number;
+  kind: 'bank' | 'card' | 'voucher' | 'other';
+}
+
+/** A month's logged spending by how it was paid, plus one-offs that left the bank. */
+export function byMethod(doc: FinanceDoc, ym: string): { methods: MethodTotal[]; bankOneOffs: Paise; total: Paise } {
+  const cards = new Set(doc.settings.cards.map((c) => c.method));
+  const m = new Map<string, MethodTotal>();
+  for (const t of live(doc)) {
+    if (monthOf(t.date) !== ym) continue;
+    const kind: MethodTotal['kind'] = t.method === VOUCHER_METHOD ? 'voucher' : cards.has(t.method) ? 'card' : t.method === 'UPI' || t.method === 'Debit' ? 'bank' : 'other';
+    const row = m.get(t.method) ?? { method: t.method, total: 0, count: 0, kind };
+    row.total += t.amount;
+    row.count++;
+    m.set(t.method, row);
+  }
+  const bankOneOffs = (doc.events ?? [])
+    .filter((e) => !e.deletedAt && e.status === 'settled' && e.account === 'bank' && e.kind === 'expense' && e.settledOn?.startsWith(ym))
+    .reduce((a, e) => a + e.amount, 0);
+  const methods = [...m.values()].sort((a, b) => b.total - a.total);
+  return { methods, bankOneOffs, total: methods.reduce((a, x) => a + x.total, 0) };
+}
+
+export interface BudgetStep {
+  id: string;
+  date: string;
+  label: string;
+  amount: Paise;
+  method: string;
+  /** Running total after this purchase. */
+  running: Paise;
+  /** This purchase took the budget past its limit. */
+  crossed: boolean;
+}
+
+/** A budget category's purchases in order, with a running total and the day it ran out. */
+export function budgetTimeline(doc: FinanceDoc, category: string, ym: string): { limit: Paise | null; steps: BudgetStep[]; usedUpOn: string | null; spent: Paise } {
+  const limit = planFor(doc.settings, ym).budgets.find((b) => b.category === category)?.amount ?? null;
+  const txs = live(doc)
+    .filter((t) => t.category === category && monthOf(t.date) === ym && t.method !== VOUCHER_METHOD)
+    .sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt));
+  let running = 0;
+  let usedUpOn: string | null = null;
+  const steps = txs.map((t) => {
+    const before = running;
+    running += t.amount;
+    const crossed = limit !== null && before < limit && running >= limit;
+    if (crossed && !usedUpOn) usedUpOn = t.date;
+    return { id: t.id, date: t.date, label: t.note || t.category, amount: t.amount, method: t.method, running, crossed };
+  });
+  return { limit, steps, usedUpOn, spent: running };
+}

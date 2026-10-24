@@ -1,8 +1,10 @@
 import { Alert, Box, Button, Checkbox, Chip, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Stack, TextField, Typography } from '@mui/material';
-import { useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useSnackbar } from '../layout/Snackbar';
 import { useFinance } from './FinanceContext';
-import { applyMonthImport, parseMonthMarkdown, type ImportItem, type ParsedMonth } from './mdImport';
+import dayjs from 'dayjs';
+import { readXlsx } from '../lib/xlsx';
+import { applyMonthImport, markDuplicates, parseExpenseSheets, parseMonthMarkdown, type ImportItem, type ParsedMonth } from './mdImport';
 import { formatINR } from './model';
 
 const KIND_LABEL: Record<ImportItem['kind'], string> = {
@@ -27,11 +29,7 @@ export function MonthImportDialog({ onClose }: { onClose: () => void }) {
   const [undated, setUndated] = useState('');
   const [busy, setBusy] = useState(false);
   const s = doc!.settings;
-  const existing = useMemo(() => new Set([...doc!.transactions, ...(doc!.events ?? []), ...(doc!.vouchers ?? []), ...(doc!.incomes ?? []), ...(doc!.lists ?? []), ...doc!.balances].map((r) => r.id)), [doc]);
-
-  const read = (md: string) => {
-    setText(md);
-    const p = parseMonthMarkdown(md, { categories: s.categories, methods: s.methods });
+  const show = (p: ParsedMonth | { error: string }) => {
     if ('error' in p) {
       setError(p.error);
       setParsed(null);
@@ -40,7 +38,21 @@ export function MonthImportDialog({ onClose }: { onClose: () => void }) {
     setError(null);
     setParsed(p);
     setUndated(p.generated);
-    setItems(p.items.map((i) => (i.record.id && existing.has(i.record.id as string) ? { ...i, include: false, note: 'Already imported.' } : i)));
+    setItems(markDuplicates(doc!, p.items, p.month));
+  };
+  const read = (md: string) => {
+    setText(md);
+    show(parseMonthMarkdown(md, { categories: s.categories, methods: s.methods }));
+  };
+  const readFile = async (f: File | undefined) => {
+    if (!f) return;
+    if (/\.xlsx$/i.test(f.name)) {
+      try {
+        show(parseExpenseSheets(await readXlsx(await f.arrayBuffer()), { categories: s.categories, methods: s.methods, today: dayjs().format('YYYY-MM-DD') }));
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Couldn’t read that file.');
+      }
+    } else read(await f.text());
   };
   const set = (key: string, patch: Partial<ImportItem>) => setItems((list) => list.map((i) => (i.key === key ? { ...i, ...patch } : i)));
   const chosen = items.filter((i) => i.include);
@@ -66,7 +78,7 @@ export function MonthImportDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog open onClose={onClose} fullWidth maxWidth="md" scroll="paper">
-      <DialogTitle>{parsed ? parsed.title : 'Import a month (Markdown)'}</DialogTitle>
+      <DialogTitle>{parsed ? parsed.title : 'Import a month'}</DialogTitle>
       <DialogContent dividers>
         {!parsed ? (
           <Stack spacing={1.5}>
@@ -75,9 +87,13 @@ export function MonthImportDialog({ onClose }: { onClose: () => void }) {
               voucher, Pending reimbursements, Open checklist. You’ll see every row before anything is added; nothing you have is changed, and importing the same file again
               adds nothing twice.
             </Typography>
-            <input ref={fileRef} type="file" accept=".md,.markdown,.txt,text/markdown,text/plain" hidden onChange={(e) => void e.target.files?.[0]?.text().then(read)} />
+            <Typography variant="body2" color="text.secondary">
+              Or an Excel expense sheet (.xlsx) with a header row like Date · Item · Amount · Category · Paid via · Notes. Rows that look already recorded (same month, amount
+              and payment method) start unticked, so importing the same month from two files doesn’t count anything twice.
+            </Typography>
+            <input ref={fileRef} type="file" accept=".md,.markdown,.txt,.xlsx,text/markdown,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden onChange={(e) => void readFile(e.target.files?.[0])} />
             <Button variant="outlined" onClick={() => fileRef.current?.click()} sx={{ alignSelf: 'flex-start' }}>
-              Choose a .md file
+              Choose a file (.md or .xlsx)
             </Button>
             <TextField label="…or paste it here" value={text} onChange={(e) => setText(e.target.value)} multiline minRows={8} maxRows={16} inputProps={{ style: { fontFamily: 'monospace', fontSize: 12 } }} />
             {error && <Alert severity="error">{error}</Alert>}

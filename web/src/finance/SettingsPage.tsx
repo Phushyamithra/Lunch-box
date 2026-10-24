@@ -430,7 +430,7 @@ export default function FinanceSettingsPage() {
               Restore from file
             </Button>
             <Button variant="contained" onClick={() => setImporting(true)}>
-              Import a month (Markdown)
+              Import a month (.md or .xlsx)
             </Button>
           </Stack>
           <Button color="error" onClick={() => setConfirmForget(true)} sx={{ alignSelf: 'flex-start' }}>

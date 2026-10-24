@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { monthSummary } from './engine';
 import { voucherState } from './extras';
-import { applyMonthImport, guessCategory, parseAmount, parseDay, parseMonthMarkdown, type ParsedMonth } from './mdImport';
+import { applyMonthImport, guessCategory, markDuplicates, parseAmount, parseDay, parseExpenseSheets, parseMonthMarkdown, type ParsedMonth } from './mdImport';
 import { CATEGORIES, emptyDoc, METHODS, rupees } from './model';
 
 // A made-up month in the same layout as the real summaries.
@@ -159,5 +159,69 @@ describe('applying', () => {
     expect(voucherState(doc, '2027-03-20').balance).toBe(rupees(1000 - 299));
     const m = monthSummary(doc, '2027-03', '2027-03-20');
     expect(m).toMatchObject({ voucherSpend: rupees(299), eventsOut: rupees(4321), otherIncome: rupees(2500), eventsIn: 0 });
+  });
+});
+
+describe('Excel expense sheets', () => {
+  const sheets = [
+    {
+      name: 'Transactions',
+      rows: [
+        ['March 2027 expenses'],
+        [],
+        ['Date', 'Item', 'Amount (₹)', 'Category', 'Sub-category', 'Paid via', 'Method confirmed', 'Notes'],
+        ['', 'Rent', 20000, 'Fixed', 'Housing', 'Bank / UPI', 'Yes', ''],
+        ['', 'SIP', 3000, 'Savings/Investment', 'Mutual fund', 'Bank / UPI', 'Yes', ''],
+        ['', 'HDFC card bill (previous cycle)', 4321, 'Card bill payment', 'HDFC', 'Bank / UPI', 'Yes', ''],
+        [46462, 'Domain renewal (annual)', 1200, 'Yearly bill', 'Web', 'ICICI card', 'Yes', 'Planned one-off. Verify cashback on the next statement'],
+        ['', 'Other ICICI purchases (not itemised)', 700, 'Unitemised ICICI', 'Petrol / misc', 'ICICI card', 'Estimate', ''],
+        [46450, 'Earbuds tips', 299, 'Needs', 'Parts', 'Amazon Pay voucher', 'Yes', ''],
+        ['', 'Jacket', 2000, 'Wants', 'Clothing', 'Bank / UPI', 'Yes', 'Returned'],
+        ['', 'Jacket refund', -2000, 'Wants', 'Clothing', 'Bank / UPI', 'Yes', 'Refund received'],
+        [46465, 'Shawarma', 378, 'Wants', 'Eating out', 'Bank / UPI', 'Yes', ''],
+        ['', 'Socks (sports)', 499, 'Wants', 'Clothing', 'Bank / UPI', 'Yes', ''],
+        ['', 'Total logged', 27397],
+      ],
+    },
+    { name: 'Notes', rows: [['6. Amazon voucher: 1,000 received Mar 5, of which 299 is logged.'], ['7. Pending reimbursement: phone recharge 299.']] },
+  ];
+  const sheetOpts = { ...opts, today: '2027-03-25' };
+
+  it('reads the table, its dates and the notes', () => {
+    const p = parseExpenseSheets(sheets, sheetOpts) as ParsedMonth;
+    expect(p).toMatchObject({ title: 'March 2027 expenses', month: '2027-03', generated: '2027-03-19' }); // latest dated row
+    const by = (label: string) => p.items.find((i) => i.label.startsWith(label))!;
+    expect(by('Rent')).toMatchObject({ category: 'Rent', method: 'UPI', date: '2027-03-01', include: true });
+    expect(by('SIP')).toMatchObject({ category: 'Bills', date: '2027-03-01' });
+    expect(by('HDFC card bill')).toMatchObject({ kind: 'event', date: '2027-03-01', record: { kind: 'expense' } });
+    expect(by('Domain renewal')).toMatchObject({ date: '2027-03-16', category: 'Other', method: 'ICICI', record: { oneOff: true, cashbackCheck: true } });
+    expect(by('Other ICICI purchases')).toMatchObject({ category: 'Other', include: true, note: expect.stringContaining('Estimate') });
+    expect(by('Earbuds tips')).toMatchObject({ method: 'Amazon Pay', date: '2027-03-04' });
+    expect(by('Jacket refund')).toMatchObject({ include: false });
+    expect(p.items.find((i) => i.label === 'Jacket')).toMatchObject({ include: false });
+    expect(p.items.some((i) => /^Total/.test(i.label))).toBe(false);
+    expect(by('Amazon Pay value received 2027-03-05')).toMatchObject({ kind: 'voucher', amount: rupees(1000) });
+    expect(by('Phone recharge: reimbursement')).toMatchObject({ kind: 'event', amount: rupees(299), record: { status: 'pending' } });
+    expect(p.skippedSections).toEqual(['Notes (only the voucher and reimbursement lines were read)']);
+  });
+
+  it('needs Item and Amount columns', () => {
+    expect(parseExpenseSheets([{ name: 'S', rows: [['a', 'b']] }], sheetOpts)).toEqual({ error: expect.stringContaining('“Item” and “Amount”') });
+  });
+
+  it('flags rows already recorded from another file', () => {
+    const md = parse(); // the Markdown month (March 2027) imported first
+    const first = applyMonthImport(emptyDoc('2027-03-20'), md, md.items.filter((i) => i.include), '2027-03-15').doc;
+    const p = parseExpenseSheets(sheets, sheetOpts) as ParsedMonth;
+    const marked = markDuplicates(first, p.items, p.month);
+    const by = (label: string) => marked.find((i) => i.label.startsWith(label))!;
+    expect(by('Rent')).toMatchObject({ include: false, note: expect.stringContaining('Already imported') });
+    expect(by('HDFC card bill')).toMatchObject({ include: false });
+    expect(by('Domain renewal')).toMatchObject({ include: false }); // same name and amount: same id
+    expect(by('Other ICICI purchases')).toMatchObject({ include: true });
+    expect(by('Amazon Pay value received')).toMatchObject({ include: false });
+    expect(by('Shawarma')).toMatchObject({ include: true });
+    // Different name, same amount and method as "Running socks" from the Markdown file.
+    expect(by('Socks (sports)')).toMatchObject({ include: false, note: expect.stringContaining('Looks already recorded: Wants · Running socks') });
   });
 });

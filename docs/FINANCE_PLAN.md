@@ -257,3 +257,33 @@ choose in the preview. Importing the same file again adds nothing twice.
 The current month's everyday ("needs") projection is now what's logged
 plus the allowance for the days left, not the full allowance.
 Affordability judges a purchase against the plan's savings.
+
+### Excel sheets, payment methods, budgets and balances (2026-10-24)
+
+- **Import (.xlsx)** (`lib/xlsx.ts`, a small reader with no dependency,
+  tested; `parseExpenseSheets`):
+  - **Columns:** an expense table with Date · Item · Amount · Category ·
+    Sub-category · Paid via · Method confirmed · Notes.
+  - **Dates:** Excel dates become real dates. Fixed costs and old card
+    bills without a date go on the 1st.
+  - **Read row by row:**
+    - a purchase together with its matching refund is left out (net 0);
+    - "Estimate" rows go under Other, flagged;
+    - "Total" rows are skipped.
+  - **From other sheets:** only "voucher … received <date>" and "Pending
+    reimbursement: …" lines are read.
+  - **Already recorded:** rows that look already recorded (same id, or
+    same month, amount and payment method) start unticked, for both
+    .md and .xlsx files.
+- **Paid via** (Transactions):
+  - totals per payment method (bank, card, voucher), plus one-offs out of
+    the bank, with the bank total for the month;
+  - tap a method to filter, and combine it with a category filter.
+- **Budget timeline:** pick Wants or Unplanned to see each purchase in
+  order with a running total and the purchase that used the budget up.
+  Month → Budgets bars open it and show "used up on …".
+- **Bank:**
+  - a Starting point card to set or edit the opening balance and start
+    month;
+  - each balance check can be edited (amount, date, note) or deleted with
+    undo.

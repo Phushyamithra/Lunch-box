@@ -79,3 +79,36 @@ describe('finance reports', () => {
     expect(m).toContain('## Savings goals (waterfall)');
   });
 });
+
+describe('by method and budget timelines', () => {
+  it('totals each payment method; bank one-offs listed separately', async () => {
+    const { byMethod } = await import('./reports');
+    const d = doc();
+    d.events = [{ id: 'e', date: '2026-10-02', kind: 'expense', amount: rupees(8888), description: 'Old HDFC bill', status: 'settled', settledOn: '2026-10-02', account: 'bank', cardMethod: null, updatedAt: '', deletedAt: null }];
+    const r = byMethod(d, '2026-10');
+    expect(r.methods.map((m) => [m.method, m.total / 100, m.count, m.kind])).toEqual([
+      ['HDFC', 2500, 1, 'card'],
+      ['ICICI', 1800, 1, 'card'],
+      ['Amazon Pay', 350, 1, 'voucher'],
+    ]);
+    expect(r.bankOneOffs).toBe(rupees(8888));
+  });
+
+  it('a budget’s purchases in order, with the day it ran out', async () => {
+    const { budgetTimeline } = await import('./reports');
+    const d = doc();
+    d.transactions = [
+      tx('2026-10-05', 849, 'Wants', 'UPI', { note: 'Shaker' }),
+      tx('2026-10-12', 185, 'Wants', 'UPI', { note: 'Ice cream' }),
+      tx('2026-10-15', 300, 'Wants', 'Amazon Pay'), // voucher: not the cash budget
+      tx('2026-10-23', 378, 'Wants', 'UPI', { note: 'Shawarma' }),
+    ];
+    const b = budgetTimeline(d, 'Wants', '2026-10');
+    expect(b).toMatchObject({ limit: rupees(1000), usedUpOn: '2026-10-12', spent: rupees(1412) });
+    expect(b.steps.map((s) => [s.label, s.running / 100, s.crossed])).toEqual([
+      ['Shaker', 849, false],
+      ['Ice cream', 1034, true],
+      ['Shawarma', 1412, false],
+    ]);
+  });
+});

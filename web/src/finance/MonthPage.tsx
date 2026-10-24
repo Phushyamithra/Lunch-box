@@ -3,8 +3,10 @@ import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 import { Alert, Box, Chip, Collapse, IconButton, LinearProgress, Stack, Typography, Button } from '@mui/material';
 import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, Metric } from '../fitness/ui';
 import { addMonths, monthSummary, savingsState, upcoming } from './engine';
+import { budgetTimeline } from './reports';
 import { useFinance } from './FinanceContext';
 import { formatINR, type Paise } from './model';
 
@@ -36,6 +38,7 @@ const monthName = (ym: string) => dayjs(`${ym}-01`).format('MMMM YYYY');
 /** One month: what pays for it, what's committed, budgets, everyday spend, savings and what's coming up. */
 export default function MonthPage() {
   const { doc } = useFinance();
+  const navigate = useNavigate();
   const today = dayjs().format('YYYY-MM-DD');
   const current = today.slice(0, 7);
   const [month, setMonth] = useState(current);
@@ -129,15 +132,29 @@ export default function MonthPage() {
 
       <Card title="🎚️ Budgets">
         <Stack spacing={1.75}>
-          {m.budgets.map((b) => (
-            <Bar
-              key={b.category}
-              label={b.category}
-              value={b.logged}
-              max={b.planned}
-              detail={b.logged > b.planned ? `${formatINR(b.logged - b.planned)} over` : `${formatINR(b.remaining)} left${b.rollover ? (m.final ? ' (saved)' : '; whatever’s left is saved') : ''}`}
-            />
-          ))}
+          {m.budgets.map((b) => {
+            const usedUp = budgetTimeline(doc, b.category, month).usedUpOn;
+            return (
+              <Box
+                key={b.category}
+                component="button"
+                onClick={() => navigate('/finance/transactions', { state: { category: b.category, month } })}
+                aria-label={`${b.category}: see purchases`}
+                sx={{ display: 'block', width: '100%', p: 0, border: 0, bgcolor: 'transparent', color: 'inherit', font: 'inherit', textAlign: 'left', cursor: 'pointer' }}
+              >
+                <Bar
+                  label={`${b.category} ›`}
+                  value={b.logged}
+                  max={b.planned}
+                  detail={
+                    b.logged > b.planned
+                      ? `${formatINR(b.logged - b.planned)} over${usedUp ? ` · used up on ${dayjs(usedUp).format('D MMM')}` : ''}`
+                      : `${formatINR(b.remaining)} left${b.rollover ? (m.final ? ' (saved)' : '; whatever’s left is saved') : ''}`
+                  }
+                />
+              </Box>
+            );
+          })}
           <Bar
             label="Needs (everyday)"
             value={m.everyday.logged}
