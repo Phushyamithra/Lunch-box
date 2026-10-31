@@ -128,6 +128,18 @@ describe('helpers', () => {
     ]);
   });
 
+  it('puts a meal’s usual foods first, at the amount had at that meal', () => {
+    const rows = [
+      e({ food_id: 'dal', name: 'Dal', meal: 'lunch' }),
+      e({ food_id: 'dal', name: 'Dal', meal: 'lunch' }),
+      e({ food_id: 'milk', name: 'Milk', meal: 'breakfast', quantity: 2, logged_at: '2026-10-18T03:00:00Z' }),
+      e({ food_id: 'milk', name: 'Milk', meal: 'dinner', quantity: 1, logged_at: '2026-10-19T15:00:00Z' }),
+    ];
+    const f = frequentFoods(rows, '2026-10-19', 'breakfast');
+    expect(f[0].name).toBe('Milk');
+    expect(f[0].last.quantity).toBe(2);
+  });
+
   it('checks label energy against 4/4/9 and validates foods', () => {
     expect(energyCheck({ kcal: 116, protein: 6.8, carbs: 16.5, fat: 2.3 }).ok).toBe(true);
     expect(energyCheck({ kcal: 50, protein: 20, carbs: 20, fat: 10 }).ok).toBe(false);

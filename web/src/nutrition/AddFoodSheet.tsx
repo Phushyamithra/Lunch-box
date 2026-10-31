@@ -5,6 +5,7 @@ import {
   Alert,
   Box,
   Button,
+  Checkbox,
   Chip,
   Dialog,
   DialogContent,
@@ -13,6 +14,7 @@ import {
   InputAdornment,
   Link,
   List,
+  ListItem,
   ListItemButton,
   ListItemText,
   ListSubheader,
@@ -119,6 +121,7 @@ export function AddFoodSheet({ open, day, meal: initialMeal, onClose }: { open: 
                   meal={meal}
                   onPick={(food, quantity, unit) => setPicked({ food, quantity, unit })}
                   onCreate={(name) => setCreating(name)}
+                  onAddedAll={close}
                   onPickMenu={(item) => {
                     setMenuItem(item);
                     setMode('out');
@@ -198,12 +201,14 @@ function SearchStep({
   meal,
   onPick,
   onCreate,
+  onAddedAll,
   onPickMenu,
 }: {
   day: string;
   meal: MealSlot;
   onPick: (f: Food, quantity?: number, unit?: string) => void;
   onCreate: (name: string) => void;
+  onAddedAll: () => void;
   onPickMenu: (item: RestaurantItem) => void;
 }) {
   const { data, addEntry } = useNutrition();
@@ -212,7 +217,11 @@ function SearchStep({
   const [filter, setFilter] = useState<DietFilter>(readFilter);
   const [category, setCategory] = useState<string | null>(null);
   const foods = data!.foods;
-  const frequent = useMemo(() => frequentFoods(data!.entries, day), [data, day]);
+  const frequent = useMemo(() => frequentFoods(data!.entries, day, meal), [data, day, meal]);
+  const [ticked, setTicked] = useState<string[]>([]);
+  const [adding, setAdding] = useState(false);
+  const chosen = frequent.filter((f) => ticked.includes(f.key));
+  const chosenKcal = Math.round(chosen.reduce((a, f) => a + f.last.kcal, 0));
   const results = useMemo(() => searchFoods(foods, q, filter), [foods, q, filter]);
   const menuHits = useMemo(() => searchMenu(q).filter((i) => dietAllowed(i.diet, filter)).slice(0, 8), [q, filter]);
   const categories = useMemo(() => {
@@ -230,14 +239,34 @@ function SearchStep({
     }
   };
 
-  const again = async (last: Entry) => {
+  const copyOf = (last: Entry): EntryInput => {
     const input: EntryInput = { ...last, day, meal, meal_log_id: null };
     for (const k of ['id', 'logged_at', 'deleted_at'] as const) delete (input as unknown as Record<string, unknown>)[k];
+    return input;
+  };
+  const again = async (last: Entry) => {
     try {
-      await addEntry(input);
+      await addEntry(copyOf(last));
       toast(`✅ ${last.name} added`);
     } catch (e) {
       toast(`Not saved: ${e instanceof Error ? e.message : 'error'}`, { severity: 'error' });
+    }
+  };
+  const addTicked = async () => {
+    setAdding(true);
+    let done = 0;
+    try {
+      for (const f of chosen) {
+        await addEntry(copyOf(f.last));
+        done += 1;
+      }
+      toast(`✅ ${done} ${done === 1 ? 'food' : 'foods'} added · ${chosenKcal} kcal`);
+      onAddedAll();
+    } catch (e) {
+      setTicked(chosen.slice(done).map((f) => f.key));
+      toast(`${done} of ${chosen.length} added, then: ${e instanceof Error ? e.message : 'error'}`, { severity: 'error' });
+    } finally {
+      setAdding(false);
     }
   };
 
@@ -259,18 +288,31 @@ function SearchStep({
         ))}
       </Box>
       <List dense disablePadding>
-        {!q.trim() && !category && frequent.length > 0 && <ListSubheader disableSticky>Frequent</ListSubheader>}
+        {!q.trim() && !category && frequent.length > 0 && <ListSubheader disableSticky>Frequent · tick several to add together</ListSubheader>}
         {!q.trim() &&
           !category &&
           frequent.map((f) => {
             const food = f.food_id ? foods.find((x) => x.id === f.food_id) : undefined;
             return (
-              <ListItemButton key={f.key} onClick={() => (food ? onPick(food, f.last.quantity, f.last.unit) : void again(f.last))} sx={{ borderRadius: '12px' }}>
-                <ListItemText
-                  primary={f.name}
-                  secondary={`${food ? `${f.last.quantity} × ${f.last.unit}` : 'tap to add again'} · ${f.last.kcal} kcal · ${f.last.protein} g protein · ${f.count}× in 30 days`}
-                />
-              </ListItemButton>
+              <ListItem
+                key={f.key}
+                disablePadding
+                secondaryAction={
+                  <Checkbox
+                    edge="end"
+                    checked={ticked.includes(f.key)}
+                    onChange={() => setTicked(ticked.includes(f.key) ? ticked.filter((k) => k !== f.key) : [...ticked, f.key])}
+                    inputProps={{ 'aria-label': `Select ${f.name}` }}
+                  />
+                }
+              >
+                <ListItemButton onClick={() => (food ? onPick(food, f.last.quantity, f.last.unit) : void again(f.last))} sx={{ borderRadius: '12px' }}>
+                  <ListItemText
+                    primary={f.name}
+                    secondary={`${food ? `${f.last.quantity} × ${f.last.unit}` : 'tap to add again'} · ${f.last.kcal} kcal · ${f.last.protein} g protein · ${f.count}× in 30 days`}
+                  />
+                </ListItemButton>
+              </ListItem>
             );
           })}
         {q.trim() && results.map((f) => <FoodRow key={f.id} f={f} onPick={onPick} />)}
@@ -317,6 +359,13 @@ function SearchStep({
       <Button startIcon={<AddRoundedIcon />} onClick={() => onCreate(q.trim())} sx={{ alignSelf: 'flex-start' }}>
         {q.trim() ? `Create “${q.trim()}”` : 'Create a food'}
       </Button>
+      {chosen.length > 0 && (
+        <Box sx={{ position: 'sticky', bottom: 0, zIndex: 1, py: 1, bgcolor: 'background.paper' }}>
+          <Button variant="contained" size="large" fullWidth disabled={adding} onClick={() => void addTicked()} sx={{ minHeight: 52 }}>
+            Add {chosen.length} {chosen.length === 1 ? 'food' : 'foods'} · {chosenKcal} kcal
+          </Button>
+        </Box>
+      )}
     </Stack>
   );
 }

@@ -186,19 +186,26 @@ export function progressAgainst(total: Nutrients, t: MacroTargets): MacroProgres
   ];
 }
 
-/** Most-logged foods recently (by food, or by name for quick adds), for one-tap re-logging. */
-export function frequentFoods(entries: Entry[], today: string, days = 30, limit = 8): { key: string; food_id: string | null; name: string; count: number; last: Entry }[] {
+/**
+ * Most-logged foods recently (by food, or by name for quick adds), for one-tap re-logging.
+ * With a meal, what you have at that meal comes first, at the amount you had it then.
+ */
+export function frequentFoods(entries: Entry[], today: string, meal?: MealSlot, days = 30, limit = 10): { key: string; food_id: string | null; name: string; count: number; last: Entry }[] {
   const since = new Date(new Date(today).getTime() - days * 86400000).toISOString().slice(0, 10);
-  const groups = new Map<string, { key: string; food_id: string | null; name: string; count: number; last: Entry }>();
+  const groups = new Map<string, { key: string; food_id: string | null; name: string; count: number; atMeal: number; last: Entry }>();
   for (const e of entries) {
     if (e.deleted_at || e.day < since || e.day > today || e.source === 'meal_prep') continue;
     const key = e.food_id ?? `name:${e.name.toLowerCase()}`;
-    const g = groups.get(key) ?? { key, food_id: e.food_id, name: e.name, count: 0, last: e };
+    const g = groups.get(key) ?? { key, food_id: e.food_id, name: e.name, count: 0, atMeal: 0, last: e };
     g.count += 1;
-    if (e.logged_at > g.last.logged_at) g.last = e;
+    const here = e.meal === meal;
+    if (here) g.atMeal += 1;
+    // An entry from this meal beats any from another; otherwise the newest wins.
+    const lastHere = g.last.meal === meal;
+    if (here === lastHere ? e.logged_at > g.last.logged_at : here) g.last = e;
     groups.set(key, g);
   }
-  return [...groups.values()].sort((a, b) => b.count - a.count || b.last.logged_at.localeCompare(a.last.logged_at)).slice(0, limit);
+  return [...groups.values()].sort((a, b) => b.atMeal - a.atMeal || b.count - a.count || b.last.logged_at.localeCompare(a.last.logged_at)).slice(0, limit);
 }
 
 /** Label energy vs 4/4/9 maths; flags big gaps (likely a typo) without blocking. */
