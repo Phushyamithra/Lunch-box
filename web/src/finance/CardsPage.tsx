@@ -20,7 +20,7 @@ export default function CardsPage() {
   const owed = cards.reduce((a, c) => a + c.outstanding, 0);
 
   return (
-    <Stack spacing={2} sx={{ maxWidth: 860 }}>
+    <Stack spacing={3} sx={{ maxWidth: 860 }}>
       <WeeklyCapBar />
       <Card title="💳 Both cards">
         <Bar label={`Combined, ${dayjs().format('MMMM')}`} value={cap.spent} max={cap.cap} detail={cap.level === 'over' ? 'Over the combined cap.' : `${formatINR(Math.max(0, cap.cap - cap.spent))} left this month`} />

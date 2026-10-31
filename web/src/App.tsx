@@ -38,6 +38,8 @@ const FitnessReview = lazy(() => import('./fitness/ReviewPage'));
 const FitnessSettings = lazy(() => import('./fitness/FitnessSettingsPage'));
 const NutritionOverview = lazy(() => import('./nutrition/OverviewPage'));
 const NutritionToday = lazy(() => import('./nutrition/TodayPage'));
+const TemplatesPage = lazy(() => import('./bulk/TemplatesPage'));
+const NutritionDays = lazy(() => import('./nutrition/DaysPage'));
 const NutritionFoods = lazy(() => import('./nutrition/FoodsPage'));
 const NutritionTrends = lazy(() => import('./nutrition/TrendsPage'));
 const NutritionData = lazy(() => import('./nutrition/DataPage'));
@@ -97,6 +99,7 @@ function SignedInApp({ client, userId }: { client: SupabaseClient; userId: strin
                     <Route index element={<Home />} />
                     <Route path="nutrition" element={<NutritionLayout />}>
                       <Route index element={<NutritionToday />} />
+                      <Route path="days" element={<NutritionDays />} />
                       <Route path="overview" element={<NutritionOverview />} />
                       <Route path="foods" element={<NutritionFoods />} />
                       <Route path="trends" element={<NutritionTrends />} />
@@ -135,6 +138,7 @@ function SignedInApp({ client, userId }: { client: SupabaseClient; userId: strin
                       <Route path="timeline" element={<GoalsTimeline />} />
                     </Route>
                     <Route path="settings" element={<Settings />} />
+                    <Route path="templates" element={<TemplatesPage />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Route>
                 </Routes>

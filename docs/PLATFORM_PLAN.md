@@ -147,3 +147,12 @@ The extension and its `chrome.storage` data are never modified by the
 migration. Imports copy data; they never move it. Take a backup
 (Settings → Backup) before every import. Database changes are versioned
 migrations.
+
+## First bug round (dev, 2026-10-31)
+
+- **Finance home:** amount in the account (latest balance entered, plus what's logged since), then card usage, then tiles for every section. The tab strip is gone; sections have a back link.
+- **Salary:** "Add salary" records the actual amount and date for the month (`doc.salaries`). It replaces the planned figure in the month funded, the bank check and the salary-day plan. Removing it brings the plan back.
+- **Nutrition:** a Days tab lists each logged day meal by meal. Foods and quick adds can go to several meals and days at once; restaurant and meal-prep adds stay single.
+- **Gym timer:** Start and Finish on the day's session, kept on the session row so it survives closing the app. Needs migration 0016; the app still loads without it, and Start says to run it.
+- **Bulk add (`/templates`):** a CSV template per record type (expenses, measurements, workouts, food log, foods). Upload .csv or .xlsx, see a preview, then add. It only adds: rows already here are skipped, a day's steps are never replaced, and rows starting with EXAMPLE are ignored. Imported workouts become finished sessions under V1, with exercises in the free slots (21-40).
+- **Spacing:** roomier cards, page gaps and gutters across the app.

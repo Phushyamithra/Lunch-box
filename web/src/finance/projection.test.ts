@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { emptyDoc, rupees, type FinanceDoc, type Transaction } from './model';
-import { compareBalance, finishMonth, projection, reconcile } from './projection';
+import { accountNow, compareBalance, finishMonth, projection, reconcile } from './projection';
+import { monthSummary } from './engine';
 
 let n = 0;
 const tx = (date: string, amount: number, category: string, method = 'UPI'): Transaction => ({
@@ -100,5 +101,33 @@ describe('bank reconciliation', () => {
     expect(compareBalance(r, rupees(30000))?.verdict).toBe('explained');
     expect(compareBalance(r, rupees(5000))).toMatchObject({ verdict: 'unexplained', message: expect.stringContaining('less than expected') });
     expect(compareBalance(r, rupees(58000))).toMatchObject({ verdict: 'unexplained', diff: rupees(8000), message: expect.stringContaining('more than expected') });
+  });
+});
+
+describe('salary received and the account now', () => {
+  const stamp = '2026-10-01T00:00:00Z';
+  const base = () =>
+    doc((x) => {
+      x.settings.openingBalance = rupees(50000);
+    });
+
+  it('a recorded salary overrides the planned amount and date, and funds next month', () => {
+    const d = base();
+    d.salaries = [{ id: 's', month: '2026-10', date: '2026-10-30', amount: rupees(61500), note: null, updatedAt: stamp, deletedAt: null }];
+    expect(reconcile(d, '2026-10-30', { savingsPot: 0, cardsOwed: 0 }).expected).toBe(rupees(50000 + 61500));
+    expect(monthSummary(d, '2026-11', '2026-11-02')).toMatchObject({ funding: rupees(61500), fundingDate: '2026-10-30' });
+    // Without a record, the plan's salary and day still apply.
+    expect(reconcile(base(), '2026-10-30', { savingsPot: 0, cardsOwed: 0 }).expected).toBe(rupees(50000));
+    expect(reconcile(base(), '2026-10-31', { savingsPot: 0, cardsOwed: 0 }).expected).toBe(rupees(112000));
+  });
+
+  it('account now rolls forward from the latest balance you entered', () => {
+    const d = base();
+    d.balances = [{ id: 'b', date: '2026-10-22', amount: rupees(7210.97), note: null, updatedAt: stamp, deletedAt: null }];
+    d.transactions = [tx('2026-10-20', 999, 'Fuel'), tx('2026-10-23', 378, 'Wants'), tx('2026-10-24', 500, 'Groceries', 'HDFC')];
+    // 7,210.97 − 378 (UPI after the balance); the earlier ₹999 and the card purchase don't move it.
+    expect(accountNow(d, '2026-10-24')).toEqual({ amount: rupees(7210.97) - rupees(378), from: { date: '2026-10-22', amount: rupees(7210.97) } });
+    expect(accountNow(base(), '2026-10-24')).toEqual({ amount: rupees(50000), from: null });
+    expect(accountNow(doc(), '2026-10-24').amount).toBeNull();
   });
 });

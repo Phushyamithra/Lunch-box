@@ -10,7 +10,7 @@
  * payments, card bills on their due dates, committed costs you didn't log),
  * so it can be compared with the real balance you type in.
  */
-import { addMonths, allocate, cardCycles, commitmentsFor, dueDateAfter, monthOf, monthSummary, plannedSavings, salaryDate } from './engine';
+import { addMonths, allocate, cardCycles, commitmentsFor, dueDateAfter, monthOf, monthSummary, plannedSavings, salaryDate, salaryReceipt } from './engine';
 import { bankEventsUntil, cardEventsBetween, incomesOf, reliableIncome } from './extras';
 import { planFor, type Card, type FinanceDoc, type FinanceSettings, type Paise } from './model';
 
@@ -176,9 +176,10 @@ export function reconcile(doc: FinanceDoc, date: string, opts: { savingsPot: Pai
   let count = 0;
   for (let m = s.startMonth; m <= dateMonth; m = addMonths(m, 1)) {
     const p = planFor(s, m);
-    const d = salaryDate(p, m);
+    const r = salaryReceipt(doc, m);
+    const d = r ? r.date : salaryDate(p, m);
     if (d >= start && d <= date) {
-      salaries += p.salary;
+      salaries += r ? r.amount : p.salary;
       count++;
     }
   }
@@ -245,4 +246,18 @@ export function compareBalance(r: Reconciliation, actual: Paise, tolerance: Pais
         ? `${fmt(diff)} less than expected and not explained: an expense you haven’t logged, a bill paid early, or a wrong amount somewhere.`
         : `${fmt(diff)} more than expected and not explained: income or a refund not recorded, a bill not yet paid, or an expense logged twice.`,
   };
+}
+
+/**
+ * What's in the account today. Starts from the latest balance you entered
+ * and adds what happened since; without one, it's the expected balance.
+ */
+export function accountNow(doc: FinanceDoc, today: string): { amount: Paise | null; from: { date: string; amount: Paise } | null } {
+  const latest = doc.balances.filter((b) => !b.deletedAt && b.date <= today).sort((a, b) => b.date.localeCompare(a.date) || b.updatedAt.localeCompare(a.updatedAt))[0];
+  const none = { savingsPot: 0, cardsOwed: 0 };
+  if (!latest) return { amount: reconcile(doc, today, none).expected, from: null };
+  // Only the movement since matters, so an unset opening balance doesn't block it.
+  const d: FinanceDoc = { ...doc, settings: { ...doc.settings, openingBalance: doc.settings.openingBalance ?? 0 } };
+  const moved = (reconcile(d, today, none).expected as Paise) - (reconcile(d, latest.date, none).expected as Paise);
+  return { amount: latest.amount + moved, from: { date: latest.date, amount: latest.amount } };
 }

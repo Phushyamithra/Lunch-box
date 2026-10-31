@@ -64,7 +64,7 @@ export function AppShell() {
   const active = activeNavPath(location.pathname);
   const title =
     NAV_ITEMS.find((item) => item.path === active)?.label ??
-    (location.pathname.startsWith('/settings') ? 'Settings' : 'Tracker');
+    (location.pathname.startsWith('/settings') ? 'Settings' : location.pathname.startsWith('/templates') ? 'Bulk add' : 'Tracker');
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100%' }}>
@@ -139,8 +139,8 @@ export function AppShell() {
             width: '100%',
             maxWidth: 1100,
             mx: 'auto',
-            px: 2,
-            pt: 2,
+            px: 2.5,
+            pt: 3,
             pb: wide ? 4 : 'calc(104px + env(safe-area-inset-bottom))',
           }}
         >

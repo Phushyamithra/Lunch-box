@@ -51,7 +51,7 @@ export default function MonthPage() {
   const activeGoal = sav.goals.find((g) => !g.done);
 
   return (
-    <Stack spacing={2} sx={{ maxWidth: 860 }}>
+    <Stack spacing={3} sx={{ maxWidth: 860 }}>
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
         <IconButton aria-label="Previous month" disabled={month <= doc.settings.startMonth} onClick={() => setMonth(addMonths(month, -1))}>
           <ChevronLeftRoundedIcon />

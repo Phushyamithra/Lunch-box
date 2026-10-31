@@ -6,8 +6,8 @@ import { useFitness } from './FitnessContext';
 
 export function Card({ title, aside, children, id }: { title: string; aside?: ReactNode; children: ReactNode; id?: string }) {
   return (
-    <Paper variant="outlined" id={id} sx={{ p: 2, scrollMarginTop: 96 }}>
-      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mb: 1.5 }}>
+    <Paper variant="outlined" id={id} sx={{ p: { xs: 2.5, sm: 3 }, scrollMarginTop: 96 }}>
+      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mb: 2 }}>
         <Typography variant="subtitle1" component="h2" sx={{ flexGrow: 1 }}>
           {title}
         </Typography>
@@ -37,6 +37,11 @@ export function Metric({ value, unit, caption }: { value: string; unit?: string;
   );
 }
 
+/** 2520 → "42 min"; 3900 → "1 h 5 min". */
+export const minutes = (sec: number): string => {
+  const m = Math.round(sec / 60);
+  return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ''}`;
+};
 export const kg = (v: number | null | undefined, digits = 1): string => (v === null || v === undefined ? '–' : v.toFixed(digits));
 export const signed = (v: number, digits = 2): string => `${v > 0 ? '+' : ''}${v.toFixed(digits)}`;
 

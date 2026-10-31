@@ -63,7 +63,7 @@ export default function ImportPage({ client }: { client: SupabaseClient }) {
   };
 
   return (
-    <Stack spacing={2} sx={{ maxWidth: 640 }}>
+    <Stack spacing={3} sx={{ maxWidth: 640 }}>
       <Button startIcon={<ArrowBackRoundedIcon />} onClick={() => navigate('/food')} sx={{ alignSelf: 'flex-start' }}>
         Back to Food
       </Button>

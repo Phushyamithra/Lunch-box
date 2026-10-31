@@ -138,7 +138,7 @@ export default function BankPage() {
   };
 
   return (
-    <Stack spacing={2} sx={{ maxWidth: 860 }}>
+    <Stack spacing={3} sx={{ maxWidth: 860 }}>
       <SalaryDayCard />
       <OpeningCard />
       <Card title="🏦 Your bank should hold">

@@ -56,7 +56,7 @@ export default function TodayPage() {
   const away = awayPeriodFor(day, data.away);
 
   return (
-    <Stack spacing={2} sx={{ maxWidth: 720 }}>
+    <Stack spacing={3} sx={{ maxWidth: 720 }}>
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
         <IconButton aria-label="Previous day" onClick={() => setDay(addDays(day, -1))} size="large">
           <ChevronLeftRoundedIcon />

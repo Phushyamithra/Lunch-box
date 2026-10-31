@@ -1,3 +1,4 @@
+import type { MeasurementPlan, WorkoutPlan } from '../bulk/templates';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { CustomExercise, CustomWorkout } from './dayPlan';
 import type { ParsedFinisher, ParsedReference } from './referenceImport';
@@ -64,6 +65,9 @@ export interface SessionRow extends Session {
   extras: CustomExercise[];
   /** Whose program was trained (Mon = 1 … Sat = 6); null = the day's own. */
   program_weekday: number | null;
+  /** Gym timer: `started_at` set with no `duration_sec` means it's still running. */
+  started_at: string | null;
+  duration_sec: number | null;
 }
 export type SessionInput = Pick<
   SessionRow,
@@ -111,7 +115,8 @@ const NUMERIC_SETTINGS: (keyof FitnessSettings)[] = [
   'rest_isolation_sec',
 ];
 const SETTINGS_COLUMNS = [...NUMERIC_SETTINGS, 'rotation_start', 'phase_start', 'key_lifts', 'weigh_time', 'day_focus', 'finishers', 'reminders'].join(', ');
-const SESSION_COLUMNS = 'id, day, variant_index, completed, slots_completed, notes, cardio_done, slot_variants, custom_workout_id, extras, program_weekday';
+// Everything, so the app keeps working until the timer migration (0016) has been run.
+const SESSION_COLUMNS = '*';
 const WORKOUT_COLUMNS = 'id, name, weekday, exercises';
 
 /** Postgres numerics can arrive as strings; normalise once at the edge. */
@@ -131,6 +136,8 @@ const normaliseSession = (r: SessionRow): SessionRow => ({
   custom_workout_id: r.custom_workout_id ?? null,
   extras: Array.isArray(r.extras) ? r.extras : [],
   program_weekday: r.program_weekday === null || r.program_weekday === undefined ? null : Number(r.program_weekday),
+  started_at: r.started_at ?? null,
+  duration_sec: r.duration_sec === null || r.duration_sec === undefined ? null : Number(r.duration_sec),
 });
 const normaliseWorkout = (r: CustomWorkout): CustomWorkout => ({ ...r, exercises: Array.isArray(r.exercises) ? r.exercises : [] });
 const num = <T extends object>(rows: T[], keys: (keyof T)[]): T[] =>
@@ -290,6 +297,42 @@ export async function upsertSession(
         .single(),
     ) as SessionRow,
   );
+}
+
+export async function setSessionTime(client: SupabaseClient, id: string, time: { started_at: string | null; duration_sec: number | null }): Promise<SessionRow> {
+  return normaliseSession(check(await client.from('workout_sessions').update({ ...time, updated_at: new Date().toISOString() }).eq('id', id).select(SESSION_COLUMNS).single()) as SessionRow);
+}
+
+const CHUNK = 200;
+async function insertChunks(client: SupabaseClient, table: string, rows: object[], step: (n: number) => void) {
+  for (let i = 0; i < rows.length; i += CHUNK) {
+    const part = rows.slice(i, i + CHUNK);
+    check(await client.from(table).insert(part).select('id'));
+    step(part.length);
+  }
+}
+
+/** Bulk upload from a template: only adds rows. */
+export async function importMeasurements(client: SupabaseClient, plan: MeasurementPlan, onProgress: (pct: number) => void) {
+  const total = plan.weighIns.length + plan.waists.length + plan.steps.length;
+  let done = 0;
+  const step = (n: number) => onProgress(((done += n) / Math.max(total, 1)) * 100);
+  await insertChunks(client, 'weigh_ins', plan.weighIns, step);
+  await insertChunks(client, 'waist_measurements', plan.waists, step);
+  await insertChunks(client, 'step_counts', plan.steps, step);
+}
+
+export async function importWorkouts(client: SupabaseClient, plan: WorkoutPlan, onProgress: (pct: number) => void) {
+  let done = 0;
+  for (const d of plan.days) {
+    let id = d.sessionId;
+    if (!id) {
+      const row = check(await client.from('workout_sessions').insert({ day: d.day, variant_index: 0, completed: true }).select('id').single()) as { id: string };
+      id = row.id;
+    }
+    const session_id = id;
+    await insertChunks(client, 'workout_sets', d.sets.map((s) => ({ ...s, session_id })), (n) => onProgress(((done += n) / Math.max(plan.sets, 1)) * 100));
+  }
 }
 
 /** Your own workout cards. Deleting only hides them (logged sets stay). */

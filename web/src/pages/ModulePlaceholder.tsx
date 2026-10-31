@@ -43,7 +43,7 @@ export const MODULES = {
 /** Honest "not built yet" screen — no sample numbers that look real. */
 export function ModulePlaceholder({ module }: { module: ModuleInfo }) {
   return (
-    <Stack spacing={2}>
+    <Stack spacing={3}>
       <Paper variant="outlined" sx={{ p: 2.5 }}>
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
           <Typography variant="h6" component="h2">

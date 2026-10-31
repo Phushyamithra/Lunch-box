@@ -31,7 +31,7 @@ export default function ProgramPage() {
   };
 
   return (
-    <Stack spacing={2} sx={{ maxWidth: 820 }}>
+    <Stack spacing={3} sx={{ maxWidth: 820 }}>
       <ImportReferenceCard data={data} />
       <Card title="Weekly rotation" aside={<Chip color="secondary" label={`This week: V${current + 1}`} />}>
         <Typography color="text.secondary" variant="body2" sx={{ mb: 1.5 }}>

@@ -219,7 +219,7 @@ export default function ExtrasPage() {
     );
 
   return (
-    <Stack spacing={2} sx={{ maxWidth: 860 }}>
+    <Stack spacing={3} sx={{ maxWidth: 860 }}>
       <IncomeCard />
       <Card title="🎟️ Amazon Pay balance" aside={<Chip size="small" variant="outlined" label="Not cash" />}>
         <Typography sx={{ fontSize: 32, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{formatINR(v.balance)}</Typography>

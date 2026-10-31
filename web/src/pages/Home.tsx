@@ -249,7 +249,7 @@ export default function Home() {
   ];
 
   return (
-    <Stack spacing={2}>
+    <Stack spacing={3}>
       <Box>
         <Typography variant="h5" component="h1" sx={{ fontWeight: 700 }}>
           {greeting()}

@@ -49,7 +49,7 @@ export default function PlanPage() {
   const axis = { tick: { fill: theme.palette.text.secondary, fontSize: 11 }, stroke: theme.palette.divider };
 
   return (
-    <Stack spacing={2} sx={{ maxWidth: 960 }}>
+    <Stack spacing={3} sx={{ maxWidth: 960 }}>
       <Card title="🧭 Where the plan goes">
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
           <Metric value={done ? ym(last.month, 'MMM YYYY') : '10 yrs+'} caption="every goal funded (estimate)" />

@@ -244,7 +244,7 @@ export default function WhatIfPage() {
   const { doc } = useFinance();
   if (!doc) return null;
   return (
-    <Stack spacing={2} sx={{ maxWidth: 860 }}>
+    <Stack spacing={3} sx={{ maxWidth: 860 }}>
       <Afford />
       <Scenario key={JSON.stringify(doc.settings.planHistory ?? []) + doc.settings.updatedAt} />
     </Stack>

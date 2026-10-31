@@ -22,7 +22,7 @@ export default function FoodsPage() {
   for (const e of data!.entries) if (e.food_id) uses.set(e.food_id, (uses.get(e.food_id) ?? 0) + 1);
 
   return (
-    <Stack spacing={2} sx={{ maxWidth: 720 }}>
+    <Stack spacing={3} sx={{ maxWidth: 720 }}>
       <Card
         title="🥘 My foods"
         aside={

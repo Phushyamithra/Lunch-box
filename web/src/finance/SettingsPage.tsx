@@ -200,7 +200,7 @@ export default function FinanceSettingsPage() {
   };
 
   return (
-    <Stack spacing={2} sx={{ maxWidth: 860, pb: dirty ? 10 : 0 }} key={formKey}>
+    <Stack spacing={3} sx={{ maxWidth: 860, pb: dirty ? 10 : 0 }} key={formKey}>
       <Card title="💼 Income">
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
           <AmountField label="Salary (in hand, monthly)" value={form.salary} onChange={(v) => v !== null && set({ salary: v })} />

@@ -104,7 +104,7 @@ export default function TrendsPage() {
   const pct = (n: number) => (stats.tracked ? `${Math.round((n / stats.tracked) * 100)}%` : '–');
 
   return (
-    <Stack spacing={2} sx={{ maxWidth: 900 }}>
+    <Stack spacing={3} sx={{ maxWidth: 900 }}>
       <ToggleButtonGroup exclusive size="small" value={period} onChange={(_, v) => v && setPeriod(v)} aria-label="Period">
         {PERIODS.map((p) => (
           <ToggleButton key={p.days} value={p.days}>

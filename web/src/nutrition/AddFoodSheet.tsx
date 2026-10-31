@@ -35,6 +35,7 @@ import { RestaurantStep } from './RestaurantStep';
 import { chainOf, searchMenu } from './restaurants/index';
 import type { MenuItem as RestaurantItem } from './restaurants/types';
 import { FoodFormDialog } from './FoodFormDialog';
+import { AlsoAddPicker, addToAll, useAlsoAdd } from './MultiAdd';
 import {
   DIET,
   MEALS,
@@ -344,6 +345,7 @@ function PortionStep({
   const [unitKey, setUnitKey] = useState(preferred.key);
   const [qty, setQty] = useState(quantity ?? (preferred.key === 'g' || preferred.key === 'ml' ? 100 : 1));
   const [busy, setBusy] = useState(false);
+  const also = useAlsoAdd(day, meal);
   const grams = unitKey === 'g' || unitKey === 'ml';
   const { nutrients, grams: weight } = nutrientsFor(food, qty || 0, unitKey);
 
@@ -351,10 +353,8 @@ function PortionStep({
     if (!(qty > 0)) return toast('Enter how much you had.', { severity: 'info' });
     setBusy(true);
     try {
-      await addEntry({
+      await addToAll(also.targets, {
         ...nutrients,
-        day,
-        meal,
         food_id: food.id,
         meal_log_id: null,
         source: 'food',
@@ -363,8 +363,8 @@ function PortionStep({
         unit: units.find((u) => u.key === unitKey)?.key.replace(/^p:/, '') ?? unitKey,
         grams: weight,
         verification: food.verification,
-      });
-      toast(`✅ ${food.name} · ${nutrients.kcal} kcal`);
+      }, addEntry);
+      toast(also.targets.length > 1 ? `✅ ${food.name} added to ${also.targets.length} meals` : `✅ ${food.name} · ${nutrients.kcal} kcal`);
       onAdded();
     } catch (e) {
       toast(`Not saved: ${e instanceof Error ? e.message : 'error'}`, { severity: 'error' });
@@ -374,7 +374,7 @@ function PortionStep({
   };
 
   return (
-    <Stack spacing={2}>
+    <Stack spacing={3}>
       <Box>
         <Typography variant="h6" component="p">
           {food.diet && `${DIET[food.diet].emoji} `}
@@ -446,8 +446,9 @@ function PortionStep({
           {nutrients.fibre ? ` · fibre ${nutrients.fibre} g` : ''}
         </Typography>
       )}
+      <AlsoAddPicker state={also} />
       <Button variant="contained" size="large" onClick={() => void add()} disabled={busy} sx={{ minHeight: 52 }}>
-        Add · {nutrients.kcal} kcal
+        {also.targets.length > 1 ? `Add to ${also.targets.length} meals · ${nutrients.kcal} kcal each` : `Add · ${nutrients.kcal} kcal`}
       </Button>
     </Stack>
   );
@@ -457,15 +458,17 @@ function QuickAdd({ day, meal }: { day: string; meal: MealSlot }) {
   const { addEntry } = useNutrition();
   const toast = useSnackbar();
   const [f, setF] = useState({ name: '', kcal: '', protein: '', carbs: '', fat: '' });
+  const also = useAlsoAdd(day, meal);
   const n = (s: string) => (s.trim() ? Number(s.replace(',', '.')) : 0);
   const add = async () => {
     if (!f.name.trim()) return toast('Give it a name so you can find it later.', { severity: 'info' });
     const values = { kcal: n(f.kcal), protein: n(f.protein), carbs: n(f.carbs), fat: n(f.fat) };
     if (Object.values(values).some((v) => !(v >= 0)) || values.kcal <= 0) return toast('Enter calories (and any macros you know).', { severity: 'info' });
     try {
-      await addEntry({ ...values, fibre: 0, sugar: null, sodium_mg: null, day, meal, food_id: null, meal_log_id: null, source: 'quick', name: f.name.trim(), quantity: 1, unit: 'serving', grams: null, verification: 'user' });
-      toast(`✅ ${f.name.trim()} · ${values.kcal} kcal`);
+      await addToAll(also.targets, { ...values, fibre: 0, sugar: null, sodium_mg: null, food_id: null, meal_log_id: null, source: 'quick', name: f.name.trim(), quantity: 1, unit: 'serving', grams: null, verification: 'user' }, addEntry);
+      toast(also.targets.length > 1 ? `✅ ${f.name.trim()} added to ${also.targets.length} meals` : `✅ ${f.name.trim()} · ${values.kcal} kcal`);
       setF({ name: '', kcal: '', protein: '', carbs: '', fat: '' });
+      also.reset();
     } catch (e) {
       toast(`Not saved: ${e instanceof Error ? e.message : 'error'}`, { severity: 'error' });
     }
@@ -481,8 +484,9 @@ function QuickAdd({ day, meal }: { day: string; meal: MealSlot }) {
           <TextField key={k} size="small" label={k === 'kcal' ? 'Calories' : `${k[0].toUpperCase()}${k.slice(1)} (g)`} inputMode="decimal" value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} />
         ))}
       </Box>
+      <AlsoAddPicker state={also} />
       <Button variant="contained" onClick={() => void add()} sx={{ minHeight: 48 }}>
-        Add
+        {also.targets.length > 1 ? `Add to ${also.targets.length} meals` : 'Add'}
       </Button>
     </Stack>
   );

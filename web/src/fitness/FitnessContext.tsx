@@ -1,3 +1,4 @@
+import type { MeasurementPlan, WorkoutPlan } from '../bulk/templates';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import * as api from './fitnessApi';
@@ -23,6 +24,9 @@ interface FitnessValue {
   removeAway: (id: string) => Promise<void>;
   saveSlot: (input: Omit<SlotRow, 'id'>) => Promise<void>;
   saveSession: (input: api.SessionInput) => Promise<SessionRow>;
+  setSessionTime: (id: string, time: { started_at: string | null; duration_sec: number | null }) => Promise<SessionRow>;
+  importMeasurements: (plan: MeasurementPlan, onProgress: (pct: number) => void) => Promise<void>;
+  importWorkouts: (plan: WorkoutPlan, onProgress: (pct: number) => void) => Promise<void>;
   saveWorkout: (input: Omit<CustomWorkout, 'id'>, id?: string) => Promise<CustomWorkout>;
   removeWorkout: (id: string) => Promise<void>;
   /** Logs a set and remembers its weight × reps as the exercise preset. */
@@ -124,6 +128,25 @@ export function FitnessProvider({ client, children }: { client: SupabaseClient; 
         const row = await api.upsertSession(client, input);
         patch((d) => ({ ...d, sessions: upsertBy(d.sessions, row, (r) => r.day === input.day).sort((a, b) => a.day.localeCompare(b.day)) }));
         return row;
+      },
+      async setSessionTime(id, time) {
+        const row = await api.setSessionTime(client, id, time);
+        patch((d) => ({ ...d, sessions: d.sessions.map((s) => (s.id === id ? row : s)) }));
+        return row;
+      },
+      async importMeasurements(plan, onProgress) {
+        try {
+          await api.importMeasurements(client, plan, onProgress);
+        } finally {
+          setData(await api.loadFitness(client));
+        }
+      },
+      async importWorkouts(plan, onProgress) {
+        try {
+          await api.importWorkouts(client, plan, onProgress);
+        } finally {
+          setData(await api.loadFitness(client));
+        }
       },
       async saveWorkout(input, id) {
         const row = await api.saveWorkout(client, input, id);

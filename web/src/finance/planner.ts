@@ -2,7 +2,7 @@
  * Planning helpers: yearly bills (sinking funds), peak months, the
  * salary-day transfer, card-free mode and reminders. Pure; money in paise.
  */
-import { addMonths, cardCycles, commitmentsFor, monthOf, salaryDate } from './engine';
+import { addMonths, cardCycles, commitmentsFor, monthOf, salaryDate, salaryReceipt } from './engine';
 import { reliableIncome, voucherState } from './extras';
 import { planFor, VOUCHER_METHOD, type FinanceDoc, type FinanceSettings, type Paise, type Transaction } from './model';
 
@@ -154,7 +154,8 @@ export interface SalaryDayPlan {
 export function salaryDayPlan(doc: FinanceDoc, today: string): SalaryDayPlan {
   const s = doc.settings;
   let ym = monthOf(today);
-  if (salaryDate(planFor(s, ym), ym) < today) ym = addMonths(ym, 1);
+  // Past, or already recorded: plan the next one.
+  if (salaryDate(planFor(s, ym), ym) < today || salaryReceipt(doc, ym)) ym = addMonths(ym, 1);
   const date = salaryDate(planFor(s, ym), ym);
   const covers = addMonths(ym, 1);
   const salary = planFor(s, ym).salary;

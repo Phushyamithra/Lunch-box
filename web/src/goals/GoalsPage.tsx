@@ -479,7 +479,7 @@ export default function GoalsPage() {
   };
 
   return (
-    <Stack spacing={2} sx={{ maxWidth: 860 }}>
+    <Stack spacing={3} sx={{ maxWidth: 860 }}>
       <Stack direction="row" alignItems="center">
         <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>
           Measured from what you log. Away days and partial first cycles don’t count against you.

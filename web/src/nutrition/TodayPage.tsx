@@ -6,7 +6,7 @@ import { Alert, Box, Button, Chip, FormControlLabel, IconButton, LinearProgress,
 import dayjs from 'dayjs';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { addDays } from '../fitness/rules';
 import { Card } from '../fitness/ui';
 import { useSnackbar } from '../layout/Snackbar';
@@ -36,7 +36,8 @@ export default function NutritionToday() {
   const navigate = useNavigate();
   const toast = useSnackbar();
   const today = dayjs().format(KEY);
-  const [day, setDay] = useState(today);
+  const opened = (useLocation().state as { day?: string } | null)?.day;
+  const [day, setDay] = useState(opened ?? today);
   const [adding, setAdding] = useState<MealSlot | null>(null);
   const [perMeal, setPerMeal] = useState(() => {
     try {
@@ -68,7 +69,7 @@ export default function NutritionToday() {
   };
 
   return (
-    <Stack spacing={2} sx={{ maxWidth: 720 }}>
+    <Stack spacing={3} sx={{ maxWidth: 720 }}>
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
         <IconButton aria-label="Previous day" onClick={() => setDay(addDays(day, -1))} size="large">
           <ChevronLeftRoundedIcon />
@@ -117,7 +118,7 @@ export default function NutritionToday() {
       {MEALS.map((m) => {
         const { entries, total: mt } = byMeal[m.key];
         return (
-          <Paper key={m.key} variant="outlined" sx={{ p: 1.5, borderRadius: '20px' }}>
+          <Paper key={m.key} variant="outlined" sx={{ p: 2, borderRadius: '20px' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Typography sx={{ fontWeight: 700, flexGrow: 1 }}>
                 {m.emoji} {m.label}
@@ -149,7 +150,7 @@ export default function NutritionToday() {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 10, height: 0 }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0' }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0' }}
                   >
                     <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                       <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>

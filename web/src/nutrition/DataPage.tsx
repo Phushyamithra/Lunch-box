@@ -1,6 +1,7 @@
 import { Alert, Box, Button, Chip, LinearProgress, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import dayjs from 'dayjs';
 import { useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '../fitness/ui';
 import { ReportCard } from '../report/ReportCard';
 import { useSnackbar } from '../layout/Snackbar';
@@ -41,6 +42,7 @@ export default function DataPage() {
   const nutrition = useNutrition();
   const data = nutrition.data!;
   const toast = useSnackbar();
+  const navigate = useNavigate();
   const input = useRef<HTMLInputElement>(null);
   const today = dayjs().format('YYYY-MM-DD');
   const [file, setFile] = useState<{ name: string; parsed: ParsedImport; plan: ImportPlan } | null>(null);
@@ -85,7 +87,7 @@ export default function DataPage() {
   const days = plan?.entries.map((e) => e.day).sort() ?? [];
 
   return (
-    <Stack spacing={2}>
+    <Stack spacing={3}>
       <ReportCard />
       <Card title="💾 Back up and export">
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
@@ -110,6 +112,9 @@ export default function DataPage() {
           A Tracker backup, or a CSV of food-log rows or foods. Import only adds: nothing you have is changed or deleted, and rows you already have are skipped. You’ll see what
           will be added first.
         </Typography>
+        <Button size="small" sx={{ px: 0, mb: 1 }} onClick={() => navigate('/templates')}>
+          All templates, including Finance and Fitness
+        </Button>
         <input ref={input} type="file" accept=".json,.csv,application/json,text/csv" hidden onChange={(e) => void pick(e.target.files?.[0])} />
         <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
           <Button variant="contained" onClick={() => input.current?.click()} disabled={progress !== null}>

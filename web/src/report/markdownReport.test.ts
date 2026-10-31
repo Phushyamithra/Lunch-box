@@ -58,8 +58,8 @@ const fitness: FitnessData = {
   steps: [{ id: 's1', day: '2026-10-12', steps: 9000, source: 'manual' }],
   slots: [],
   sessions: [
-    { id: 'a', day: '2026-10-05', variant_index: 0, completed: true, slots_completed: 5, notes: null, cardio_done: true, slot_variants: {}, custom_workout_id: null, extras: [], program_weekday: null },
-    { id: 'b', day: '2026-10-12', variant_index: 1, completed: true, slots_completed: 5, notes: 'Felt strong | slept 8h', cardio_done: false, slot_variants: {}, custom_workout_id: null, extras: [], program_weekday: 2 },
+    { id: 'a', day: '2026-10-05', variant_index: 0, completed: true, slots_completed: 5, notes: null, cardio_done: true, slot_variants: {}, custom_workout_id: null, extras: [], program_weekday: null, started_at: null, duration_sec: null },
+    { id: 'b', day: '2026-10-12', variant_index: 1, completed: true, slots_completed: 5, notes: 'Felt strong | slept 8h', cardio_done: false, slot_variants: {}, custom_workout_id: null, extras: [], program_weekday: 2, started_at: null, duration_sec: null },
   ],
   sets: [
     { id: 'x1', session_id: 'a', slot: 1, exercise: 'Barbell Bench', set_number: 1, reps: 8, weight_kg: 60, notes: null },

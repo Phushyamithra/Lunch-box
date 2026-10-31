@@ -248,6 +248,15 @@ export interface MoneyEvent extends Stamped {
   cardMethod: string | null;
 }
 
+/** A salary that actually arrived (overrides the planned amount and date for that month). */
+export interface SalaryReceipt extends Stamped {
+  /** The month it's credited in (YYYY-MM); it pays the month after. */
+  month: string;
+  date: string;
+  amount: Paise;
+  note: string | null;
+}
+
 export interface FinanceDoc {
   schema: typeof FINANCE_SCHEMA;
   version: number;
@@ -258,6 +267,7 @@ export interface FinanceDoc {
   events: MoneyEvent[];
   incomes: IncomeSource[];
   lists: ListItem[];
+  salaries: SalaryReceipt[];
 }
 
 const id = () => crypto.randomUUID();
@@ -303,7 +313,7 @@ export function defaultSettings(today: string, now = new Date().toISOString()): 
 }
 
 export function emptyDoc(today: string, now?: string): FinanceDoc {
-  return { schema: FINANCE_SCHEMA, version: FINANCE_VERSION, settings: defaultSettings(today, now), transactions: [], balances: [], vouchers: [], events: [], incomes: [], lists: [] };
+  return { schema: FINANCE_SCHEMA, version: FINANCE_VERSION, settings: defaultSettings(today, now), transactions: [], balances: [], vouchers: [], events: [], incomes: [], lists: [], salaries: [] };
 }
 
 export interface TransactionInput {
@@ -383,13 +393,17 @@ export function parseFinanceDoc(raw: unknown): { doc: FinanceDoc } | { error: st
   }
   const incomes = Array.isArray(d.incomes) ? d.incomes : [];
   const lists = Array.isArray(d.lists) ? d.lists : [];
+  const salaries = Array.isArray(d.salaries) ? d.salaries : [];
+  for (const r of salaries) {
+    if (!r || typeof r.id !== 'string' || !Number.isInteger(r.amount) || !isDay(String(r.date))) return { error: 'A salary entry in the file is damaged.' };
+  }
   for (const i of incomes) {
     if (!i || typeof i.id !== 'string' || !Number.isInteger(i.amount) || !/^\d{4}-\d{2}$/.test(String(i.month))) return { error: 'An income entry in the file is damaged.' };
   }
   for (const l of lists) {
     if (!l || typeof l.id !== 'string' || typeof l.title !== 'string') return { error: 'A list item in the file is damaged.' };
   }
-  return { doc: { ...(d as FinanceDoc), vouchers, events, incomes, lists } };
+  return { doc: { ...(d as FinanceDoc), vouchers, events, incomes, lists, salaries } };
 }
 
 /** Live transactions for a month (YYYY-MM), newest first. */

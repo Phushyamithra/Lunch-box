@@ -172,7 +172,7 @@ export default function ListsPage() {
   const doneCount = items.filter((x) => x.status === 'done').length;
 
   return (
-    <Stack spacing={2} sx={{ maxWidth: 860 }}>
+    <Stack spacing={3} sx={{ maxWidth: 860 }}>
       {rem.length > 0 && (
         <Card title="🔔 Reminders">
           <Stack spacing={1}>

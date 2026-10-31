@@ -54,7 +54,7 @@ export default function PlanPage() {
   );
 
   return (
-    <Stack spacing={2} sx={{ maxWidth: 760 }}>
+    <Stack spacing={3} sx={{ maxWidth: 760 }}>
       <Button startIcon={<ArrowBackRoundedIcon />} onClick={() => navigate('/food')} sx={{ alignSelf: 'flex-start' }}>
         Back to Food
       </Button>

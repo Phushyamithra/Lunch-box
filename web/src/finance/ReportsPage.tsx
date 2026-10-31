@@ -49,7 +49,7 @@ export default function ReportsPage() {
   const cardChart = months.map((m, i) => ({ month: m, ...Object.fromEntries(cards.map((c, j) => [`c${j}`, c.byMonth[i] / 100])) }));
 
   return (
-    <Stack spacing={2} sx={{ maxWidth: 960 }}>
+    <Stack spacing={3} sx={{ maxWidth: 960 }}>
       <ToggleButtonGroup exclusive size="small" value={span} onChange={(_, v) => v !== null && setSpan(v)} aria-label="Period">
         {([3, 6, 12, 0] as const).map((v) => (
           <ToggleButton key={v} value={v} sx={{ textTransform: 'none', px: 2 }}>

@@ -78,7 +78,7 @@ export default function MealsPage() {
   };
 
   return (
-    <Stack spacing={2} sx={{ maxWidth: 760 }}>
+    <Stack spacing={3} sx={{ maxWidth: 760 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
         <Button startIcon={<ArrowBackRoundedIcon />} onClick={() => navigate('/food')}>
           Back to Food

@@ -10,6 +10,10 @@ import {
   Box,
   Button,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControlLabel,
   IconButton,
   LinearProgress,
@@ -22,6 +26,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import dayjs from 'dayjs';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -58,7 +63,7 @@ import { NumberStepper } from './NumberStepper';
 import { exerciseOptions } from './referenceImport';
 import { addDays, isAway, isoWeekday, suggestSet, variantIndexFor, weekStart } from './rules';
 import { SwipeRow, type SwipeRowHandle } from './SwipeRow';
-import { Card } from './ui';
+import { Card, minutes } from './ui';
 import { WorkoutEditor, knownExercises } from './WorkoutEditor';
 
 const WEEKDAY = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -213,6 +218,8 @@ export function SessionLogger({ day, data }: { day: string; data: FitnessData })
             No program for {WEEKDAY[weekday]} yet. Import your reference file, or make your own card.
           </Alert>
         )}
+
+        {!showPicker && <SessionTimer day={day} session={session} ensureSession={async () => session ?? (await persist({}))} />}
 
         <AnimatePresence initial={false} mode="wait">
           {showPicker ? (
@@ -901,6 +908,91 @@ function ExerciseCard({
         </Typography>
       </Paper>
     </motion.div>
+  );
+}
+
+/** A timer left running longer than this was probably forgotten. */
+const LONG_SESSION_SEC = 4 * 3600;
+const clock = (sec: number) => `${Math.floor(sec / 3600)}:${String(Math.floor(sec / 60) % 60).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+
+/** Time in the gym. Kept on the session, so it runs on with the app closed. */
+function SessionTimer({ day, session, ensureSession }: { day: string; session: SessionRow | undefined; ensureSession: () => Promise<SessionRow | null> }) {
+  const toast = useSnackbar();
+  const { setSessionTime } = useFitness();
+  const [now, setNow] = useState(Date.now());
+  const [editing, setEditing] = useState<{ minutes: string; note: string | null } | null>(null);
+  const running = Boolean(session?.started_at) && session?.duration_sec === null;
+  useEffect(() => {
+    if (!running) return;
+    setNow(Date.now());
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [running]);
+  const elapsed = running ? Math.max(0, Math.round((now - Date.parse(session!.started_at!)) / 1000)) : 0;
+
+  const save = async (time: { started_at: string | null; duration_sec: number | null }, id = session?.id) => {
+    if (!id) return false;
+    try {
+      await setSessionTime(id, time);
+      return true;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'error';
+      toast(/started_at|duration_sec/.test(msg) ? 'Run migration 0016 in Supabase to use the timer.' : `Not saved: ${msg}`, { severity: 'error' });
+      return false;
+    }
+  };
+  const start = async () => {
+    const s = await ensureSession();
+    if (s) await save({ started_at: new Date().toISOString(), duration_sec: null }, s.id);
+  };
+  const finish = async () => {
+    const sec = Math.round((Date.now() - Date.parse(session!.started_at!)) / 1000);
+    if (sec > LONG_SESSION_SEC) return setEditing({ minutes: String(Math.round(sec / 60)), note: 'That’s over 4 hours. If you forgot to stop it, enter the real time.' });
+    if (await save({ started_at: session!.started_at, duration_sec: sec })) toast(`⏱️ ${minutes(sec)} session`);
+  };
+  const saveEdit = async () => {
+    const m = Number(editing?.minutes);
+    if (!(m >= 0) || m > 1440) return toast('Enter the minutes, up to 1440.', { severity: 'info' });
+    if (await save({ started_at: session?.started_at ?? null, duration_sec: Math.round(m * 60) })) setEditing(null);
+  };
+
+  if (!session && day !== dayjs().format('YYYY-MM-DD')) return null;
+  return (
+    <Paper variant="outlined" role="timer" sx={{ p: 1, pl: 2, borderRadius: 999, display: 'flex', alignItems: 'center', gap: 1 }}>
+      <TimerRoundedIcon color={running ? 'secondary' : 'disabled'} />
+      <Typography sx={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', flexGrow: 1 }}>
+        {running ? clock(elapsed) : session?.duration_sec !== null && session?.duration_sec !== undefined ? minutes(session.duration_sec) : 'Time in gym'}
+      </Typography>
+      {running ? (
+        <Button variant="contained" size="small" onClick={() => void finish()}>
+          Finish
+        </Button>
+      ) : session?.duration_sec !== null && session?.duration_sec !== undefined ? (
+        <Button size="small" onClick={() => setEditing({ minutes: String(Math.round(session.duration_sec! / 60)), note: null })}>
+          Edit
+        </Button>
+      ) : day === dayjs().format('YYYY-MM-DD') ? (
+        <Button variant="contained" size="small" onClick={() => void start()}>
+          Start
+        </Button>
+      ) : (
+        <Button size="small" onClick={() => setEditing({ minutes: '', note: null })}>
+          Add time
+        </Button>
+      )}
+      <Dialog open={editing !== null} onClose={() => setEditing(null)} fullWidth maxWidth="xs">
+        <DialogTitle>Session time</DialogTitle>
+        <DialogContent>
+          <TextField autoFocus fullWidth label="Minutes" inputMode="numeric" value={editing?.minutes ?? ''} onChange={(e) => setEditing((v) => v && { ...v, minutes: e.target.value })} helperText={editing?.note ?? undefined} sx={{ mt: 1 }} />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditing(null)}>Cancel</Button>
+          <Button variant="contained" disabled={!editing?.minutes.trim()} onClick={() => void saveEdit()}>
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Paper>
   );
 }
 

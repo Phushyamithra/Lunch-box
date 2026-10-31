@@ -110,6 +110,7 @@ export function mergeDocs(local: FinanceDoc, remote: FinanceDoc): FinanceDoc {
     events: mergeRecords(local.events ?? [], remote.events ?? []).sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id)),
     incomes: mergeRecords(local.incomes ?? [], remote.incomes ?? []).sort((a, b) => a.month.localeCompare(b.month) || a.id.localeCompare(b.id)),
     lists: mergeRecords(local.lists ?? [], remote.lists ?? []).sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id)),
+    salaries: mergeRecords(local.salaries ?? [], remote.salaries ?? []).sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id)),
   };
 }
 

@@ -18,7 +18,7 @@ export default function SavingsPage() {
   const total = doc.settings.goals.reduce((a, g) => a + g.target, 0);
 
   return (
-    <Stack spacing={2} sx={{ maxWidth: 860 }}>
+    <Stack spacing={3} sx={{ maxWidth: 860 }}>
       <Card title="🪜 Savings">
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
           <Metric value={formatINR(st.actualTotal)} caption={`saved (actual) of ${formatINR(total)}`} />

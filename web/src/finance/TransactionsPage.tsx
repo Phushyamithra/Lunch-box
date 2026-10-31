@@ -47,7 +47,7 @@ export default function TransactionsPage() {
   const budgetCategories = planFor(doc.settings, month).budgets.map((b) => b.category);
 
   return (
-    <Stack spacing={2} sx={{ maxWidth: 860 }}>
+    <Stack spacing={3} sx={{ maxWidth: 860 }}>
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
         <IconButton aria-label="Previous month" onClick={() => setMonth(dayjs(`${month}-01`).subtract(1, 'month').format('YYYY-MM'))}>
           <ChevronLeftRoundedIcon />

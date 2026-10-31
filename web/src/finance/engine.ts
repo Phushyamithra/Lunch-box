@@ -36,6 +36,9 @@ export function salaryDate(s: Pick<FinanceSettings, 'salaryDay'>, ym: string): s
   return s.salaryDay === 'last' ? dateIn(ym, 31) : dateIn(ym, s.salaryDay);
 }
 
+/** The recorded salary credited in month `ym`, if you've marked it received. */
+export const salaryReceipt = (doc: FinanceDoc, ym: string) => (doc.salaries ?? []).find((r) => !r.deletedAt && r.month === ym) ?? null;
+
 // ---------- plan for a month ----------
 
 export interface PlannedItem {
@@ -162,13 +165,15 @@ export function monthSummary(doc: FinanceDoc, ym: string, today: string): MonthS
   const spend = committed.reduce((a, c) => a + c.counted, 0) + budgets.reduce((a, b) => a + b.counted, 0) + everyday.counted;
   const loggedTotal = txs.reduce((a, t) => a + t.amount, 0);
   const stillToPay = committed.reduce((a, c) => a + Math.max(0, c.planned - c.logged), 0);
-  const funding = s.salary;
+  // Last month's salary pays this month: the real amount once it's recorded.
+  const receipt = salaryReceipt(doc, addMonths(ym, -1));
+  const funding = receipt ? receipt.amount : s.salary;
   return {
     month: ym,
     tracked: ym >= s.startMonth,
     final,
     funding,
-    fundingDate: salaryDate(planFor(doc.settings, addMonths(ym, -1)), addMonths(ym, -1)),
+    fundingDate: receipt ? receipt.date : salaryDate(planFor(doc.settings, addMonths(ym, -1)), addMonths(ym, -1)),
     committed,
     budgets,
     everyday,
@@ -378,7 +383,7 @@ export function upcoming(doc: FinanceDoc, today: string): Upcoming[] {
     if (st.spent > 0) out.push({ date: nextDue, month: monthOf(nextDue ?? st.current.end), name: `${card.name} bill (this cycle so far)`, amount: st.spent, kind: 'card', note: 'Grows until the statement closes' });
   }
   const sal = salaryDate(s, ym);
-  if (sal >= today) out.push({ date: sal, month: ym, name: 'Salary', amount: s.salary, kind: 'salary', note: 'Pays next month' });
+  if (sal >= today && !salaryReceipt(doc, ym)) out.push({ date: sal, month: ym, name: 'Salary', amount: s.salary, kind: 'salary', note: 'Pays next month' });
   const next = addMonths(ym, 1);
   for (const c of commitmentsFor(s, next)) for (const i of c.items) out.push({ date: null, month: next, name: i.name, amount: i.amount, kind: i.kind, note: null });
   const thisMonth = monthSummary(doc, ym, today);

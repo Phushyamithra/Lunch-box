@@ -11,6 +11,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useState, type ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { ThemeMode } from '../../../src/models';
 import { describeAuthError, useAuth } from '../auth/AuthContext';
 import { useSettings } from '../settings/SettingsContext';
@@ -28,12 +29,13 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 }
 
 export default function Settings() {
+  const navigate = useNavigate();
   const { session, signOut } = useAuth();
   const { settings, updateSettings, syncState, syncError, resync } = useSettings();
   const [signOutError, setSignOutError] = useState<string | null>(null);
 
   return (
-    <Stack spacing={2} sx={{ maxWidth: 560 }}>
+    <Stack spacing={3} sx={{ maxWidth: 560 }}>
       <Section title="Appearance">
         <ToggleButtonGroup
           value={settings.themeMode}
@@ -75,6 +77,15 @@ export default function Settings() {
           </Alert>
         )}
         {(syncState === 'loading' || syncState === 'saving') && <Alert severity="info">Syncing…</Alert>}
+      </Section>
+
+      <Section title="Add in bulk">
+        <Typography variant="body2" color="text.secondary">
+          Templates for Finance, Fitness and Nutrition: download, fill in, upload.
+        </Typography>
+        <Button variant="outlined" onClick={() => navigate('/templates')}>
+          Open templates
+        </Button>
       </Section>
 
       <AppSection />

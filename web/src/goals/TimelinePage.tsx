@@ -264,7 +264,7 @@ export default function TimelinePage() {
   const hasPhase = goals.data.milestones.some((m) => m.source === 'phase' && !m.archived_at);
 
   return (
-    <Stack spacing={2} sx={{ maxWidth: 860 }}>
+    <Stack spacing={3} sx={{ maxWidth: 860 }}>
       <Stack direction="row" alignItems="center" spacing={1}>
         <Stack direction="row" spacing={0.75} sx={{ flexGrow: 1, flexWrap: 'wrap', rowGap: 0.75 }}>
           {(

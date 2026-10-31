@@ -1,3 +1,4 @@
+import ChevronLeftRoundedIcon from '@mui/icons-material/ChevronLeftRounded';
 import CloudDoneRoundedIcon from '@mui/icons-material/CloudDoneRounded';
 import CloudOffRoundedIcon from '@mui/icons-material/CloudOffRounded';
 import CloudSyncRoundedIcon from '@mui/icons-material/CloudSyncRounded';
@@ -15,8 +16,6 @@ import {
   InputAdornment,
   Paper,
   Stack,
-  Tab,
-  Tabs,
   TextField,
   Tooltip,
   Typography,
@@ -30,19 +29,20 @@ import { useFinance } from './FinanceContext';
 import { parseINR, toRupees, type Paise } from './model';
 import { passphraseProblem, WrongPassphraseError } from './vault';
 
-const TABS = [
-  { path: '/finance', label: 'Today' },
-  { path: '/finance/month', label: 'Month' },
-  { path: '/finance/cards', label: 'Cards' },
-  { path: '/finance/savings', label: 'Savings' },
-  { path: '/finance/plan', label: 'Plan' },
-  { path: '/finance/bank', label: 'Bank' },
-  { path: '/finance/what-if', label: 'What if' },
-  { path: '/finance/extras', label: 'Income & extras' },
-  { path: '/finance/lists', label: 'Lists' },
-  { path: '/finance/reports', label: 'Reports' },
-  { path: '/finance/transactions', label: 'Transactions' },
-  { path: '/finance/settings', label: 'Settings' },
+/** Finance's sections, shown as tiles on the Finance home. */
+export const FINANCE_SECTIONS = [
+  { path: '/finance/transactions', label: 'Transactions', emoji: '🧾', hint: 'By method and category' },
+  { path: '/finance/month', label: 'Month', emoji: '📅', hint: 'Budgets and bills' },
+  { path: '/finance/cards', label: 'Cards', emoji: '💳', hint: 'Cycles and statements' },
+  { path: '/finance/bank', label: 'Bank', emoji: '🏦', hint: 'Balance and salary day' },
+  { path: '/finance/savings', label: 'Savings', emoji: '🪜', hint: 'Goals in order' },
+  { path: '/finance/plan', label: 'Plan', emoji: '🧭', hint: 'Months ahead' },
+  { path: '/finance/what-if', label: 'What if', emoji: '🛍️', hint: 'Can I afford it?' },
+  { path: '/finance/extras', label: 'Income & extras', emoji: '🎟️', hint: 'Vouchers and refunds' },
+  { path: '/finance/lists', label: 'Lists', emoji: '✅', hint: 'To-dos, buy later' },
+  { path: '/finance/reports', label: 'Reports', emoji: '📊', hint: 'Trends and exports' },
+  { path: '/finance/settings', label: 'Settings', emoji: '⚙️', hint: 'Your plan and security' },
+  { path: '/templates', label: 'Bulk add', emoji: '📥', hint: 'Templates and upload' },
 ];
 
 /** Amount field in rupees; reports paise (null while empty or invalid). */
@@ -256,7 +256,7 @@ export function FinanceLayout() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const finance = useFinance();
-  const current = TABS.find((t) => t.path === pathname)?.path ?? false;
+  const section = FINANCE_SECTIONS.find((t) => t.path === pathname);
 
   if (finance.status === 'loading') {
     return (
@@ -278,25 +278,17 @@ export function FinanceLayout() {
 
   return (
     <Box>
-      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
-        <Tabs
-          value={current}
-          onChange={(_, path: string) => navigate(path)}
-          variant="scrollable"
-          allowScrollButtonsMobile
-          aria-label="Finance sections"
-          sx={{
-            flexGrow: 1,
-            minHeight: 44,
-            '& .MuiTabs-indicator': { display: 'none' },
-            '& .MuiTab-root': { minHeight: 40, borderRadius: 999, textTransform: 'none', fontWeight: 600, px: 2, mr: 0.5 },
-            '& .Mui-selected': { bgcolor: (t) => t.tracker.tonal, color: (t) => `${t.tracker.onTonal} !important` },
-          }}
-        >
-          {TABS.map((t) => (
-            <Tab key={t.path} value={t.path} label={t.label} />
-          ))}
-        </Tabs>
+      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2.5 }}>
+        {section ? (
+          <Button startIcon={<ChevronLeftRoundedIcon />} color="inherit" onClick={() => navigate('/finance')} sx={{ textTransform: 'none', fontWeight: 700, fontSize: 16 }}>
+            {section.label}
+          </Button>
+        ) : (
+          <Typography color="text.secondary" variant="body2">
+            {dayjs().format('dddd, D MMMM')}
+          </Typography>
+        )}
+        <Box sx={{ flexGrow: 1 }} />
         <SyncChip />
       </Stack>
       {finance.sync.state === 'error' && finance.sync.message && (
