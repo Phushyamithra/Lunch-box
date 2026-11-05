@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { defaultSettings, emptyDoc, formatINR, newTransaction, parseFinanceDoc, parseINR, rupees, validateSettings, validateTransaction, type FinanceDoc } from './model';
-import { deriveKey, mergeDocs, newKdfParams, open, passphraseProblem, seal, WrongPassphraseError } from './vault';
+import { defaultSettings, emptyDoc, formatINR, newTransaction, parseFinanceDoc, parseINR, rupees, validateSettings, validateTransaction, type FinanceDoc, type Transaction } from './model';
+import { deriveKey, mergeDocs, newKdfParams, open, passphraseProblem, replaceDoc, seal, WrongPassphraseError } from './vault';
 
 describe('money', () => {
   it('formats rupees the Indian way, in paise', () => {
@@ -178,5 +178,25 @@ describe('dated plan changes', () => {
     expect(planFor(fixed, '2026-09').salary).toBe(rupees(61000));
     // Changing only non-plan settings (a goal) adds no history.
     expect(withPlanFrom(s, { ...s, openingBalance: rupees(5) }, '2026-11').planHistory).toEqual([]);
+  });
+});
+
+describe('replaceDoc', () => {
+  it('removes every old record everywhere and loads the file instead', () => {
+    const old = emptyDoc('2026-10-01', '2026-10-01T00:00:00Z');
+    const t = (id: string, date: string): Transaction => ({ id, date, amount: 100, category: 'Other', method: 'UPI', note: null, createdAt: '2026-10-01T00:00:00Z', updatedAt: '2026-10-01T00:00:00Z', deletedAt: null });
+    old.transactions = [t('a', '2026-10-02'), t('b', '2026-10-03')];
+    const file = emptyDoc('2026-11-01', '2026-11-01T00:00:00Z');
+    file.settings.salary = rupees(61908);
+    file.transactions = [t('n', '2026-11-01')];
+    const now = '2026-11-06T10:00:00Z';
+    const out = replaceDoc(old, file, now);
+    expect(out.transactions.filter((x) => !x.deletedAt).map((x) => x.id)).toEqual(['n']);
+    expect(out.transactions.filter((x) => x.deletedAt).map((x) => x.id)).toEqual(['a', 'b']);
+    expect(out.settings).toMatchObject({ salary: rupees(61908), updatedAt: now });
+    // Another device still holding the old records loses them on merge.
+    const merged = mergeDocs(old, out);
+    expect(merged.transactions.filter((x) => !x.deletedAt).map((x) => x.id)).toEqual(['n']);
+    expect(merged.settings.salary).toBe(rupees(61908));
   });
 });

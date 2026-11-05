@@ -4,7 +4,7 @@ import { biometricAvailable, newPrfSalt, registerPasskey, unwrapVaultKey, verify
 import { deviceLabel, forgetBio, forgetKey, forgetLocal, loadBio, loadKey, loadLocal, saveBio, saveKey, saveLocal, type LocalState } from './localStore';
 import { emptyDoc, parseFinanceDoc, type FinanceDoc, type FinanceSettings } from './model';
 import { createVault, fetchVault, updateVault, type VaultRow } from './vaultApi';
-import { deriveKey, deriveRawKey, importVaultKey, mergeDocs, newKdfParams, open, seal, WrongPassphraseError, type KdfParams } from './vault';
+import { deriveKey, deriveRawKey, importVaultKey, mergeDocs, newKdfParams, open, replaceDoc, seal, WrongPassphraseError, type KdfParams } from './vault';
 
 export type FinanceStatus = 'loading' | 'setup' | 'locked' | 'ready' | 'error';
 export interface SyncState {
@@ -30,6 +30,8 @@ interface FinanceValue {
   changePassphrase: (current: string, next: string) => Promise<void>;
   /** Adds a backup's records to yours (newer edits win; nothing is deleted). */
   restore: (raw: unknown) => Promise<{ added: number }>;
+  /** Removes every record (on all devices, via sync) and loads the file's records and settings instead. */
+  replaceAll: (raw: unknown) => Promise<{ count: number }>;
   forgetDevice: () => Promise<void>;
   /** Fingerprint lock: whether this phone can, and how it's set up (null = off). */
   fingerprint: { available: boolean; mode: BioMode | null };
@@ -347,6 +349,16 @@ export function FinanceProvider({ client, userId, children }: { client: Supabase
         await persist({ ...cur, doc: merged, dirty: true });
         schedule();
         return { added: merged.transactions.filter((t) => !before.has(t.id)).length };
+      },
+      async replaceAll(raw) {
+        const parsed = parseFinanceDoc(raw);
+        if ('error' in parsed) throw new Error(parsed.error);
+        const cur = localRef.current;
+        if (!cur) throw new Error('Finance isn’t open.');
+        await persist({ ...cur, doc: replaceDoc(cur.doc, parsed.doc), dirty: true });
+        schedule();
+        const d = parsed.doc;
+        return { count: [d.transactions, d.balances, d.vouchers, d.events, d.incomes, d.lists, d.salaries].reduce((a, l) => a + (l?.length ?? 0), 0) };
       },
       async forgetDevice() {
         await syncNow();

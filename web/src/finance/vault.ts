@@ -114,6 +114,24 @@ export function mergeDocs(local: FinanceDoc, remote: FinanceDoc): FinanceDoc {
   };
 }
 
+const RECORD_KEYS = ['transactions', 'balances', 'vouchers', 'events', 'incomes', 'lists', 'salaries'] as const;
+
+/**
+ * Start over from a file: every current record is marked deleted and the
+ * file's records and settings take their place, all stamped `now`. Deletes
+ * are tombstones, so the other devices drop the old records when they merge.
+ */
+export function replaceDoc(current: FinanceDoc, incoming: FinanceDoc, now = new Date().toISOString()): FinanceDoc {
+  const out = { ...current, version: Math.max(current.version, incoming.version), settings: { ...incoming.settings, updatedAt: now } } as FinanceDoc;
+  for (const k of RECORD_KEYS) {
+    const fresh = ((incoming[k] ?? []) as Stamped[]).map((r) => ({ ...r, updatedAt: now }));
+    const ids = new Set(fresh.map((r) => r.id));
+    const gone = ((current[k] ?? []) as Stamped[]).filter((r) => !ids.has(r.id)).map((r) => (r.deletedAt ? r : { ...r, deletedAt: now, updatedAt: now }));
+    (out as unknown as Record<string, Stamped[]>)[k] = [...gone, ...fresh];
+  }
+  return out;
+}
+
 /**
  * The same key as `deriveKey`, as raw bytes, so it can be wrapped for
  * fingerprint unlock. (PBKDF2 → 256 bits is exactly what deriveKey uses.)

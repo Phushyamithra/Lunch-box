@@ -157,7 +157,9 @@ export default function FinanceSettingsPage() {
     setReloadForm(false);
   }, [reloadForm, finance.doc]);
   const [confirmForget, setConfirmForget] = useState(false);
+  const [confirmReplace, setConfirmReplace] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const replaceRef = useRef<HTMLInputElement>(null);
   const error = validateSettings(form);
   const dirty = JSON.stringify(form) !== JSON.stringify(finance.doc!.settings);
   const set = (patch: Partial<FinanceSettings>) => setForm((f) => ({ ...f, ...patch }));
@@ -196,6 +198,21 @@ export default function FinanceSettingsPage() {
       toast(e instanceof SyntaxError ? 'That file isn’t valid JSON.' : e instanceof Error ? e.message : 'Could not restore.', { severity: 'error' });
     } finally {
       if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
+  const replace = async (file: File | undefined) => {
+    if (!file) return;
+    try {
+      const { count } = await finance.replaceAll(JSON.parse(await file.text()));
+      toast(`Replaced: everything before is removed; ${count} records loaded from the file`);
+      setForm(structuredClone(finance.doc!.settings));
+      setFormKey((k) => k + 1);
+      setReloadForm(true);
+    } catch (e) {
+      toast(e instanceof SyntaxError ? 'That file isn’t valid JSON.' : e instanceof Error ? e.message : 'Could not replace.', { severity: 'error' });
+    } finally {
+      if (replaceRef.current) replaceRef.current.value = '';
     }
   };
 
@@ -433,9 +450,15 @@ export default function FinanceSettingsPage() {
               Import a month (.md or .xlsx)
             </Button>
           </Stack>
-          <Button color="error" onClick={() => setConfirmForget(true)} sx={{ alignSelf: 'flex-start' }}>
-            Remove Finance from this device
-          </Button>
+          <input ref={replaceRef} type="file" accept=".json,application/json" hidden onChange={(e) => void replace(e.target.files?.[0])} />
+          <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap', rowGap: 1 }}>
+            <Button color="error" onClick={() => setConfirmReplace(true)}>
+              Replace everything with a file
+            </Button>
+            <Button color="error" onClick={() => setConfirmForget(true)}>
+              Remove Finance from this device
+            </Button>
+          </Stack>
         </Stack>
       </Card>
 
@@ -462,6 +485,32 @@ export default function FinanceSettingsPage() {
       {changing && <PassphraseDialog onClose={() => setChanging(false)} />}
       {enablingBio && <FingerprintDialog onClose={() => setEnablingBio(false)} />}
       {importing && <MonthImportDialog onClose={() => (setImporting(false), setReloadForm(true))} />}
+      <Dialog open={confirmReplace} onClose={() => setConfirmReplace(false)}>
+        <DialogTitle>Replace all Finance data?</DialogTitle>
+        <DialogContent>
+          <Typography gutterBottom>
+            Every transaction, balance, salary, voucher, event, income and list item is removed, on all your devices once they sync, and your settings are replaced by the
+            file’s. Then the file’s records are loaded.
+          </Typography>
+          <Typography color="text.secondary" variant="body2">
+            Download a backup first if you might want the old data back: restoring that backup brings it back.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={download}>Download backup</Button>
+          <Button onClick={() => setConfirmReplace(false)}>Cancel</Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={() => {
+              setConfirmReplace(false);
+              replaceRef.current?.click();
+            }}
+          >
+            Choose file
+          </Button>
+        </DialogActions>
+      </Dialog>
       <Dialog open={confirmForget} onClose={() => setConfirmForget(false)}>
         <DialogTitle>Remove Finance from this device?</DialogTitle>
         <DialogContent>
