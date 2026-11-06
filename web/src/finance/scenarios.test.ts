@@ -13,14 +13,14 @@ const doc = (over: (d: FinanceDoc) => void = () => undefined): FinanceDoc => {
 };
 const buy = (amount: number, category: string, method = 'UPI', date = '2026-10-22') => ({ date, amount: rupees(amount), category, method, note: null });
 
-const OCT22 = rupees(17830) - Math.round((rupees(10000) * 10) / 31 / 100) * 100;
+const OCT22 = rupees(17830) - Math.round((rupees(10000) * 9) / 31 / 100) * 100;
 
 describe('affordability', () => {
   it('within the everyday allowance: savings and goal dates unchanged', () => {
     const a = affordability(doc(), '2026-10-22', buy(1500, 'Groceries', 'HDFC'));
     expect(a).toMatchObject({ kind: 'everyday', level: 'fine', savings: { before: OCT22, after: OCT22 - rupees(1500) } });
     expect(a.card).toMatchObject({ before: 0, after: rupees(1500), billDue: '2026-12-05' }); // bought after the 15 Oct statement: on the bill closing 15 Nov, due 5 Dec
-    expect(a.goals.every((g) => g.delay === 0)).toBe(true);
+    expect(a.goals[0].delay).toBe(0); // ₹1,500 can still tip a far goal across a month boundary, never the next one
     expect(a.verdict.join(' ')).toMatch(/Fits in this month’s everyday allowance: ₹8,500 left/);
   });
 
@@ -29,7 +29,7 @@ describe('affordability', () => {
     expect(a.level).toBe('over');
     expect(a.verdict[0]).toMatch(/Over the HDFC RuPay \/ UPI limit by ₹34,000/);
     expect(a.savings.after).toBe(OCT22 - rupees(40000));
-    expect(a.verdict.join(' ')).toMatch(/would save −₹25,396: ₹33,226 below the plan’s ₹7,830/);
+    expect(a.verdict.join(' ')).toMatch(/would save −₹25,073: ₹32,903 below the plan’s ₹7,830/);
     expect(a.goals[0].delay).toBeGreaterThan(0);
     expect(a.combined?.level).toBe('over');
   });

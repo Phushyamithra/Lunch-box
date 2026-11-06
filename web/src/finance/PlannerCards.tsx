@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 import { Card } from '../fitness/ui';
 import { useFinance } from './FinanceContext';
-import { formatINR, type Paise } from './model';
+import { budgetMonth, formatINR, type Paise } from './model';
 import { Bar } from './MonthPage';
 import { checkTransfer, peakMonths, salaryDayPlan, sinkingFunds, weeklyCap } from './planner';
 import { AmountField } from './ui';
@@ -174,7 +174,7 @@ export function WeeklyCapBar() {
   const { doc } = useFinance();
   const today = dayjs().format('YYYY-MM-DD');
   const w = doc ? weeklyCap(doc, today) : null;
-  if (!w || (doc!.settings.cardFree && doc!.settings.cardFree.from > today.slice(0, 7))) return null;
+  if (!w || (doc!.settings.cardFree && doc!.settings.cardFree.from > budgetMonth(doc!, today))) return null;
   return (
     <Card title="🧮 This week (card-free)">
       <Bar

@@ -2,7 +2,7 @@
  * Planning helpers: yearly bills (sinking funds), peak months, the
  * salary-day transfer, card-free mode and reminders. Pure; money in paise.
  */
-import { addMonths, cardCycles, commitmentsFor, monthOf, salaryDate, salaryReceipt } from './engine';
+import { budgetMonth, addMonths, cardCycles, commitmentsFor, monthOf, salaryDate, salaryReceipt } from './engine';
 import { reliableIncome, voucherState } from './extras';
 import { planFor, VOUCHER_METHOD, type FinanceDoc, type FinanceSettings, type Paise, type Transaction } from './model';
 
@@ -101,9 +101,9 @@ export function cashOut(doc: FinanceDoc, ym: string, today: string): CashOut {
   // Last month's card spending: actual if that month is the current or past and bigger than plan.
   const cardMethods = new Set(s.cards.map((c) => c.method));
   const loggedCard = live(doc.transactions)
-    .filter((t) => cardMethods.has(t.method) && monthOf(t.date) === prev)
+    .filter((t) => cardMethods.has(t.method) && budgetMonth(doc, t.date) === prev)
     .reduce((a, t) => a + t.amount, 0);
-  const lastCardBill = prev <= monthOf(today) ? Math.max(everydayPlan(s, prev), loggedCard) : everydayPlan(s, prev);
+  const lastCardBill = prev <= budgetMonth(doc, today) ? Math.max(everydayPlan(s, prev), loggedCard) : everydayPlan(s, prev);
   let doublePayment = 0;
   if (from && ym >= from) {
     items.push({ name: 'Everyday spending (card-free, same month)', amount: everydayPlan(s, ym) });

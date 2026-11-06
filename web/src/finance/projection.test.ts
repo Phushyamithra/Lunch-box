@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { emptyDoc, rupees, type FinanceDoc, type Transaction } from './model';
+import { budgetMonth, cycleRange, emptyDoc, rupees, salaryDate, type FinanceDoc, type Transaction } from './model';
 import { accountNow, compareBalance, finishMonth, projection, reconcile } from './projection';
 import { monthSummary } from './engine';
 
@@ -26,8 +26,8 @@ describe('projection', () => {
   const rows = projection(doc(), '2026-10-20');
 
   it('labels each month and stops when the last goal is full', () => {
-    // 20 Oct: needs counted for the 12 days left.
-    expect(rows[0]).toMatchObject({ month: '2026-10', kind: 'current', savings: rupees(17830) - Math.round((rupees(10000) * 12) / 31 / 100) * 100 });
+    // 20 Oct: needs counted for the 11 days left (to 30 Oct).
+    expect(rows[0]).toMatchObject({ month: '2026-10', kind: 'current', savings: rupees(17830) - Math.round((rupees(10000) * 11) / 31 / 100) * 100 });
     expect(rows[1]).toMatchObject({ month: '2026-11', kind: 'projected', savings: rupees(11000) });
     const last = rows[rows.length - 1];
     expect(last.total).toBeGreaterThanOrEqual(rupees(634000));
@@ -114,11 +114,13 @@ describe('salary received and the account now', () => {
   it('a recorded salary overrides the planned amount and date, and funds next month', () => {
     const d = base();
     d.salaries = [{ id: 's', month: '2026-10', date: '2026-10-30', amount: rupees(61500), note: null, updatedAt: stamp, deletedAt: null }];
-    expect(reconcile(d, '2026-10-30', { savingsPot: 0, cardsOwed: 0 }).expected).toBe(rupees(50000 + 61500));
+    // Salary day closes October: its unlogged committed costs (₹42,170) now count as paid.
+    expect(reconcile(d, '2026-10-30', { savingsPot: 0, cardsOwed: 0 }).expected).toBe(rupees(50000 + 61500 - 42170));
+    expect(reconcile(d, '2026-10-29', { savingsPot: 0, cardsOwed: 0 }).expected).toBe(rupees(50000));
     expect(monthSummary(d, '2026-11', '2026-11-02')).toMatchObject({ funding: rupees(61500), fundingDate: '2026-10-30' });
     // Without a record, the plan's salary and day still apply.
     expect(reconcile(base(), '2026-10-30', { savingsPot: 0, cardsOwed: 0 }).expected).toBe(rupees(50000));
-    expect(reconcile(base(), '2026-10-31', { savingsPot: 0, cardsOwed: 0 }).expected).toBe(rupees(112000));
+    expect(reconcile(base(), '2026-10-31', { savingsPot: 0, cardsOwed: 0 }).expected).toBe(rupees(112000 - 42170));
   });
 
   it('account now rolls forward from the latest balance you entered', () => {
@@ -129,5 +131,23 @@ describe('salary received and the account now', () => {
     expect(accountNow(d, '2026-10-24')).toEqual({ amount: rupees(7210.97) - rupees(378), from: { date: '2026-10-22', amount: rupees(7210.97) } });
     expect(accountNow(base(), '2026-10-24')).toEqual({ amount: rupees(50000), from: null });
     expect(accountNow(doc(), '2026-10-24').amount).toBeNull();
+  });
+});
+
+describe('budget months run salary to salary', () => {
+  const stamp = '2026-10-01T00:00:00Z';
+  it('counts a payment on or after salary day toward next month, by the real or planned date', () => {
+    const d = emptyDoc('2026-10-01', stamp);
+    d.settings.salaryDay = 'lastWorking';
+    // 31 Oct 2026 is a Saturday, 31 Jan 2027 a Sunday: both move back to Friday.
+    expect(salaryDate(d.settings, '2026-10')).toBe('2026-10-30');
+    expect(salaryDate(d.settings, '2027-01')).toBe('2027-01-29');
+    expect(salaryDate(d.settings, '2026-11')).toBe('2026-11-30');
+    expect(budgetMonth(d, '2026-10-29')).toBe('2026-10');
+    expect(budgetMonth(d, '2026-10-30')).toBe('2026-11');
+    expect(cycleRange(d, '2026-11')).toEqual({ start: '2026-10-30', end: '2026-11-29' });
+    // A recorded salary moves the boundary to the day it really landed.
+    d.salaries = [{ id: 's', month: '2026-11', date: '2026-11-28', amount: rupees(61908), note: null, updatedAt: stamp, deletedAt: null }];
+    expect(budgetMonth(d, '2026-11-28')).toBe('2026-12');
   });
 });

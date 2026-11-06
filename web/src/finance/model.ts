@@ -112,8 +112,12 @@ export interface SavingsGoal {
 export interface FinanceSettings {
   updatedAt: string;
   salary: Paise;
-  /** 'last' = last day of the month; that salary pays next month's bills. */
-  salaryDay: 'last' | number;
+  /**
+   * When it's credited: 'last' day of the month, 'lastWorking' (last
+   * Mon–Fri), or a day number. That salary pays next month's bills, so a
+   * budget month runs from one salary to the day before the next.
+   */
+  salaryDay: 'last' | 'lastWorking' | number;
   fixed: FixedExpense[];
   periodic: PeriodicExpense[];
   budgets: VariableBudget[];
@@ -272,6 +276,50 @@ export interface FinanceDoc {
 
 const id = () => crypto.randomUUID();
 
+// ---------- months and salary cycles ----------
+
+export const addMonths = (ym: string, n: number): string => {
+  const [y, m] = ym.split('-').map(Number);
+  const t = y * 12 + (m - 1) + n;
+  return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, '0')}`;
+};
+export const monthOf = (day: string) => day.slice(0, 7);
+const lastDay = (ym: string) => {
+  const [y, m] = ym.split('-').map(Number);
+  return new Date(Date.UTC(y, m, 0));
+};
+const shiftDay = (d: string, n: number) => new Date(Date.parse(`${d}T00:00:00Z`) + n * 86400000).toISOString().slice(0, 10);
+
+export function salaryDate(s: Pick<FinanceSettings, 'salaryDay'>, ym: string): string {
+  const end = lastDay(ym);
+  if (s.salaryDay === 'last') return end.toISOString().slice(0, 10);
+  if (s.salaryDay === 'lastWorking') {
+    // Saturday → Friday, Sunday → Friday. Bank holidays aren't known; record the real date when it lands.
+    const back = end.getUTCDay() === 6 ? 1 : end.getUTCDay() === 0 ? 2 : 0;
+    return shiftDay(end.toISOString().slice(0, 10), -back);
+  }
+  return `${ym}-${String(Math.min(s.salaryDay, end.getUTCDate())).padStart(2, '0')}`;
+}
+
+/** The recorded salary credited in month `ym`, if you've marked it received. */
+export const salaryReceipt = (doc: FinanceDoc, ym: string) => (doc.salaries ?? []).find((r) => !r.deletedAt && r.month === ym) ?? null;
+
+/** First day of budget month `ym`: the day the salary that pays it was credited (actual if recorded, else planned). */
+export function cycleStart(doc: FinanceDoc, ym: string): string {
+  const prev = addMonths(ym, -1);
+  const r = salaryReceipt(doc, prev);
+  return r ? r.date : salaryDate(planFor(doc.settings, prev), prev);
+}
+
+/** Budget month `ym` as dates: salary day to the day before the next salary. */
+export const cycleRange = (doc: FinanceDoc, ym: string) => ({ start: cycleStart(doc, ym), end: shiftDay(cycleStart(doc, addMonths(ym, 1)), -1) });
+
+/** The budget month a date belongs to: from salary day on, it's next month's money (30 Oct → November). */
+export function budgetMonth(doc: FinanceDoc, date: string): string {
+  const next = addMonths(monthOf(date), 1);
+  return date >= cycleStart(doc, next) ? next : monthOf(date);
+}
+
 /** Starting values from your brief. Card dates, balances and savings so far are asked for, never guessed. */
 export function defaultSettings(today: string, now = new Date().toISOString()): FinanceSettings {
   return {
@@ -345,7 +393,7 @@ export function newTransaction(t: TransactionInput, now = new Date().toISOString
 export function validateSettings(s: FinanceSettings): string | null {
   const money = (v: number) => Number.isInteger(v) && v >= 0;
   if (!money(s.salary) || s.salary === 0) return 'Salary must be more than ₹0.';
-  if (s.salaryDay !== 'last' && !(Number.isInteger(s.salaryDay) && s.salaryDay >= 1 && s.salaryDay <= 28)) return 'Salary day must be 1–28, or the last day.';
+  if (s.salaryDay !== 'last' && s.salaryDay !== 'lastWorking' && !(Number.isInteger(s.salaryDay) && s.salaryDay >= 1 && s.salaryDay <= 28)) return 'Salary day must be 1–28, the last day or the last working day.';
   for (const f of s.fixed) {
     if (!f.name.trim() || !money(f.amount)) return `Check the fixed cost “${f.name || '?'}”.`;
     if (f.endsOn && !/^\d{4}-(0[1-9]|1[0-2])$/.test(f.endsOn)) return `“${f.name}” end month must look like 2027-08.`;
@@ -406,6 +454,6 @@ export function parseFinanceDoc(raw: unknown): { doc: FinanceDoc } | { error: st
   return { doc: { ...(d as FinanceDoc), vouchers, events, incomes, lists, salaries } };
 }
 
-/** Live transactions for a month (YYYY-MM), newest first. */
+/** Live transactions for a budget month (YYYY-MM, salary to salary), newest first. */
 export const monthTransactions = (doc: FinanceDoc, month: string) =>
-  doc.transactions.filter((t) => !t.deletedAt && t.date.startsWith(month)).sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
+  doc.transactions.filter((t) => !t.deletedAt && budgetMonth(doc, t.date) === month).sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));

@@ -6,7 +6,7 @@ import { useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Card } from '../fitness/ui';
 import { useFinance } from './FinanceContext';
-import { formatINR, monthTransactions, planFor, type Transaction } from './model';
+import { budgetMonth, cycleRange, formatINR, monthTransactions, planFor, type Transaction } from './model';
 import { budgetTimeline, byMethod } from './reports';
 import { EditTransactionDialog, TransactionRow } from './TransactionForm';
 
@@ -30,7 +30,7 @@ function FilterChips({ label, options, value, onChange }: { label: string; optio
 export default function TransactionsPage() {
   const { doc } = useFinance();
   const initial = (useLocation().state ?? null) as { category?: string; method?: string; month?: string } | null;
-  const [month, setMonth] = useState(initial?.month ?? dayjs().format('YYYY-MM'));
+  const [month, setMonth] = useState(initial?.month ?? (doc ? budgetMonth(doc, dayjs().format('YYYY-MM-DD')) : dayjs().format('YYYY-MM')));
   const [category, setCategory] = useState<string | null>(initial?.category ?? null);
   const [method, setMethod] = useState<string | null>(initial?.method ?? null);
   const [editing, setEditing] = useState<Transaction | null>(null);
@@ -42,7 +42,8 @@ export default function TransactionsPage() {
   const days = [...new Set(txs.map((t) => t.date))];
   const cats = [...new Set(all.map((t) => t.category))];
   const total = txs.reduce((a, t) => a + t.amount, 0);
-  const isCurrent = month === dayjs().format('YYYY-MM');
+  const isCurrent = month === budgetMonth(doc, dayjs().format('YYYY-MM-DD'));
+  const range = cycleRange(doc, month);
   const isBudget = !!budget && budget.limit !== null;
   const budgetCategories = planFor(doc.settings, month).budgets.map((b) => b.category);
 
@@ -54,6 +55,9 @@ export default function TransactionsPage() {
         </IconButton>
         <Typography variant="h6" component="h2" sx={{ flexGrow: 1, textAlign: 'center' }}>
           {dayjs(`${month}-01`).format('MMMM YYYY')}
+          <Typography component="span" variant="body2" color="text.secondary" sx={{ display: 'block' }}>
+            {dayjs(range.start).format('D MMM')} – {dayjs(range.end).format('D MMM')}
+          </Typography>
         </Typography>
         <IconButton aria-label="Next month" disabled={isCurrent} onClick={() => setMonth(dayjs(`${month}-01`).add(1, 'month').format('YYYY-MM'))}>
           <ChevronRightRoundedIcon />

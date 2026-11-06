@@ -3,7 +3,7 @@ import { Alert, Box, Button, Chip, LinearProgress, Paper, Stack, Typography } fr
 import dayjs from 'dayjs';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { monthSummary } from '../finance/engine';
+import { budgetMonth, monthSummary } from '../finance/engine';
 import { useFinance } from '../finance/FinanceContext';
 import { formatINR } from '../finance/model';
 import { reminders as financeReminders, weeklyCap } from '../finance/planner';
@@ -197,9 +197,9 @@ export default function Home() {
   } else tiles.push({ path: '/fitness', title: MODULES.fitness.title, chip: fitness.error ? 'Setup needed' : 'Loading' });
 
   if (finance.status === 'ready' && finance.doc) {
-    const m = monthSummary(finance.doc, today.slice(0, 7), today);
+    const m = monthSummary(finance.doc, budgetMonth(finance.doc, today), today);
     const w = weeklyCap(finance.doc, today);
-    const cardFreeLive = !!finance.doc.settings.cardFree && finance.doc.settings.cardFree.from <= today.slice(0, 7);
+    const cardFreeLive = !!finance.doc.settings.cardFree && finance.doc.settings.cardFree.from <= budgetMonth(finance.doc, today);
     const budgetMax = m.budgets.reduce((a, b) => a + b.planned, 0) + m.everyday.planned;
     tiles.push({
       path: '/finance',

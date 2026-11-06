@@ -12,7 +12,7 @@
  */
 import { addMonths, allocate, cardCycles, commitmentsFor, dueDateAfter, monthOf, monthSummary, plannedSavings, salaryDate, salaryReceipt } from './engine';
 import { bankEventsUntil, cardEventsBetween, incomesOf, reliableIncome } from './extras';
-import { planFor, type Card, type FinanceDoc, type FinanceSettings, type Paise } from './model';
+import { budgetMonth, cycleStart, planFor, type Card, type FinanceDoc, type FinanceSettings, type Paise } from './model';
 
 // ---------- projection ----------
 
@@ -57,7 +57,7 @@ function monthNotes(s0: FinanceSettings, ym: string): string[] {
 /** Month by month from tracking start until every goal is expected to be full (10 years at most). */
 export function projection(doc: FinanceDoc, today: string, opts: { cardOwed?: Paise } = {}): ProjectionRow[] {
   const s = doc.settings;
-  const current = monthOf(today);
+  const current = budgetMonth(doc, today);
   const goals = s.goals;
   const allTarget = goals.reduce((a, g) => a + g.target, 0);
   let total = goals.reduce((a, g) => a + g.savedAtStart, 0);
@@ -150,17 +150,18 @@ function cardBills(doc: FinanceDoc, card: Card, from: string, to: string): { pai
 
 export function reconcile(doc: FinanceDoc, date: string, opts: { savingsPot: Paise; cardsOwed: Paise }): Reconciliation {
   const s = doc.settings;
-  const start = `${s.startMonth}-01`;
+  // Tracking starts on the salary day that pays the first month; the opening balance is right after it.
+  const start = cycleStart(doc, s.startMonth);
   const lines: ReconLine[] = [];
   const live = doc.transactions.filter((t) => !t.deletedAt && t.date >= start && t.date <= date);
-  const dateMonth = monthOf(date);
+  const dateMonth = budgetMonth(doc, date);
 
   // Committed costs not logged at all: past months assumed paid from the bank; this month pending.
   let assumedPaid = 0;
   let pendingThisMonth = 0;
   for (let m = s.startMonth; m <= dateMonth; m = addMonths(m, 1)) {
     const logged = new Map<string, Paise>();
-    for (const t of doc.transactions) if (!t.deletedAt && monthOf(t.date) === m) logged.set(t.category, (logged.get(t.category) ?? 0) + t.amount);
+    for (const t of doc.transactions) if (!t.deletedAt && budgetMonth(doc, t.date) === m) logged.set(t.category, (logged.get(t.category) ?? 0) + t.amount);
     for (const c of commitmentsFor(s, m)) {
       const missing = Math.max(0, c.planned - (logged.get(c.category) ?? 0));
       if (m < dateMonth) assumedPaid += missing;

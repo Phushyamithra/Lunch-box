@@ -5,7 +5,7 @@ import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Metric } from '../fitness/ui';
-import { addMonths, monthSummary, savingsState, upcoming } from './engine';
+import { addMonths, budgetMonth, cycleRange, monthSummary, savingsState, upcoming } from './engine';
 import { budgetTimeline } from './reports';
 import { useFinance } from './FinanceContext';
 import { formatINR, type Paise } from './model';
@@ -40,7 +40,7 @@ export default function MonthPage() {
   const { doc } = useFinance();
   const navigate = useNavigate();
   const today = dayjs().format('YYYY-MM-DD');
-  const current = today.slice(0, 7);
+  const current = doc ? budgetMonth(doc, today) : today.slice(0, 7);
   const [month, setMonth] = useState(current);
   const [how, setHow] = useState(false);
   const m = useMemo(() => (doc ? monthSummary(doc, month, today) : null), [doc, month, today]);
@@ -58,6 +58,12 @@ export default function MonthPage() {
         </IconButton>
         <Typography variant="h6" component="h2" sx={{ flexGrow: 1, textAlign: 'center' }}>
           {monthName(month)}
+          <Typography component="span" variant="body2" color="text.secondary" sx={{ display: 'block' }}>
+            {(() => {
+              const r = cycleRange(doc, month);
+              return `${dayjs(r.start).format('D MMM')} – ${dayjs(r.end).format('D MMM')}`;
+            })()}
+          </Typography>
         </Typography>
         <IconButton aria-label="Next month" disabled={isCurrent} onClick={() => setMonth(addMonths(month, 1))}>
           <ChevronRightRoundedIcon />

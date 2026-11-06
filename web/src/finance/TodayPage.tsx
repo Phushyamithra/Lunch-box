@@ -7,7 +7,7 @@ import { Card, Metric } from '../fitness/ui';
 import { useSnackbar } from '../layout/Snackbar';
 import { addMonths, cardStatus, combinedCap, monthSummary, salaryDate, salaryReceipt } from './engine';
 import { useFinance } from './FinanceContext';
-import { formatINR, monthTransactions, planFor, type BalanceCheck, type Paise, type SalaryReceipt, type Transaction } from './model';
+import { budgetMonth, formatINR, monthTransactions, planFor, type BalanceCheck, type Paise, type SalaryReceipt, type Transaction } from './model';
 import { WeeklyCapBar } from './PlannerCards';
 import { accountNow } from './projection';
 import { EditTransactionDialog, QuickAdd, TransactionRow } from './TransactionForm';
@@ -106,7 +106,7 @@ export default function FinanceToday() {
   const [salaryOpen, setSalaryOpen] = useState(false);
   const [balanceOpen, setBalanceOpen] = useState(false);
   const today = dayjs().format(KEY);
-  const month = today.slice(0, 7);
+  const month = doc ? budgetMonth(doc, today) : today.slice(0, 7);
   const txs = useMemo(() => (doc ? monthTransactions(doc, month) : []), [doc, month]);
   const account = useMemo(() => (doc ? accountNow(doc, today) : null), [doc, today]);
   if (!doc || !account) return null;
@@ -184,7 +184,7 @@ export default function FinanceToday() {
         Add expense
       </Button>
 
-      <Card title={`📅 ${dayjs().format('MMMM')}`}>
+      <Card title={`📅 ${dayjs(`${month}-01`).format('MMMM')}`}>
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
           <Metric value={formatINR(summary.leftInBudgets)} caption="left in budgets" />
           <Metric value={formatINR(summary.savings)} caption="expected to save" />

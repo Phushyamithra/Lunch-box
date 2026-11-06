@@ -54,8 +54,8 @@ describe('a month with logs', () => {
     const dinner = m.committed.find((c) => c.category === 'Dinner')!;
     expect(dinner.counted).toBe(rupees(4200)); // over the ₹3,500 plan
     expect(m.budgets.find((b) => b.category === 'Wants')).toMatchObject({ logged: rupees(800), remaining: rupees(200) });
-    // Current month: logged + the allowance for the 12 days left (20–31 Oct).
-    expect(m.everyday).toMatchObject({ logged: rupees(1500), counted: rupees(1500) + Math.round((rupees(10000) * 12) / 31 / 100) * 100 });
+    // Current month: logged + the allowance for the 11 days left (20–30 Oct; salary day starts November).
+    expect(m.everyday).toMatchObject({ logged: rupees(1500), counted: rupees(1500) + Math.round((rupees(10000) * 11) / 31 / 100) * 100 });
     expect(m.loggedTotal).toBe(rupees(26500)); // deleted one ignored
     // Still to pay: gold 10,000 + SIP 3,000 (Bills) + protein 2,500 + insurance 3,170.
     expect(m.stillToPay).toBe(rupees(18670));
@@ -63,8 +63,8 @@ describe('a month with logs', () => {
     // Wants 200 + Unplanned 1,000 + everyday 10,000 − 1,500.
     expect(m.leftInBudgets).toBe(rupees(9700));
     expect(m.final).toBe(false);
-    // Projected: committed (42,170 + 700 dinner over) + budgets 2,000 + needs (1,500 + 12/31 of 10,000).
-    expect(m.savings).toBe(rupees(62000 - 42870 - 2000 - 1500) - Math.round((rupees(10000) * 12) / 31 / 100) * 100);
+    // Projected: committed (42,170 + 700 dinner over) + budgets 2,000 + needs (1,500 + 11/31 of 10,000).
+    expect(m.savings).toBe(rupees(62000 - 42870 - 2000 - 1500) - Math.round((rupees(10000) * 11) / 31 / 100) * 100);
   });
 
   it('a finished month counts what really happened: unspent budgets stay saved', () => {
@@ -146,5 +146,17 @@ describe('cards', () => {
     expect(monthSummary(d, '2026-10', '2026-10-20').loggedTotal).toBe(rupees(2000));
     const bills = upcoming(d, '2026-10-20').filter((u) => u.kind === 'card');
     expect(bills).toEqual([expect.objectContaining({ amount: rupees(2000), date: '2026-11-05' })]);
+  });
+});
+
+describe('upcoming', () => {
+  it('lists next month with next month’s plan, not this month’s', () => {
+    const d = emptyDoc('2026-11-01', '2026-11-01T00:00:00Z');
+    d.settings.startMonth = '2026-11';
+    const nov = { ...d.settings, fixed: d.settings.fixed.map((f) => (f.id === 'rent' ? { ...f, amount: rupees(20000) } : f)) };
+    d.settings.fixed = d.settings.fixed.map((f) => (f.id === 'rent' ? { ...f, amount: rupees(20500) } : f));
+    d.settings.planHistory = [{ until: '2026-11', values: { salary: nov.salary, salaryDay: nov.salaryDay, fixed: nov.fixed, periodic: nov.periodic, budgets: nov.budgets, combinedCardCap: nov.combinedCardCap } }];
+    const rent = upcoming(d, '2026-11-06').find((u) => u.month === '2026-12' && u.name === 'Rent');
+    expect(rent?.amount).toBe(rupees(20500));
   });
 });

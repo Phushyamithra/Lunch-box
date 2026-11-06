@@ -4,7 +4,7 @@
  * Every figure says whether it's actual or an estimate.
  */
 import { toCsv } from '../nutrition/backup';
-import { addMonths, allocate, cardStatus, monthOf, monthSummary, plannedSavings } from './engine';
+import { budgetMonth, addMonths, allocate, cardStatus, monthOf, monthSummary, plannedSavings } from './engine';
 import { reliableIncome, voucherState } from './extras';
 import { formatINR, planFor, VOUCHER_METHOD, type FinanceDoc, type Paise } from './model';
 import { finishMonth, projection } from './projection';
@@ -35,7 +35,7 @@ export interface MonthRow {
 
 /** Tracked months from `from` to `to` (never before tracking started, never after this month). */
 export function monthlyRows(doc: FinanceDoc, from: string, to: string, today: string): MonthRow[] {
-  const current = monthOf(today);
+  const current = budgetMonth(doc, today);
   const start = from < doc.settings.startMonth ? doc.settings.startMonth : from;
   const end = to > current ? current : to;
   return monthsBetween(start, end).map((m) => {
@@ -53,7 +53,7 @@ export function monthlyRows(doc: FinanceDoc, from: string, to: string, today: st
       savings: s.savings,
       planned: plannedSavings(doc.settings, m).savings + reliableIncome(doc, m),
       voucherSpend: s.voucherSpend,
-      transactions: live(doc).filter((t) => monthOf(t.date) === m).length,
+      transactions: live(doc).filter((t) => budgetMonth(doc, t.date) === m).length,
     };
   });
 }
@@ -62,7 +62,7 @@ export function monthlyRows(doc: FinanceDoc, from: string, to: string, today: st
 export function categoryTrends(doc: FinanceDoc, months: string[]): { category: string; byMonth: Paise[]; total: Paise }[] {
   const by = new Map<string, Paise[]>();
   for (const t of live(doc)) {
-    const i = months.indexOf(monthOf(t.date));
+    const i = months.indexOf(budgetMonth(doc, t.date));
     if (i < 0) continue;
     const row = by.get(t.category) ?? months.map(() => 0);
     row[i] += t.amount;
@@ -73,12 +73,12 @@ export function categoryTrends(doc: FinanceDoc, months: string[]): { category: s
     .sort((a, b) => b.total - a.total);
 }
 
-/** Card spending per calendar month against each limit. */
+/** Card spending per budget month against each limit. */
 export function cardTrends(doc: FinanceDoc, months: string[]): { name: string; limit: Paise; byMonth: Paise[] }[] {
   return doc.settings.cards.map((c) => ({
     name: c.name,
     limit: c.limit,
-    byMonth: months.map((m) => live(doc).filter((t) => t.method === c.method && monthOf(t.date) === m).reduce((a, t) => a + t.amount, 0)),
+    byMonth: months.map((m) => live(doc).filter((t) => t.method === c.method && budgetMonth(doc, t.date) === m).reduce((a, t) => a + t.amount, 0)),
   }));
 }
 
@@ -192,7 +192,7 @@ export function byMethod(doc: FinanceDoc, ym: string): { methods: MethodTotal[];
   const cards = new Set(doc.settings.cards.map((c) => c.method));
   const m = new Map<string, MethodTotal>();
   for (const t of live(doc)) {
-    if (monthOf(t.date) !== ym) continue;
+    if (budgetMonth(doc, t.date) !== ym) continue;
     const kind: MethodTotal['kind'] = t.method === VOUCHER_METHOD ? 'voucher' : cards.has(t.method) ? 'card' : t.method === 'UPI' || t.method === 'Debit' ? 'bank' : 'other';
     const row = m.get(t.method) ?? { method: t.method, total: 0, count: 0, kind };
     row.total += t.amount;
@@ -200,7 +200,7 @@ export function byMethod(doc: FinanceDoc, ym: string): { methods: MethodTotal[];
     m.set(t.method, row);
   }
   const bankOneOffs = (doc.events ?? [])
-    .filter((e) => !e.deletedAt && e.status === 'settled' && e.account === 'bank' && e.kind === 'expense' && e.settledOn?.startsWith(ym))
+    .filter((e) => !e.deletedAt && e.status === 'settled' && e.account === 'bank' && e.kind === 'expense' && !!e.settledOn && budgetMonth(doc, e.settledOn) === ym)
     .reduce((a, e) => a + e.amount, 0);
   const methods = [...m.values()].sort((a, b) => b.total - a.total);
   return { methods, bankOneOffs, total: methods.reduce((a, x) => a + x.total, 0) };
@@ -222,7 +222,7 @@ export interface BudgetStep {
 export function budgetTimeline(doc: FinanceDoc, category: string, ym: string): { limit: Paise | null; steps: BudgetStep[]; usedUpOn: string | null; spent: Paise } {
   const limit = planFor(doc.settings, ym).budgets.find((b) => b.category === category)?.amount ?? null;
   const txs = live(doc)
-    .filter((t) => t.category === category && monthOf(t.date) === ym && t.method !== VOUCHER_METHOD)
+    .filter((t) => t.category === category && budgetMonth(doc, t.date) === ym && t.method !== VOUCHER_METHOD)
     .sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt));
   let running = 0;
   let usedUpOn: string | null = null;

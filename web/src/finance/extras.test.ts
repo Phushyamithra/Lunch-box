@@ -78,7 +78,7 @@ describe('Amazon Pay vouchers', () => {
 });
 
 /** October's projection on 22 Oct: plan without needs (₹17,830) − needs allowance for the 10 days left. */
-const OCT22 = rupees(17830) - Math.round((rupees(10000) * 10) / 31 / 100) * 100;
+const OCT22 = rupees(17830) - Math.round((rupees(10000) * 9) / 31 / 100) * 100;
 
 describe('one-off events', () => {
   it('pending: listed for forecasts, never counted', () => {

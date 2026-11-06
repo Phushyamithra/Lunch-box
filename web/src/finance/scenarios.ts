@@ -4,7 +4,7 @@
  * scenario only changes your settings when you apply it (from a month on,
  * so past months stay as they were).
  */
-import { cardCycles, cardStatus, combinedCap, commitmentsFor, dueDateAfter, monthOf, monthSummary, plannedSavings } from './engine';
+import { budgetMonth, cardCycles, cardStatus, combinedCap, commitmentsFor, dueDateAfter, monthSummary, plannedSavings } from './engine';
 import { reliableIncome } from './extras';
 import { formatINR, newTransaction, planFor, withPlanFrom, type FinanceDoc, type FinanceSettings, type Paise, type TransactionInput } from './model';
 import { finishMonth, projection, type ProjectionRow } from './projection';
@@ -45,8 +45,8 @@ export interface Affordability {
 const rs = (p: Paise) => `₹${Math.round(Math.abs(p) / 100).toLocaleString('en-IN')}`;
 
 export function affordability(doc: FinanceDoc, today: string, input: TransactionInput): Affordability {
-  const s = planFor(doc.settings, monthOf(input.date));
-  const ym = monthOf(input.date);
+  const s = planFor(doc.settings, budgetMonth(doc, input.date));
+  const ym = budgetMonth(doc, input.date);
   const tx = { ...newTransaction(input, `${today}T00:00:00Z`), createdAt: '9999' };
   const after: FinanceDoc = { ...doc, transactions: [...doc.transactions, tx] };
   const kind: CategoryKind = commitmentsFor(doc.settings, ym).some((c) => c.category === input.category)
@@ -169,7 +169,7 @@ export interface ScenarioResult {
 }
 
 export function compareScenario(doc: FinanceDoc, today: string, w: WhatIf): ScenarioResult {
-  const from = monthOf(today);
+  const from = budgetMonth(doc, today);
   const s1 = scenarioSettings(doc.settings, w, from);
   const baseRows = projection(doc, today);
   const rows = projection({ ...doc, settings: s1 }, today);

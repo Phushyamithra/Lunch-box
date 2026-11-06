@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bar, CartesianGrid, ComposedChart, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Card } from '../fitness/ui';
-import { addMonths } from './engine';
+import { budgetMonth, addMonths } from './engine';
 import { useFinance } from './FinanceContext';
 import { formatINR, VOUCHER_METHOD } from './model';
 import { cardTrends, categoryTrends, goalReport, monthlyCsv, monthlyRows, transactionsCsv } from './reports';
@@ -29,7 +29,7 @@ export default function ReportsPage() {
   const theme = useTheme();
   const navigate = useNavigate();
   const today = dayjs().format('YYYY-MM-DD');
-  const current = today.slice(0, 7);
+  const current = doc ? budgetMonth(doc, today) : today.slice(0, 7);
   const [span, setSpan] = useState<3 | 6 | 12 | 0>(6);
   const from = doc ? (span === 0 ? doc.settings.startMonth : addMonths(current, -(span - 1))) : current;
   const rows = useMemo(() => (doc ? monthlyRows(doc, from, current, today) : []), [doc, from, current, today]);

@@ -15,16 +15,12 @@
  *   later is a settlement, never a second expense.
  */
 import { cardEventsBetween, receivedBonus, reliableIncome, settledCashIn } from './extras';
-import { planFor, VOUCHER_METHOD, type Card, type FinanceDoc, type FinanceSettings, type Paise, type SavingsGoal, type Transaction } from './model';
+import { addMonths, budgetMonth, cycleRange, monthOf, planFor, salaryDate, salaryReceipt, VOUCHER_METHOD, type Card, type FinanceDoc, type FinanceSettings, type Paise, type SavingsGoal, type Transaction } from './model';
 
 // ---------- dates ----------
 
-export const addMonths = (ym: string, n: number): string => {
-  const [y, m] = ym.split('-').map(Number);
-  const t = y * 12 + (m - 1) + n;
-  return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, '0')}`;
-};
-export const monthOf = (day: string) => day.slice(0, 7);
+export { addMonths, budgetMonth, cycleRange, monthOf, salaryDate, salaryReceipt };
+const dayDiff = (a: string, b: string) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86400000);
 const daysInMonth = (ym: string) => {
   const [y, m] = ym.split('-').map(Number);
   return new Date(Date.UTC(y, m, 0)).getUTCDate();
@@ -32,12 +28,6 @@ const daysInMonth = (ym: string) => {
 const dateIn = (ym: string, day: number) => `${ym}-${String(Math.min(day, daysInMonth(ym))).padStart(2, '0')}`;
 const nextDay = (d: string) => new Date(Date.parse(`${d}T00:00:00Z`) + 86400000).toISOString().slice(0, 10);
 
-export function salaryDate(s: Pick<FinanceSettings, 'salaryDay'>, ym: string): string {
-  return s.salaryDay === 'last' ? dateIn(ym, 31) : dateIn(ym, s.salaryDay);
-}
-
-/** The recorded salary credited in month `ym`, if you've marked it received. */
-export const salaryReceipt = (doc: FinanceDoc, ym: string) => (doc.salaries ?? []).find((r) => !r.deletedAt && r.month === ym) ?? null;
 
 // ---------- plan for a month ----------
 
@@ -127,9 +117,9 @@ const sumBy = (txs: Transaction[]) => {
 
 export function monthSummary(doc: FinanceDoc, ym: string, today: string): MonthSummary {
   const s = planFor(doc.settings, ym);
-  const current = monthOf(today);
+  const current = budgetMonth(doc, today);
   const final = ym < current;
-  const monthTxs = live(doc.transactions).filter((t) => monthOf(t.date) === ym);
+  const monthTxs = live(doc.transactions).filter((t) => budgetMonth(doc, t.date) === ym);
   // Voucher value isn't cash: it doesn't use budgets or touch savings.
   const txs = monthTxs.filter((t) => t.method !== VOUCHER_METHOD);
   const voucherSpend = monthTxs.filter((t) => t.method === VOUCHER_METHOD).reduce((a, t) => a + t.amount, 0);
@@ -153,8 +143,9 @@ export function monthSummary(doc: FinanceDoc, ym: string, today: string): MonthS
   const everydayByCategory = [...logged].map(([category, amount]) => ({ category, amount })).sort((a, b) => b.amount - a.amount);
   const everydayLogged = everydayByCategory.reduce((a, x) => a + x.amount, 0);
   // Everyday ("needs") spending still to come this month: the allowance for the days left (today included).
-  const days = daysInMonth(ym);
-  const daysLeft = ym === current ? days - Number(today.slice(8, 10)) + 1 : days;
+  const cycle = cycleRange(doc, ym);
+  const days = dayDiff(cycle.start, cycle.end) + 1;
+  const daysLeft = ym === current ? Math.max(0, dayDiff(today, cycle.end) + 1) : days;
   const everyday = {
     planned: s.combinedCardCap,
     logged: everydayLogged,
@@ -246,7 +237,7 @@ const HORIZON = 120;
 
 export function savingsState(doc: FinanceDoc, today: string): SavingsState {
   const s = doc.settings;
-  const current = monthOf(today);
+  const current = budgetMonth(doc, today);
   const opening = s.goals.reduce((a, g) => a + g.savedAtStart, 0);
   const months: { month: string; savings: Paise }[] = [];
   for (let m = s.startMonth; m < current; m = addMonths(m, 1)) months.push({ month: m, savings: monthSummary(doc, m, today).savings });
@@ -346,13 +337,13 @@ export function cardStatus(doc: FinanceDoc, card: Card, today: string): CardStat
 /** Card spending this calendar month against the combined cap. */
 export function combinedCap(doc: FinanceDoc, today: string): { spent: Paise; cap: Paise; level: 'ok' | 'warn' | 'over' } {
   const methods = new Set(doc.settings.cards.map((c) => c.method));
-  const ym = monthOf(today);
+  const ym = budgetMonth(doc, today);
   const spent = live(doc.transactions)
-    .filter((t) => methods.has(t.method) && monthOf(t.date) === ym)
+    .filter((t) => methods.has(t.method) && budgetMonth(doc, t.date) === ym)
     .reduce((a, t) => a + t.amount, 0);
   const cap = planFor(doc.settings, ym).combinedCardCap;
   const oneOff = live(doc.transactions)
-    .filter((t) => t.oneOff && methods.has(t.method) && monthOf(t.date) === ym)
+    .filter((t) => t.oneOff && methods.has(t.method) && budgetMonth(doc, t.date) === ym)
     .reduce((a, t) => a + t.amount, 0);
   const w = spent - oneOff;
   return { spent, cap, level: w > cap ? 'over' : cap > 0 && w / cap >= 0.8 ? 'warn' : 'ok' };
@@ -371,7 +362,7 @@ export interface Upcoming {
 
 /** Bills and salary from today to the end of next month. */
 export function upcoming(doc: FinanceDoc, today: string): Upcoming[] {
-  const ym = monthOf(today);
+  const ym = budgetMonth(doc, today);
   const s = planFor(doc.settings, ym);
   const out: Upcoming[] = [];
   for (const card of s.cards) {
@@ -385,7 +376,7 @@ export function upcoming(doc: FinanceDoc, today: string): Upcoming[] {
   const sal = salaryDate(s, ym);
   if (sal >= today && !salaryReceipt(doc, ym)) out.push({ date: sal, month: ym, name: 'Salary', amount: s.salary, kind: 'salary', note: 'Pays next month' });
   const next = addMonths(ym, 1);
-  for (const c of commitmentsFor(s, next)) for (const i of c.items) out.push({ date: null, month: next, name: i.name, amount: i.amount, kind: i.kind, note: null });
+  for (const c of commitmentsFor(doc.settings, next)) for (const i of c.items) out.push({ date: null, month: next, name: i.name, amount: i.amount, kind: i.kind, note: null });
   const thisMonth = monthSummary(doc, ym, today);
   for (const c of thisMonth.committed) {
     const left = c.planned - c.logged;

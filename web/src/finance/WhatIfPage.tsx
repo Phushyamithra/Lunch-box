@@ -5,7 +5,7 @@ import { useLocation } from 'react-router-dom';
 import { Card } from '../fitness/ui';
 import { useSnackbar } from '../layout/Snackbar';
 import { useFinance } from './FinanceContext';
-import { formatINR, newTransaction, rupees, toRupees, validateTransaction, type Paise } from './model';
+import { budgetMonth, formatINR, newTransaction, rupees, toRupees, validateTransaction, type Paise } from './model';
 import { affordability, compareScenario, currentLevers, scenarioSettings, type WhatIf } from './scenarios';
 import { blankInput, TransactionFields, type DraftTx } from './TransactionForm';
 
@@ -164,7 +164,7 @@ function Scenario() {
   const { doc, updateSettings } = useFinance();
   const toast = useSnackbar();
   const today = dayjs().format('YYYY-MM-DD');
-  const month = today.slice(0, 7);
+  const month = budgetMonth(doc!, today);
   const base = useMemo(() => currentLevers(doc!.settings, month), [doc, month]);
   const [w, setW] = useState<WhatIf>(base);
   const [confirm, setConfirm] = useState(false);

@@ -11,7 +11,7 @@
  * it counts in the month it settled: to the bank or a card as cash, to
  * Amazon Pay as voucher value.
  */
-import { VOUCHER_METHOD, type FinanceDoc, type IncomeSource, type MoneyEvent, type Paise } from './model';
+import { budgetMonth, VOUCHER_METHOD, type FinanceDoc, type IncomeSource, type MoneyEvent, type Paise } from './model';
 
 export const vouchersOf = (d: FinanceDoc) => (d.vouchers ?? []).filter((v) => !v.deletedAt);
 export const eventsOf = (d: FinanceDoc) => (d.events ?? []).filter((e) => !e.deletedAt);
@@ -112,7 +112,7 @@ export function voucherState(doc: FinanceDoc, today: string): VoucherState {
 
 /** Settled cash events (bank or card) in a month: money in and out. */
 export function settledCashIn(doc: FinanceDoc, ym: string): { in: Paise; out: Paise; list: MoneyEvent[] } {
-  const list = eventsOf(doc).filter((e) => e.status === 'settled' && e.account !== 'voucher' && e.settledOn?.startsWith(ym));
+  const list = eventsOf(doc).filter((e) => e.status === 'settled' && e.account !== 'voucher' && !!e.settledOn && budgetMonth(doc, e.settledOn) === ym);
   return {
     in: list.filter(isInflow).reduce((a, e) => a + e.amount, 0),
     out: list.filter((e) => !isInflow(e)).reduce((a, e) => a + e.amount, 0),
@@ -166,7 +166,7 @@ export function reliableIncome(doc: FinanceDoc, ym: string): Paise {
 /** Bonus-only income actually received in a month (counts only once it's in). */
 export function receivedBonus(doc: FinanceDoc, ym: string): Paise {
   return incomesOf(doc)
-    .filter((i) => i.reliability === 'bonus' && i.receivedOn?.startsWith(ym))
+    .filter((i) => i.reliability === 'bonus' && !!i.receivedOn && budgetMonth(doc, i.receivedOn) === ym)
     .reduce((a, i) => a + (i.receivedAmount ?? i.amount), 0);
 }
 

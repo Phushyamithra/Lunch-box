@@ -225,10 +225,11 @@ export default function FinanceSettingsPage() {
             select
             label="Credited on"
             value={String(form.salaryDay)}
-            onChange={(e) => set({ salaryDay: e.target.value === 'last' ? 'last' : Number(e.target.value) })}
+            onChange={(e) => set({ salaryDay: e.target.value === 'last' || e.target.value === 'lastWorking' ? e.target.value : Number(e.target.value) })}
             sx={{ minWidth: 180 }}
-            helperText="That salary pays the next month’s bills."
+            helperText="That salary pays the next month’s bills: each month runs from one salary to the day before the next."
           >
+            <MenuItem value="lastWorking">Last working day (Mon–Fri)</MenuItem>
             <MenuItem value="last">Last day of the month</MenuItem>
             {DAYS.map((d) => (
               <MenuItem key={d} value={String(d)}>
