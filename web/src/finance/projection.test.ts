@@ -151,3 +151,19 @@ describe('budget months run salary to salary', () => {
     expect(budgetMonth(d, '2026-11-28')).toBe('2026-12');
   });
 });
+
+describe('account now after updating the balance today', () => {
+  it('UPI spends logged after the balance move it; earlier ones and card spends don’t', () => {
+    const d = emptyDoc('2026-11-01', '2026-11-01T00:00:00Z');
+    d.settings.startMonth = '2026-11';
+    d.settings.openingBalance = rupees(20000);
+    const t = (amount: number, method: string, createdAt: string): Transaction => ({ id: createdAt + method, date: '2026-11-07', amount: rupees(amount), category: 'Dinner', method, note: null, createdAt, updatedAt: createdAt, deletedAt: null });
+    d.transactions = [t(500, 'UPI', '2026-11-07T09:00:00Z')];
+    d.balances = [{ id: 'b', date: '2026-11-07', amount: rupees(13000), note: null, recordedAt: '2026-11-07T10:00:00Z', updatedAt: '2026-11-07T10:00:00Z', deletedAt: null }];
+    expect(accountNow(d, '2026-11-07').amount).toBe(rupees(13000));
+    d.transactions.push(t(200, 'UPI', '2026-11-07T11:00:00Z'), t(300, 'HDFC', '2026-11-07T11:05:00Z'));
+    expect(accountNow(d, '2026-11-07').amount).toBe(rupees(12800));
+    d.transactions.push({ ...t(100, 'UPI', '2026-11-08T08:00:00Z'), date: '2026-11-08' });
+    expect(accountNow(d, '2026-11-08').amount).toBe(rupees(12700));
+  });
+});

@@ -74,7 +74,7 @@ function BalanceUpdateDialog({ onClose }: { onClose: () => void }) {
   const save = async () => {
     if (amount === null) return;
     const stamp = new Date().toISOString();
-    const row: BalanceCheck = { id: crypto.randomUUID(), date: dayjs().format(KEY), amount, note: null, updatedAt: stamp, deletedAt: null };
+    const row: BalanceCheck = { id: crypto.randomUUID(), date: dayjs().format(KEY), amount, note: null, recordedAt: stamp, updatedAt: stamp, deletedAt: null };
     await update((d) => ({ ...d, balances: [...d.balances, row] }));
     toast('Balance updated');
     onClose();
@@ -132,9 +132,17 @@ export default function FinanceToday() {
           {account.amount === null
             ? 'Enter your balance to start.'
             : account.from
-              ? `From your ${formatINR(account.from.amount)} on ${dayjs(account.from.date).format('D MMM')}, plus what’s logged since.`
+              ? `From your ${formatINR(account.from.amount)} on ${dayjs(account.from.date).format('D MMM')}, minus UPI and debit payments logged after it.`
               : 'Estimated from your opening balance and what’s logged.'}
         </Typography>
+        {account.amount !== null && owed > 0 && (
+          <Typography sx={{ mt: 1, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+            {formatINR(account.amount - owed)} after card bills{' '}
+            <Typography component="span" variant="body2" color="text.secondary">
+              ({formatINR(owed)} on cards: it leaves the account when the bill is paid)
+            </Typography>
+          </Typography>
+        )}
         <Stack direction="row" useFlexGap spacing={1} sx={{ mt: 2, flexWrap: 'wrap', rowGap: 1 }}>
           <Button variant="contained" onClick={() => setSalaryOpen(true)}>
             {receipt ? `Salary ${formatINR(receipt.amount)} ✓` : 'Add salary'}

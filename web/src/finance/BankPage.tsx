@@ -129,7 +129,7 @@ export default function BankPage() {
   const save = async () => {
     if (amount === null) return;
     const stamp = new Date().toISOString();
-    const row: BalanceCheck = { id: crypto.randomUUID(), date, amount, note: null, updatedAt: stamp, deletedAt: null };
+    const row: BalanceCheck = { id: crypto.randomUUID(), date, amount, note: null, recordedAt: stamp, updatedAt: stamp, deletedAt: null };
     await update((d) => ({ ...d, balances: [...d.balances, row] }));
     const r = compareBalance(reconcile(doc, date, { savingsPot: ctx.pot, cardsOwed: ctx.owed }), amount);
     toast(r ? `Saved · ${VERDICT[r.verdict].label}` : 'Saved');

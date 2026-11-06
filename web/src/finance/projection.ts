@@ -12,7 +12,7 @@
  */
 import { addMonths, allocate, cardCycles, commitmentsFor, dueDateAfter, monthOf, monthSummary, plannedSavings, salaryDate, salaryReceipt } from './engine';
 import { bankEventsUntil, cardEventsBetween, incomesOf, reliableIncome } from './extras';
-import { budgetMonth, cycleStart, planFor, type Card, type FinanceDoc, type FinanceSettings, type Paise } from './model';
+import { budgetMonth, cycleStart, EVENT_KINDS, planFor, type BalanceCheck, type Card, type FinanceDoc, type FinanceSettings, type Paise } from './model';
 
 // ---------- projection ----------
 
@@ -252,13 +252,23 @@ export function compareBalance(r: Reconciliation, actual: Paise, tolerance: Pais
 /**
  * What's in the account today. Starts from the latest balance you entered
  * and adds what happened since; without one, it's the expected balance.
+ * Entries for the balance's own day count when they were logged after it
+ * (the balance already includes earlier ones).
  */
 export function accountNow(doc: FinanceDoc, today: string): { amount: Paise | null; from: { date: string; amount: Paise } | null } {
-  const latest = doc.balances.filter((b) => !b.deletedAt && b.date <= today).sort((a, b) => b.date.localeCompare(a.date) || b.updatedAt.localeCompare(a.updatedAt))[0];
+  const at = (b: BalanceCheck) => b.recordedAt ?? b.updatedAt;
+  const latest = doc.balances.filter((b) => !b.deletedAt && b.date <= today).sort((a, b) => b.date.localeCompare(a.date) || at(b).localeCompare(at(a)))[0];
   const none = { savingsPot: 0, cardsOwed: 0 };
   if (!latest) return { amount: reconcile(doc, today, none).expected, from: null };
   // Only the movement since matters, so an unset opening balance doesn't block it.
   const d: FinanceDoc = { ...doc, settings: { ...doc.settings, openingBalance: doc.settings.openingBalance ?? 0 } };
   const moved = (reconcile(d, today, none).expected as Paise) - (reconcile(d, latest.date, none).expected as Paise);
-  return { amount: latest.amount + moved, from: { date: latest.date, amount: latest.amount } };
+  const after = (stamp: string) => stamp > at(latest);
+  const sameDay =
+    -doc.transactions.filter((t) => !t.deletedAt && t.date === latest.date && BANK_METHODS.includes(t.method) && after(t.createdAt)).reduce((a, t) => a + t.amount, 0) +
+    (doc.events ?? [])
+      .filter((e) => !e.deletedAt && e.status === 'settled' && e.account === 'bank' && e.settledOn === latest.date && after(e.updatedAt))
+      .reduce((a, e) => a + (EVENT_KINDS.find((k) => k.key === e.kind)?.inflow ? e.amount : -e.amount), 0) +
+    (doc.salaries ?? []).filter((r) => !r.deletedAt && r.date === latest.date && after(r.updatedAt)).reduce((a, r) => a + r.amount, 0);
+  return { amount: latest.amount + moved + sameDay, from: { date: latest.date, amount: latest.amount } };
 }

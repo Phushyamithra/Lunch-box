@@ -209,6 +209,8 @@ export interface BalanceCheck extends Stamped {
   date: string;
   amount: Paise;
   note: string | null;
+  /** When it was entered: anything logged for that day after this is on top of it. */
+  recordedAt?: string;
 }
 
 /** Payments with this method come out of the Amazon Pay voucher balance: not cash. */
