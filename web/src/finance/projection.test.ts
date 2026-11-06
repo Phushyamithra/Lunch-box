@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { budgetMonth, cycleRange, emptyDoc, rupees, salaryDate, type FinanceDoc, type Transaction } from './model';
-import { accountNow, compareBalance, finishMonth, projection, reconcile } from './projection';
+import { accountLedger, accountNow, compareBalance, finishMonth, projection, reconcile } from './projection';
 import { monthSummary } from './engine';
 
 let n = 0;
@@ -165,5 +165,25 @@ describe('account now after updating the balance today', () => {
     expect(accountNow(d, '2026-11-07').amount).toBe(rupees(12800));
     d.transactions.push({ ...t(100, 'UPI', '2026-11-08T08:00:00Z'), date: '2026-11-08' });
     expect(accountNow(d, '2026-11-08').amount).toBe(rupees(12700));
+  });
+});
+
+describe('account ledger', () => {
+  it('is the starting balance plus money in, minus money out', () => {
+    const d = emptyDoc('2026-11-01', '2026-11-01T00:00:00Z');
+    d.settings.startMonth = '2026-11';
+    d.settings.salaryDay = 'lastWorking';
+    d.settings.openingBalance = rupees(62711.05);
+    d.salaries = [{ id: 's', month: '2026-10', date: '2026-10-30', amount: rupees(61908), note: null, updatedAt: '2026-10-30T09:00:00Z', deletedAt: null }];
+    const t = (date: string, amount: number, method: string): Transaction => ({ id: date + amount + method, date, amount: rupees(amount), category: 'Other', method, note: null, createdAt: `${date}T12:00:00Z`, updatedAt: `${date}T12:00:00Z`, deletedAt: null });
+    // Any non-card method is money out, whatever it's called; card spends wait for the bill.
+    d.settings.methods.push('GPay');
+    d.transactions = [t('2026-10-30', 385, 'UPI'), t('2026-11-02', 100, 'GPay'), t('2026-11-03', 500, 'HDFC'), t('2026-11-04', 300, 'Amazon Pay')];
+    const l = accountLedger(d, '2026-11-07');
+    expect(l.base).toMatchObject({ label: 'Opening balance', date: '2026-10-30' });
+    expect(l.amount).toBe(rupees(62711.05 - 385 - 100));
+    // A later salary adds.
+    d.salaries.push({ id: 's2', month: '2026-11', date: '2026-11-30', amount: rupees(61908), note: null, updatedAt: '2026-11-30T09:00:00Z', deletedAt: null });
+    expect(accountLedger(d, '2026-11-30').lines.find((x) => x.label === 'Salary added')?.amount).toBe(rupees(61908));
   });
 });

@@ -12,7 +12,7 @@
  */
 import { addMonths, allocate, cardCycles, commitmentsFor, dueDateAfter, monthOf, monthSummary, plannedSavings, salaryDate, salaryReceipt } from './engine';
 import { bankEventsUntil, cardEventsBetween, incomesOf, reliableIncome } from './extras';
-import { budgetMonth, cycleStart, EVENT_KINDS, planFor, type BalanceCheck, type Card, type FinanceDoc, type FinanceSettings, type Paise } from './model';
+import { budgetMonth, cycleStart, EVENT_KINDS, planFor, VOUCHER_METHOD, type BalanceCheck, type Card, type FinanceDoc, type FinanceSettings, type Paise } from './model';
 
 // ---------- projection ----------
 
@@ -249,26 +249,74 @@ export function compareBalance(r: Reconciliation, actual: Paise, tolerance: Pais
   };
 }
 
+export interface AccountLine {
+  label: string;
+  amount: Paise;
+  count: number;
+}
+export interface AccountLedger {
+  amount: Paise | null;
+  /** Where it starts: the latest balance you entered, or the opening balance. */
+  base: { label: string; date: string; amount: Paise } | null;
+  lines: AccountLine[];
+}
+
 /**
- * What's in the account today. Starts from the latest balance you entered
- * and adds what happened since; without one, it's the expected balance.
- * Entries for the balance's own day count when they were logged after it
- * (the balance already includes earlier ones).
+ * What's in the account now, kept simple: the latest balance you entered
+ * (or the opening balance), plus money in, minus money out, since then.
+ * Money out is every payment not made by card or Amazon Pay, and card bills
+ * on their due dates (card purchases leave the account only when the bill
+ * is paid). Nothing planned or assumed is added: salary counts once you add
+ * it. On the balance's own day, only entries logged after it count.
  */
-export function accountNow(doc: FinanceDoc, today: string): { amount: Paise | null; from: { date: string; amount: Paise } | null } {
+export function accountLedger(doc: FinanceDoc, today: string): AccountLedger {
+  const s = doc.settings;
   const at = (b: BalanceCheck) => b.recordedAt ?? b.updatedAt;
   const latest = doc.balances.filter((b) => !b.deletedAt && b.date <= today).sort((a, b) => b.date.localeCompare(a.date) || at(b).localeCompare(at(a)))[0];
-  const none = { savingsPot: 0, cardsOwed: 0 };
-  if (!latest) return { amount: reconcile(doc, today, none).expected, from: null };
-  // Only the movement since matters, so an unset opening balance doesn't block it.
-  const d: FinanceDoc = { ...doc, settings: { ...doc.settings, openingBalance: doc.settings.openingBalance ?? 0 } };
-  const moved = (reconcile(d, today, none).expected as Paise) - (reconcile(d, latest.date, none).expected as Paise);
-  const after = (stamp: string) => stamp > at(latest);
-  const sameDay =
-    -doc.transactions.filter((t) => !t.deletedAt && t.date === latest.date && BANK_METHODS.includes(t.method) && after(t.createdAt)).reduce((a, t) => a + t.amount, 0) +
-    (doc.events ?? [])
-      .filter((e) => !e.deletedAt && e.status === 'settled' && e.account === 'bank' && e.settledOn === latest.date && after(e.updatedAt))
-      .reduce((a, e) => a + (EVENT_KINDS.find((k) => k.key === e.kind)?.inflow ? e.amount : -e.amount), 0) +
-    (doc.salaries ?? []).filter((r) => !r.deletedAt && r.date === latest.date && after(r.updatedAt)).reduce((a, r) => a + r.amount, 0);
-  return { amount: latest.amount + moved + sameDay, from: { date: latest.date, amount: latest.amount } };
+  const base = latest
+    ? { label: 'Balance you entered', date: latest.date, amount: latest.amount, stamp: at(latest), inclusive: false }
+    : s.openingBalance !== null
+      ? { label: 'Opening balance', date: cycleStart(doc, s.startMonth), amount: s.openingBalance, stamp: '', inclusive: true }
+      : null;
+  if (!base) return { amount: null, base: null, lines: [] };
+  const counts = (date: string | null | undefined, stamp: string) => !!date && date <= today && (date > base.date || (date === base.date && (base.inclusive || stamp > base.stamp)));
+  const cards = new Set(s.cards.map((c) => c.method));
+  const lines: AccountLine[] = [];
+  const add = (label: string, rows: Paise[]) => {
+    if (rows.length) lines.push({ label, amount: rows.reduce((a, x) => a + x, 0), count: rows.length });
+  };
+
+  // The opening balance is right after a salary: that day's salary is already in it.
+  add('Salary added', (doc.salaries ?? []).filter((r) => !r.deletedAt && counts(r.date, r.updatedAt) && !(base.inclusive && r.date === base.date)).map((r) => r.amount));
+  add('Bonuses received', incomesOf(doc).filter((i) => counts(i.receivedOn, i.updatedAt)).map((i) => i.receivedAmount ?? i.amount));
+  const events = (doc.events ?? []).filter((e) => !e.deletedAt && e.status === 'settled' && e.account === 'bank' && counts(e.settledOn, e.updatedAt));
+  const inflow = (e: { kind: string }) => !!EVENT_KINDS.find((k) => k.key === e.kind)?.inflow;
+  add('Refunds and other money in', events.filter(inflow).map((e) => e.amount));
+  add('Paid from the account', doc.transactions.filter((t) => !t.deletedAt && !cards.has(t.method) && t.method !== VOUCHER_METHOD && counts(t.date, t.createdAt)).map((t) => -t.amount));
+  add('Other money out', events.filter((e) => !inflow(e)).map((e) => -e.amount));
+
+  // Card bills: each statement whose due date falls after the starting point.
+  const bills: Paise[] = [];
+  for (const card of s.cards) {
+    const txs = doc.transactions.filter((t) => !t.deletedAt && t.method === card.method);
+    let cycle = cardCycles(card, base.date).previous;
+    for (let i = 0; i < 240; i++) {
+      const due = dueDateAfter(card, cycle.end) ?? `${addMonths(monthOf(cycle.end), 1)}-05`;
+      if (due > today) break;
+      if (due > base.date || (due === base.date && base.inclusive)) {
+        const amount = txs.filter((t) => t.date >= cycle.start && t.date <= cycle.end).reduce((a, t) => a + t.amount, 0) + cardEventsBetween(doc, card.method, cycle.start, cycle.end);
+        if (amount) bills.push(-amount);
+      }
+      cycle = cardCycles(card, new Date(Date.parse(`${cycle.end}T00:00:00Z`) + 86400000).toISOString().slice(0, 10)).current;
+    }
+  }
+  add('Card bills (on their due dates)', bills);
+
+  return { amount: base.amount + lines.reduce((a, l) => a + l.amount, 0), base: { label: base.label, date: base.date, amount: base.amount }, lines };
+}
+
+/** The account amount and where it started from. */
+export function accountNow(doc: FinanceDoc, today: string): { amount: Paise | null; from: { date: string; amount: Paise } | null } {
+  const l = accountLedger(doc, today);
+  return { amount: l.amount, from: l.base && l.base.label !== 'Opening balance' ? { date: l.base.date, amount: l.base.amount } : null };
 }

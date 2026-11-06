@@ -1,7 +1,7 @@
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, LinearProgress, Paper, Stack, TextField, Typography } from '@mui/material';
 import dayjs from 'dayjs';
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Metric } from '../fitness/ui';
 import { useSnackbar } from '../layout/Snackbar';
@@ -9,7 +9,7 @@ import { addMonths, cardStatus, combinedCap, monthSummary, salaryDate, salaryRec
 import { useFinance } from './FinanceContext';
 import { budgetMonth, formatINR, monthTransactions, planFor, type BalanceCheck, type Paise, type SalaryReceipt, type Transaction } from './model';
 import { WeeklyCapBar } from './PlannerCards';
-import { accountNow } from './projection';
+import { accountLedger } from './projection';
 import { EditTransactionDialog, QuickAdd, TransactionRow } from './TransactionForm';
 import { AmountField, FINANCE_SECTIONS } from './ui';
 
@@ -108,7 +108,7 @@ export default function FinanceToday() {
   const today = dayjs().format(KEY);
   const month = doc ? budgetMonth(doc, today) : today.slice(0, 7);
   const txs = useMemo(() => (doc ? monthTransactions(doc, month) : []), [doc, month]);
-  const account = useMemo(() => (doc ? accountNow(doc, today) : null), [doc, today]);
+  const account = useMemo(() => (doc ? accountLedger(doc, today) : null), [doc, today]);
   if (!doc || !account) return null;
 
   const gaps = setupGaps(doc.settings);
@@ -128,13 +128,26 @@ export default function FinanceToday() {
         <Typography component="p" sx={{ fontSize: 40, fontWeight: 700, lineHeight: 1.15, my: 0.5, fontVariantNumeric: 'tabular-nums' }}>
           {account.amount === null ? '—' : formatINR(account.amount)}
         </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {account.amount === null
-            ? 'Enter your balance to start.'
-            : account.from
-              ? `From your ${formatINR(account.from.amount)} on ${dayjs(account.from.date).format('D MMM')}, minus UPI and debit payments logged after it.`
-              : 'Estimated from your opening balance and what’s logged.'}
-        </Typography>
+        {account.base ? (
+          <Box component="dl" sx={{ m: 0, mt: 1, display: 'grid', gridTemplateColumns: '1fr auto', columnGap: 2, rowGap: 0.25, fontSize: 14, color: 'text.secondary', fontVariantNumeric: 'tabular-nums', '& dd': { m: 0, textAlign: 'right' } }}>
+            <dt>
+              {account.base.label}, {dayjs(account.base.date).format('D MMM')}
+            </dt>
+            <dd>{formatINR(account.base.amount)}</dd>
+            {account.lines.map((l) => (
+              <Fragment key={l.label}>
+                <dt>
+                  {l.label} ({l.count})
+                </dt>
+                <dd>{formatINR(l.amount, { sign: true })}</dd>
+              </Fragment>
+            ))}
+          </Box>
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            Enter your balance to start.
+          </Typography>
+        )}
         {account.amount !== null && owed > 0 && (
           <Typography sx={{ mt: 1, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
             {formatINR(account.amount - owed)} after card bills{' '}
