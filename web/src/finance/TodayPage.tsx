@@ -1,15 +1,16 @@
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
-import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, LinearProgress, Paper, Stack, TextField, Typography } from '@mui/material';
+import RemoveRoundedIcon from '@mui/icons-material/RemoveRounded';
+import { Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, LinearProgress, Paper, Stack, TextField, Typography } from '@mui/material';
 import dayjs from 'dayjs';
-import { Fragment, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Metric } from '../fitness/ui';
 import { useSnackbar } from '../layout/Snackbar';
-import { addMonths, cardStatus, combinedCap, monthSummary, salaryDate, salaryReceipt } from './engine';
+import { cardStatus, combinedCap, monthOf, monthSummary, salaryDate, salaryReceipt } from './engine';
 import { useFinance } from './FinanceContext';
-import { budgetMonth, formatINR, monthTransactions, planFor, type BalanceCheck, type Paise, type SalaryReceipt, type Transaction } from './model';
+import { balanceEntries, MONEY_IN_KINDS, simpleBalance, type BalanceEntry, type MoneyInKind } from './balance';
+import { budgetMonth, formatINR, planFor, type MoneyEvent, type Paise, type SalaryReceipt, type Transaction } from './model';
 import { WeeklyCapBar } from './PlannerCards';
-import { accountLedger } from './projection';
 import { EditTransactionDialog, QuickAdd, TransactionRow } from './TransactionForm';
 import { AmountField, FINANCE_SECTIONS } from './ui';
 
@@ -19,81 +20,113 @@ const KEY = 'YYYY-MM-DD';
 function setupGaps(s: NonNullable<ReturnType<typeof useFinance>['doc']>['settings']): string[] {
   const gaps: string[] = [];
   if (s.cards.some((c) => c.statementDay === null || c.dueDay === null)) gaps.push('card statement and due days');
-  if (s.openingBalance === null) gaps.push('your bank balance when tracking started');
   return gaps;
 }
 
-function SalaryDialog({ month, planned, plannedDate, existing, onClose }: { month: string; planned: Paise; plannedDate: string; existing: SalaryReceipt | null; onClose: () => void }) {
+function MoneyInDialog({ plannedSalary, onClose }: { plannedSalary: Paise; onClose: () => void }) {
   const { update } = useFinance();
   const toast = useSnackbar();
-  const today = dayjs().format(KEY);
-  const [amount, setAmount] = useState<Paise | null>(existing?.amount ?? planned);
-  const [date, setDate] = useState(existing?.date ?? (plannedDate > today ? today : plannedDate));
-  const stamp = () => new Date().toISOString();
+  const [kind, setKind] = useState<MoneyInKind>('salary');
+  const [amount, setAmount] = useState<Paise | null>(plannedSalary);
+  const [date, setDate] = useState(dayjs().format(KEY));
+  const [note, setNote] = useState('');
   const save = async () => {
-    if (amount === null) return;
-    const row: SalaryReceipt = { id: existing?.id ?? crypto.randomUUID(), month, date, amount, note: null, updatedAt: stamp(), deletedAt: null };
-    await update((d) => ({ ...d, salaries: [...(d.salaries ?? []).filter((r) => r.id !== row.id), row] }));
-    toast(`💼 Salary ${formatINR(amount)} recorded`);
-    onClose();
-  };
-  const remove = async () => {
-    if (!existing) return;
-    await update((d) => ({ ...d, salaries: (d.salaries ?? []).map((r) => (r.id === existing.id ? { ...r, deletedAt: stamp(), updatedAt: stamp() } : r)) }));
-    toast('Salary record removed; the planned salary applies again');
+    if (amount === null || amount <= 0 || !date) return;
+    const stamp = new Date().toISOString();
+    const label = MONEY_IN_KINDS.find((k) => k.key === kind)!.label;
+    if (kind === 'salary') {
+      const month = date.slice(0, 7);
+      await update((d) => {
+        // One salary per month: a second one for the same month replaces it.
+        const salaries = (d.salaries ?? []).map((r) => (!r.deletedAt && r.month === month ? { ...r, deletedAt: stamp, updatedAt: stamp } : r));
+        const row: SalaryReceipt = { id: crypto.randomUUID(), month, date, amount, note: note.trim() || null, updatedAt: stamp, deletedAt: null };
+        return { ...d, salaries: [...salaries, row] };
+      });
+    } else {
+      const row: MoneyEvent = { id: crypto.randomUUID(), date, kind, amount, description: note.trim() || label, status: 'settled', settledOn: date, account: 'bank', cardMethod: null, updatedAt: stamp, deletedAt: null };
+      await update((d) => ({ ...d, events: [...(d.events ?? []), row] }));
+    }
+    toast(`➕ ${label} ${formatINR(amount)} added`);
     onClose();
   };
   return (
     <Dialog open onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle>{dayjs(`${month}-01`).format('MMMM')} salary</DialogTitle>
+      <DialogTitle>Add money in</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
-          <AmountField label="Amount received" value={amount} onChange={setAmount} autoFocus helperText={`Planned: ${formatINR(planned)}. It pays ${dayjs(`${addMonths(month, 1)}-01`).format('MMMM')}’s bills.`} />
-          <TextField type="date" label="Credited on" value={date} onChange={(e) => setDate(e.target.value)} InputLabelProps={{ shrink: true }} />
+          <Stack direction="row" spacing={1}>
+            {MONEY_IN_KINDS.map((k) => (
+              <Chip
+                key={k.key}
+                label={k.label}
+                color={kind === k.key ? 'primary' : 'default'}
+                variant={kind === k.key ? 'filled' : 'outlined'}
+                onClick={() => {
+                  setKind(k.key);
+                  if (k.key === 'salary' && amount === null) setAmount(plannedSalary);
+                }}
+              />
+            ))}
+          </Stack>
+          <AmountField label="Amount" value={amount} onChange={setAmount} autoFocus />
+          <TextField type="date" label="Date" value={date} onChange={(e) => setDate(e.target.value)} InputLabelProps={{ shrink: true }} />
+          <TextField label="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
         </Stack>
       </DialogContent>
       <DialogActions>
-        {existing && (
-          <Button color="error" onClick={() => void remove()} sx={{ mr: 'auto' }}>
-            Remove
-          </Button>
-        )}
         <Button onClick={onClose}>Cancel</Button>
         <Button variant="contained" disabled={amount === null || amount <= 0 || !date} onClick={() => void save()}>
-          Save
+          Add
         </Button>
       </DialogActions>
     </Dialog>
   );
 }
 
-function BalanceUpdateDialog({ onClose }: { onClose: () => void }) {
+/** A money-in entry: shown, and removable. */
+function MoneyInRow({ entry }: { entry: BalanceEntry }) {
   const { update } = useFinance();
   const toast = useSnackbar();
-  const [amount, setAmount] = useState<Paise | null>(null);
-  const save = async () => {
-    if (amount === null) return;
+  const [confirm, setConfirm] = useState(false);
+  const remove = async () => {
     const stamp = new Date().toISOString();
-    const row: BalanceCheck = { id: crypto.randomUUID(), date: dayjs().format(KEY), amount, note: null, recordedAt: stamp, updatedAt: stamp, deletedAt: null };
-    await update((d) => ({ ...d, balances: [...d.balances, row] }));
-    toast('Balance updated');
-    onClose();
+    const gone = <T extends { id: string }>(rows: T[] | undefined) => (rows ?? []).map((r) => (r.id === entry.id ? { ...r, deletedAt: stamp, updatedAt: stamp } : r));
+    await update((d) => (entry.source === 'salary' ? { ...d, salaries: gone(d.salaries) } : { ...d, events: gone(d.events) }));
+    toast('Removed');
+    setConfirm(false);
   };
   return (
-    <Dialog open onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle>What’s in your account now?</DialogTitle>
-      <DialogContent>
-        <Box sx={{ pt: 1 }}>
-          <AmountField label="Balance today" value={amount} onChange={setAmount} autoFocus helperText="All your bank accounts together, from your banking app. Past entries are under Bank." />
+    <>
+      <Box
+        component="button"
+        onClick={() => setConfirm(true)}
+        sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%', py: 1, px: 0.5, border: 0, borderBottom: 1, borderColor: 'divider', bgcolor: 'transparent', color: 'inherit', font: 'inherit', textAlign: 'left', cursor: 'pointer' }}
+      >
+        <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+          <Typography sx={{ fontWeight: 600 }}>{entry.label}</Typography>
+          <Typography variant="body2" color="text.secondary" noWrap>
+            {dayjs(entry.date).format('ddd D MMM')} · money in{entry.note ? ` · ${entry.note}` : ''}
+          </Typography>
         </Box>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" disabled={amount === null} onClick={() => void save()}>
-          Save
-        </Button>
-      </DialogActions>
-    </Dialog>
+        <Typography sx={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }} color="success.main">
+          {formatINR(entry.amount, { sign: entry.amount > 0 })}
+        </Typography>
+      </Box>
+      <Dialog open={confirm} onClose={() => setConfirm(false)}>
+        <DialogTitle>Remove this entry?</DialogTitle>
+        <DialogContent>
+          <Typography>
+            {entry.label}, {formatINR(entry.amount)} on {dayjs(entry.date).format('D MMM')}.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirm(false)}>Cancel</Button>
+          <Button color="error" onClick={() => void remove()}>
+            Remove
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 }
 
@@ -103,12 +136,11 @@ export default function FinanceToday() {
   const navigate = useNavigate();
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [adding, setAdding] = useState(false);
-  const [salaryOpen, setSalaryOpen] = useState(false);
-  const [balanceOpen, setBalanceOpen] = useState(false);
+  const [moneyIn, setMoneyIn] = useState(false);
   const today = dayjs().format(KEY);
   const month = doc ? budgetMonth(doc, today) : today.slice(0, 7);
-  const txs = useMemo(() => (doc ? monthTransactions(doc, month) : []), [doc, month]);
-  const account = useMemo(() => (doc ? accountLedger(doc, today) : null), [doc, today]);
+  const account = useMemo(() => (doc ? simpleBalance(doc, today) : null), [doc, today]);
+  const recent = useMemo(() => (doc ? balanceEntries(doc, today).reverse().slice(0, 8) : []), [doc, today]);
   if (!doc || !account) return null;
 
   const gaps = setupGaps(doc.settings);
@@ -118,55 +150,29 @@ export default function FinanceToday() {
   const cap = combinedCap(doc, today);
   const plan = planFor(doc.settings, month);
   const plannedDate = salaryDate(plan, month);
-  const receipt = salaryReceipt(doc, month);
-  const salaryNear = !receipt && dayjs(plannedDate).diff(today, 'day') <= 3;
+  const salaryNear = !salaryReceipt(doc, monthOf(plannedDate)) && dayjs(plannedDate).diff(today, 'day') <= 3 && dayjs(plannedDate).diff(today, 'day') >= 0;
 
   return (
     <Stack spacing={3} sx={{ maxWidth: 860 }}>
       <Paper variant="outlined" sx={{ p: 3 }}>
-        <Typography color="text.secondary">In your account</Typography>
-        <Typography component="p" sx={{ fontSize: 40, fontWeight: 700, lineHeight: 1.15, my: 0.5, fontVariantNumeric: 'tabular-nums' }}>
-          {account.amount === null ? '—' : formatINR(account.amount)}
+        <Typography color="text.secondary">Balance</Typography>
+        <Typography component="p" sx={{ fontSize: 40, fontWeight: 700, lineHeight: 1.15, my: 0.5, fontVariantNumeric: 'tabular-nums' }} color={account.balance < 0 ? 'error.main' : undefined}>
+          {formatINR(account.balance)}
         </Typography>
-        {account.base ? (
-          <Box component="dl" sx={{ m: 0, mt: 1, display: 'grid', gridTemplateColumns: '1fr auto', columnGap: 2, rowGap: 0.25, fontSize: 14, color: 'text.secondary', fontVariantNumeric: 'tabular-nums', '& dd': { m: 0, textAlign: 'right' } }}>
-            <dt>
-              {account.base.label}, {dayjs(account.base.date).format('D MMM')}
-            </dt>
-            <dd>{formatINR(account.base.amount)}</dd>
-            {account.lines.map((l) => (
-              <Fragment key={l.label}>
-                <dt>
-                  {l.label} ({l.count})
-                </dt>
-                <dd>{formatINR(l.amount, { sign: true })}</dd>
-              </Fragment>
-            ))}
-          </Box>
-        ) : (
-          <Typography variant="body2" color="text.secondary">
-            Enter your balance to start.
-          </Typography>
-        )}
-        {account.amount !== null && owed > 0 && (
-          <Typography sx={{ mt: 1, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
-            {formatINR(account.amount - owed)} after card bills{' '}
-            <Typography component="span" variant="body2" color="text.secondary">
-              ({formatINR(owed)} on cards: it leaves the account when the bill is paid)
-            </Typography>
-          </Typography>
-        )}
+        <Typography variant="body2" color="text.secondary" sx={{ fontVariantNumeric: 'tabular-nums' }}>
+          In {formatINR(account.moneyIn)} · Out {formatINR(account.moneyOut)}
+        </Typography>
         <Stack direction="row" useFlexGap spacing={1} sx={{ mt: 2, flexWrap: 'wrap', rowGap: 1 }}>
-          <Button variant="contained" onClick={() => setSalaryOpen(true)}>
-            {receipt ? `Salary ${formatINR(receipt.amount)} ✓` : 'Add salary'}
+          <Button variant="contained" startIcon={<AddRoundedIcon />} onClick={() => setMoneyIn(true)}>
+            Money in
           </Button>
-          <Button variant="outlined" onClick={() => setBalanceOpen(true)}>
-            Update balance
+          <Button variant="contained" color="secondary" startIcon={<RemoveRoundedIcon />} onClick={() => setAdding(true)}>
+            Expense
           </Button>
         </Stack>
         {salaryNear && (
           <Typography variant="body2" color="primary" sx={{ mt: 1.5 }}>
-            Salary is due {dayjs(plannedDate).format('ddd D MMM')} ({formatINR(plan.salary)}). Add it when it lands.
+            Salary is due {dayjs(plannedDate).format('ddd D MMM')}. Add it with Money in when it lands.
           </Typography>
         )}
       </Paper>
@@ -201,10 +207,6 @@ export default function FinanceToday() {
 
       <WeeklyCapBar />
 
-      <Button variant="contained" size="large" startIcon={<AddRoundedIcon />} onClick={() => setAdding(true)} sx={{ py: 1.5 }}>
-        Add expense
-      </Button>
-
       <Card title={`📅 ${dayjs(`${month}-01`).format('MMMM')}`}>
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
           <Metric value={formatINR(summary.leftInBudgets)} caption="left in budgets" />
@@ -226,19 +228,21 @@ export default function FinanceToday() {
         ))}
       </Box>
 
-      <Card title="🧾 Recent" aside={txs.length > 6 ? <Button size="small" onClick={() => navigate('/finance/transactions')}>All</Button> : undefined}>
-        {txs.length ? (
-          txs.slice(0, 6).map((t) => <TransactionRow key={t.id} tx={t} onOpen={() => setEditing(t)} />)
+      <Card title="🧾 Recent" aside={<Button size="small" onClick={() => navigate('/finance/transactions')}>All</Button>}>
+        {recent.length ? (
+          recent.map((e) => {
+            const t = e.source === 'transaction' ? doc.transactions.find((x) => x.id === e.id) : undefined;
+            return t ? <TransactionRow key={e.id} tx={t} onOpen={() => setEditing(t)} /> : <MoneyInRow key={e.id} entry={e} />;
+          })
         ) : (
           <Typography variant="body2" color="text.secondary">
-            Nothing yet this month.
+            Nothing yet. Add money in (salary, refunds) and your expenses: the balance is in minus out.
           </Typography>
         )}
       </Card>
 
       {editing && <EditTransactionDialog tx={editing} onClose={() => setEditing(null)} />}
-      {salaryOpen && <SalaryDialog month={month} planned={plan.salary} plannedDate={plannedDate} existing={receipt} onClose={() => setSalaryOpen(false)} />}
-      {balanceOpen && <BalanceUpdateDialog onClose={() => setBalanceOpen(false)} />}
+      {moneyIn && <MoneyInDialog plannedSalary={plan.salary} onClose={() => setMoneyIn(false)} />}
       <Dialog open={adding} onClose={() => setAdding(false)} fullWidth maxWidth="sm">
         <DialogTitle>Add expense</DialogTitle>
         <DialogContent>

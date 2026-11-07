@@ -1,10 +1,11 @@
 import ChevronLeftRoundedIcon from '@mui/icons-material/ChevronLeftRounded';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
-import { Box, Chip, IconButton, LinearProgress, Stack, Typography } from '@mui/material';
+import { Box, Button, Chip, IconButton, LinearProgress, Stack, Typography } from '@mui/material';
 import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Card } from '../fitness/ui';
+import { useSnackbar } from '../layout/Snackbar';
 import { useFinance } from './FinanceContext';
 import { budgetMonth, cycleRange, formatINR, monthTransactions, planFor, type Transaction } from './model';
 import { budgetTimeline, byMethod } from './reports';
@@ -34,6 +35,10 @@ export default function TransactionsPage() {
   const [category, setCategory] = useState<string | null>(initial?.category ?? null);
   const [method, setMethod] = useState<string | null>(initial?.method ?? null);
   const [editing, setEditing] = useState<Transaction | null>(null);
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
+  const { update } = useFinance();
+  const toast = useSnackbar();
   const all = useMemo(() => (doc ? monthTransactions(doc, month) : []), [doc, month]);
   const methods = useMemo(() => (doc ? byMethod(doc, month) : null), [doc, month]);
   const budget = useMemo(() => (doc && category ? budgetTimeline(doc, category, month) : null), [doc, category, month]);
@@ -46,6 +51,24 @@ export default function TransactionsPage() {
   const range = cycleRange(doc, month);
   const isBudget = !!budget && budget.limit !== null;
   const budgetCategories = planFor(doc.settings, month).budgets.map((b) => b.category);
+
+  const removeSelected = async () => {
+    const ids = new Set(selected);
+    const stamp = new Date().toISOString();
+    await update((d) => ({ ...d, transactions: d.transactions.map((t) => (ids.has(t.id) ? { ...t, deletedAt: stamp, updatedAt: stamp } : t)) }));
+    setSelected([]);
+    setSelecting(false);
+    toast(`Deleted ${ids.size} transaction${ids.size === 1 ? '' : 's'}`, {
+      severity: 'info',
+      action: {
+        label: 'Undo',
+        run: () => {
+          const back = new Date().toISOString();
+          void update((d) => ({ ...d, transactions: d.transactions.map((t) => (ids.has(t.id) ? { ...t, deletedAt: null, updatedAt: back } : t)) }));
+        },
+      },
+    });
+  };
 
   return (
     <Stack spacing={3} sx={{ maxWidth: 860 }}>
@@ -157,10 +180,38 @@ export default function TransactionsPage() {
         {methods.methods.length > 1 && <FilterChips label="Paid via" options={methods.methods.map((m) => m.method)} value={method} onChange={setMethod} />}
       </Stack>
 
-      <Typography color="text.secondary">
-        {txs.length} transaction{txs.length === 1 ? '' : 's'} · {formatINR(total)}
-        {category || method ? ` (${[category, method].filter(Boolean).join(' · ')})` : ''}
-      </Typography>
+      <Stack direction="row" alignItems="center" spacing={1}>
+        <Typography color="text.secondary" sx={{ flexGrow: 1 }}>
+          {txs.length} transaction{txs.length === 1 ? '' : 's'} · {formatINR(total)}
+          {category || method ? ` (${[category, method].filter(Boolean).join(' · ')})` : ''}
+        </Typography>
+        {txs.length > 0 && (
+          <Button
+            size="small"
+            onClick={() => {
+              setSelecting(!selecting);
+              setSelected([]);
+            }}
+          >
+            {selecting ? 'Cancel' : 'Select'}
+          </Button>
+        )}
+      </Stack>
+      {selecting && (
+        <Box sx={{ position: 'sticky', top: 72, zIndex: 2 }}>
+          <Stack direction="row" spacing={1} alignItems="center" useFlexGap sx={{ p: 1.25, borderRadius: 3, bgcolor: 'background.paper', boxShadow: 4, flexWrap: 'wrap', rowGap: 1 }}>
+            <Typography variant="body2" sx={{ flexGrow: 1 }}>
+              {selected.length} selected
+            </Typography>
+            <Button size="small" onClick={() => setSelected(selected.length === txs.length ? [] : txs.map((t) => t.id))}>
+              {selected.length === txs.length ? 'Select none' : `Select all (${txs.length})`}
+            </Button>
+            <Button size="small" variant="contained" color="error" disabled={selected.length === 0} onClick={() => void removeSelected()}>
+              Delete {selected.length || ''}
+            </Button>
+          </Stack>
+        </Box>
+      )}
       {days.length === 0 && (
         <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
           Nothing recorded{category || method ? ' with these filters' : ' this month'}.
@@ -171,7 +222,12 @@ export default function TransactionsPage() {
         return (
           <Card key={day} title={dayjs(day).format('ddd D MMM')} aside={<Typography variant="body2" color="text.secondary">{formatINR(list.reduce((a, t) => a + t.amount, 0))}</Typography>}>
             {list.map((t) => (
-              <TransactionRow key={t.id} tx={t} onOpen={() => setEditing(t)} />
+              <TransactionRow
+                key={t.id}
+                tx={t}
+                selected={selecting ? selected.includes(t.id) : undefined}
+                onOpen={() => (selecting ? setSelected(selected.includes(t.id) ? selected.filter((x) => x !== t.id) : [...selected, t.id]) : setEditing(t))}
+              />
             ))}
           </Card>
         );

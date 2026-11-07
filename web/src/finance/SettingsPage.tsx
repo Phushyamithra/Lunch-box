@@ -25,6 +25,7 @@ import { Card } from '../fitness/ui';
 import { useSnackbar } from '../layout/Snackbar';
 import { fingerprintError } from './biometric';
 import { MonthImportDialog } from './MonthImportDialog';
+import { clearedDoc } from './balance';
 import { useFinance } from './FinanceContext';
 import { formatINR, planValues, validateSettings, withPlanFrom, type FinanceSettings } from './model';
 import { AmountField } from './ui';
@@ -158,6 +159,7 @@ export default function FinanceSettingsPage() {
   }, [reloadForm, finance.doc]);
   const [confirmForget, setConfirmForget] = useState(false);
   const [confirmReplace, setConfirmReplace] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const replaceRef = useRef<HTMLInputElement>(null);
   const error = validateSettings(form);
@@ -214,6 +216,13 @@ export default function FinanceSettingsPage() {
     } finally {
       if (replaceRef.current) replaceRef.current.value = '';
     }
+  };
+
+  const clearAll = async () => {
+    setConfirmClear(false);
+    await finance.replaceAll(clearedDoc(finance.doc!));
+    toast('Cleared: everything is back to ₹0');
+    setReloadForm(true);
   };
 
   return (
@@ -453,6 +462,9 @@ export default function FinanceSettingsPage() {
           </Stack>
           <input ref={replaceRef} type="file" accept=".json,application/json" hidden onChange={(e) => void replace(e.target.files?.[0])} />
           <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap', rowGap: 1 }}>
+            <Button color="error" variant="outlined" onClick={() => setConfirmClear(true)}>
+              Clear all Finance data
+            </Button>
             <Button color="error" onClick={() => setConfirmReplace(true)}>
               Replace everything with a file
             </Button>
@@ -486,6 +498,25 @@ export default function FinanceSettingsPage() {
       {changing && <PassphraseDialog onClose={() => setChanging(false)} />}
       {enablingBio && <FingerprintDialog onClose={() => setEnablingBio(false)} />}
       {importing && <MonthImportDialog onClose={() => (setImporting(false), setReloadForm(true))} />}
+      <Dialog open={confirmClear} onClose={() => setConfirmClear(false)}>
+        <DialogTitle>Clear all Finance data?</DialogTitle>
+        <DialogContent>
+          <Typography gutterBottom>
+            Every expense, money-in entry, salary, balance, Amazon Pay entry, refund, income and list item is removed, on all your devices once they sync. The balance goes
+            back to ₹0. Your plan (salary, budgets, cards and goals) stays.
+          </Typography>
+          <Typography color="text.secondary" variant="body2">
+            Download a backup first if you might want any of it back.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={download}>Download backup</Button>
+          <Button onClick={() => setConfirmClear(false)}>Cancel</Button>
+          <Button color="error" variant="contained" onClick={() => void clearAll()}>
+            Clear everything
+          </Button>
+        </DialogActions>
+      </Dialog>
       <Dialog open={confirmReplace} onClose={() => setConfirmReplace(false)}>
         <DialogTitle>Replace all Finance data?</DialogTitle>
         <DialogContent>

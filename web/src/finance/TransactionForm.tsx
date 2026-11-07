@@ -1,4 +1,4 @@
-import { Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Stack, Switch, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Checkbox, Chip, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Stack, Switch, TextField, Typography } from '@mui/material';
 import dayjs from 'dayjs';
 import { useState, type Dispatch, type SetStateAction } from 'react';
 import { useSnackbar } from '../layout/Snackbar';
@@ -142,13 +142,15 @@ export function EditTransactionDialog({ tx, onClose }: { tx: Transaction; onClos
 }
 
 /** One line per transaction; tap to edit. */
-export function TransactionRow({ tx, onOpen }: { tx: Transaction; onOpen: () => void }) {
+export function TransactionRow({ tx, onOpen, selected }: { tx: Transaction; onOpen: () => void; selected?: boolean }) {
   return (
     <Box
       component="button"
       onClick={onOpen}
+      aria-pressed={selected}
       sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%', py: 1, px: 0.5, border: 0, borderBottom: 1, borderColor: 'divider', bgcolor: 'transparent', color: 'inherit', font: 'inherit', textAlign: 'left', cursor: 'pointer' }}
     >
+      {selected !== undefined && <Checkbox checked={selected} tabIndex={-1} sx={{ p: 0.5, pointerEvents: 'none' }} inputProps={{ 'aria-label': `Select ${tx.category} ${formatINR(tx.amount)}` }} />}
       <Box sx={{ flexGrow: 1, minWidth: 0 }}>
         <Typography sx={{ fontWeight: 600 }}>{tx.category}</Typography>
         <Typography variant="body2" color="text.secondary" noWrap>
