@@ -112,7 +112,8 @@ export function voucherState(doc: FinanceDoc, today: string): VoucherState {
 
 /** Settled cash events (bank or card) in a month: money in and out. */
 export function settledCashIn(doc: FinanceDoc, ym: string): { in: Paise; out: Paise; list: MoneyEvent[] } {
-  const list = eventsOf(doc).filter((e) => e.status === 'settled' && e.account !== 'voucher' && !!e.settledOn && budgetMonth(doc, e.settledOn) === ym);
+  // Card bill payments settle card spending that's already counted: not money in or out of the month.
+  const list = eventsOf(doc).filter((e) => e.status === 'settled' && e.account !== 'voucher' && !e.cardBill && !!e.settledOn && budgetMonth(doc, e.settledOn) === ym);
   return {
     in: list.filter(isInflow).reduce((a, e) => a + e.amount, 0),
     out: list.filter((e) => !isInflow(e)).reduce((a, e) => a + e.amount, 0),
@@ -130,7 +131,7 @@ export function cardEventsBetween(doc: FinanceDoc, method: string, from: string,
 /** Settled bank events up to a date (signed). */
 export function bankEventsUntil(doc: FinanceDoc, from: string, to: string): Paise {
   return eventsOf(doc)
-    .filter((e) => e.status === 'settled' && e.account === 'bank' && e.settledOn && e.settledOn >= from && e.settledOn <= to)
+    .filter((e) => e.status === 'settled' && e.account === 'bank' && !e.cardBill && e.settledOn && e.settledOn >= from && e.settledOn <= to)
     .reduce((a, e) => a + signed(e), 0);
 }
 

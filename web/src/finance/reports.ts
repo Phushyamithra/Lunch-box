@@ -200,7 +200,7 @@ export function byMethod(doc: FinanceDoc, ym: string): { methods: MethodTotal[];
     m.set(t.method, row);
   }
   const bankOneOffs = (doc.events ?? [])
-    .filter((e) => !e.deletedAt && e.status === 'settled' && e.account === 'bank' && e.kind === 'expense' && !!e.settledOn && budgetMonth(doc, e.settledOn) === ym)
+    .filter((e) => !e.deletedAt && e.status === 'settled' && e.account === 'bank' && e.kind === 'expense' && !e.cardBill && !!e.settledOn && budgetMonth(doc, e.settledOn) === ym)
     .reduce((a, e) => a + e.amount, 0);
   const methods = [...m.values()].sort((a, b) => b.total - a.total);
   return { methods, bankOneOffs, total: methods.reduce((a, x) => a + x.total, 0) };

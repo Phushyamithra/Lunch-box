@@ -8,7 +8,7 @@ import { Card, Metric } from '../fitness/ui';
 import { useSnackbar } from '../layout/Snackbar';
 import { cardStatus, combinedCap, monthOf, monthSummary, salaryDate, salaryReceipt } from './engine';
 import { useFinance } from './FinanceContext';
-import { balanceEntries, MONEY_IN_KINDS, simpleBalance, type BalanceEntry, type MoneyInKind } from './balance';
+import { balanceEntries, MONEY_IN_KINDS, simpleBalance, type BalanceEntry, type CardOwed, type MoneyInKind } from './balance';
 import { budgetMonth, formatINR, planFor, type MoneyEvent, type Paise, type SalaryReceipt, type Transaction } from './model';
 import { WeeklyCapBar } from './PlannerCards';
 import { EditTransactionDialog, QuickAdd, TransactionRow } from './TransactionForm';
@@ -83,6 +83,55 @@ function MoneyInDialog({ plannedSalary, onClose }: { plannedSalary: Paise; onClo
   );
 }
 
+function PayBillDialog({ cards, onClose }: { cards: CardOwed[]; onClose: () => void }) {
+  const { update } = useFinance();
+  const toast = useSnackbar();
+  const first = cards.find((c) => c.owed > 0) ?? cards[0];
+  const [method, setMethod] = useState(first.method);
+  const [amount, setAmount] = useState<Paise | null>(first.owed || null);
+  const [date, setDate] = useState(dayjs().format(KEY));
+  const card = cards.find((c) => c.method === method)!;
+  const save = async () => {
+    if (amount === null || amount <= 0 || !date) return;
+    const stamp = new Date().toISOString();
+    const row: MoneyEvent = { id: crypto.randomUUID(), date, kind: 'expense', amount, description: `${card.name} bill`, status: 'settled', settledOn: date, account: 'bank', cardMethod: null, cardBill: method, updatedAt: stamp, deletedAt: null };
+    await update((d) => ({ ...d, events: [...(d.events ?? []), row] }));
+    toast(`💳 ${card.name} bill ${formatINR(amount)} paid`);
+    onClose();
+  };
+  return (
+    <Dialog open onClose={onClose} fullWidth maxWidth="xs">
+      <DialogTitle>Pay card bill</DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} sx={{ pt: 1 }}>
+          <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap', rowGap: 1 }}>
+            {cards.map((c) => (
+              <Chip
+                key={c.method}
+                label={`${c.name} · ${formatINR(c.owed)}`}
+                color={method === c.method ? 'primary' : 'default'}
+                variant={method === c.method ? 'filled' : 'outlined'}
+                onClick={() => {
+                  setMethod(c.method);
+                  setAmount(c.owed || null);
+                }}
+              />
+            ))}
+          </Stack>
+          <AmountField label="Amount paid" value={amount} onChange={setAmount} autoFocus helperText="Comes out of your bank balance. The card spends themselves were already counted." />
+          <TextField type="date" label="Paid on" value={date} onChange={(e) => setDate(e.target.value)} InputLabelProps={{ shrink: true }} />
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="contained" disabled={amount === null || amount <= 0 || !date} onClick={() => void save()}>
+          Pay
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 /** A money-in entry: shown, and removable. */
 function MoneyInRow({ entry }: { entry: BalanceEntry }) {
   const { update } = useFinance();
@@ -105,10 +154,11 @@ function MoneyInRow({ entry }: { entry: BalanceEntry }) {
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
           <Typography sx={{ fontWeight: 600 }}>{entry.label}</Typography>
           <Typography variant="body2" color="text.secondary" noWrap>
-            {dayjs(entry.date).format('ddd D MMM')} · money in{entry.note ? ` · ${entry.note}` : ''}
+            {dayjs(entry.date).format('ddd D MMM')} · {entry.cardBill ? 'card bill from the bank' : entry.amount > 0 ? 'money in' : 'money out'}
+            {entry.note ? ` · ${entry.note}` : ''}
           </Typography>
         </Box>
-        <Typography sx={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }} color="success.main">
+        <Typography sx={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }} color={entry.amount > 0 ? 'success.main' : undefined}>
           {formatINR(entry.amount, { sign: entry.amount > 0 })}
         </Typography>
       </Box>
@@ -137,10 +187,19 @@ export default function FinanceToday() {
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [adding, setAdding] = useState(false);
   const [moneyIn, setMoneyIn] = useState(false);
+  const [payBill, setPayBill] = useState(false);
   const today = dayjs().format(KEY);
   const month = doc ? budgetMonth(doc, today) : today.slice(0, 7);
   const account = useMemo(() => (doc ? simpleBalance(doc, today) : null), [doc, today]);
-  const recent = useMemo(() => (doc ? balanceEntries(doc, today).reverse().slice(0, 8) : []), [doc, today]);
+  // Bank entries plus card spends (listed, though they only leave the bank when the bill is paid).
+  const recent = useMemo(() => {
+    if (!doc) return [];
+    const cardMethods = new Set(doc.settings.cards.map((c) => c.method));
+    const cardSpends: BalanceEntry[] = doc.transactions
+      .filter((t) => !t.deletedAt && cardMethods.has(t.method) && t.date <= today)
+      .map((t) => ({ id: t.id, date: t.date, amount: -t.amount, label: t.category, note: t.note, source: 'transaction', stamp: t.createdAt }));
+    return [...balanceEntries(doc, today), ...cardSpends].sort((x, y) => y.date.localeCompare(x.date) || y.stamp.localeCompare(x.stamp)).slice(0, 8);
+  }, [doc, today]);
   if (!doc || !account) return null;
 
   const gaps = setupGaps(doc.settings);
@@ -155,13 +214,21 @@ export default function FinanceToday() {
   return (
     <Stack spacing={3} sx={{ maxWidth: 860 }}>
       <Paper variant="outlined" sx={{ p: 3 }}>
-        <Typography color="text.secondary">Balance</Typography>
+        <Typography color="text.secondary">Bank balance</Typography>
         <Typography component="p" sx={{ fontSize: 40, fontWeight: 700, lineHeight: 1.15, my: 0.5, fontVariantNumeric: 'tabular-nums' }} color={account.balance < 0 ? 'error.main' : undefined}>
           {formatINR(account.balance)}
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ fontVariantNumeric: 'tabular-nums' }}>
           In {formatINR(account.moneyIn)} · Out {formatINR(account.moneyOut)}
         </Typography>
+        {account.onCards > 0 && (
+          <Typography sx={{ mt: 1, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+            {formatINR(account.onCards)} on cards{' '}
+            <Typography component="span" variant="body2" color="text.secondary">
+              ({account.cards.filter((c) => c.owed > 0).map((c) => `${c.name} ${formatINR(c.owed)}`).join(', ')}): leaves the bank when you pay the bill
+            </Typography>
+          </Typography>
+        )}
         <Stack direction="row" useFlexGap spacing={1} sx={{ mt: 2, flexWrap: 'wrap', rowGap: 1 }}>
           <Button variant="contained" startIcon={<AddRoundedIcon />} onClick={() => setMoneyIn(true)}>
             Money in
@@ -169,6 +236,11 @@ export default function FinanceToday() {
           <Button variant="contained" color="secondary" startIcon={<RemoveRoundedIcon />} onClick={() => setAdding(true)}>
             Expense
           </Button>
+          {account.cards.length > 0 && (
+            <Button variant="outlined" onClick={() => setPayBill(true)}>
+              Pay card bill
+            </Button>
+          )}
         </Stack>
         {salaryNear && (
           <Typography variant="body2" color="primary" sx={{ mt: 1.5 }}>
@@ -243,6 +315,7 @@ export default function FinanceToday() {
 
       {editing && <EditTransactionDialog tx={editing} onClose={() => setEditing(null)} />}
       {moneyIn && <MoneyInDialog plannedSalary={plan.salary} onClose={() => setMoneyIn(false)} />}
+      {payBill && <PayBillDialog cards={account.cards} onClose={() => setPayBill(false)} />}
       <Dialog open={adding} onClose={() => setAdding(false)} fullWidth maxWidth="sm">
         <DialogTitle>Add expense</DialogTitle>
         <DialogContent>

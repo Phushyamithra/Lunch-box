@@ -252,6 +252,8 @@ export interface MoneyEvent extends Stamped {
   account: 'bank' | 'card' | 'voucher';
   /** account = 'card': which card's method. */
   cardMethod: string | null;
+  /** Paying a card bill from the bank: that card's method. It settles card spending already counted, so it's never spending itself. */
+  cardBill?: string | null;
 }
 
 /** A salary that actually arrived (overrides the planned amount and date for that month). */
