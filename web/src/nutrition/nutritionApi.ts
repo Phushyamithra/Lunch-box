@@ -150,6 +150,21 @@ export async function addEntry(client: SupabaseClient, input: EntryInput): Promi
   return normaliseEntry(check(await client.from('food_log_entries').insert(input).select(ENTRY_COLUMNS).single()) as Entry);
 }
 
+/** Copies of log entries on another day and/or meal (meal-prep links stay with the original). */
+export async function copyEntries(client: SupabaseClient, entries: Entry[], day: string, meal: MealSlot): Promise<Entry[]> {
+  const rows = entries.map((e) => {
+    const input = { ...e, day, meal, meal_log_id: null } as Record<string, unknown>;
+    for (const k of ['id', 'logged_at', 'deleted_at']) delete input[k];
+    return input;
+  });
+  return (check(await client.from('food_log_entries').insert(rows).select(ENTRY_COLUMNS)) as Entry[]).map(normaliseEntry);
+}
+
+/** Moves log entries to another day and/or meal. */
+export async function moveEntries(client: SupabaseClient, ids: string[], day: string, meal: MealSlot): Promise<Entry[]> {
+  return (check(await client.from('food_log_entries').update({ day, meal }).in('id', ids).select(ENTRY_COLUMNS)) as Entry[]).map(normaliseEntry);
+}
+
 /** Soft delete / restore (undo-able). */
 export async function setEntryDeleted(client: SupabaseClient, id: string, deleted: boolean): Promise<Entry> {
   return normaliseEntry(

@@ -1,7 +1,8 @@
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import ChevronLeftRoundedIcon from '@mui/icons-material/ChevronLeftRounded';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
-import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
+import MoreHorizRoundedIcon from '@mui/icons-material/MoreHorizRounded';
+import MoreVertRoundedIcon from '@mui/icons-material/MoreVertRounded';
 import { Alert, Box, Button, Chip, FormControlLabel, IconButton, LinearProgress, Paper, Stack, Switch, Typography } from '@mui/material';
 import dayjs from 'dayjs';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -9,8 +10,8 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { addDays } from '../fitness/rules';
 import { Card } from '../fitness/ui';
-import { useSnackbar } from '../layout/Snackbar';
 import { AddFoodSheet } from './AddFoodSheet';
+import { MealActions } from './MealActions';
 import { MEALS, dayTotals, progressAgainst, type Entry, type MacroProgress, type MealSlot } from './foodLog';
 import { useNutrition } from './NutritionContext';
 import { activeTarget } from './nutritionApi';
@@ -32,13 +33,13 @@ const mealNow = (): MealSlot => {
 
 /** The day's food log: totals vs targets, then meal by meal. */
 export default function NutritionToday() {
-  const { data, setEntryDeleted } = useNutrition();
+  const { data } = useNutrition();
   const navigate = useNavigate();
-  const toast = useSnackbar();
   const today = dayjs().format(KEY);
   const opened = (useLocation().state as { day?: string } | null)?.day;
   const [day, setDay] = useState(opened ?? today);
   const [adding, setAdding] = useState<MealSlot | null>(null);
+  const [acting, setActing] = useState<{ entries: Entry[]; meal: MealSlot; single?: boolean } | null>(null);
   const [perMeal, setPerMeal] = useState(() => {
     try {
       return localStorage.getItem(SPREAD_KEY) === '1';
@@ -59,14 +60,6 @@ export default function NutritionToday() {
   const { total, byMeal } = dayTotals(nd.entries, day);
   const progress = target ? progressAgainst(total, target) : null;
 
-  const remove = async (e: Entry) => {
-    try {
-      await setEntryDeleted(e, true);
-      toast(`Removed ${e.name}`, { severity: 'info', action: { label: 'Undo', run: () => void setEntryDeleted(e, false) } });
-    } catch (err) {
-      toast(`Not removed: ${err instanceof Error ? err.message : 'error'}`, { severity: 'error' });
-    }
-  };
 
   return (
     <Stack spacing={3} sx={{ maxWidth: 720 }}>
@@ -137,7 +130,12 @@ export default function NutritionToday() {
                   </Typography>
                 )
               )}
-              <IconButton aria-label={`Add to ${m.label}`} onClick={() => setAdding(m.key)} sx={{ bgcolor: (t) => t.tracker.tonal }}>
+              {entries.length > 0 && (
+                <IconButton aria-label={`Copy or move ${m.label}`} onClick={() => setActing({ entries, meal: m.key })} sx={{ width: 48, height: 48 }}>
+                  <MoreHorizRoundedIcon />
+                </IconButton>
+              )}
+              <IconButton aria-label={`Add to ${m.label}`} onClick={() => setAdding(m.key)} sx={{ width: 48, height: 48, bgcolor: (t) => t.tracker.tonal }}>
                 <AddRoundedIcon />
               </IconButton>
             </Box>
@@ -150,8 +148,14 @@ export default function NutritionToday() {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 10, height: 0 }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0' }}
+                    style={{ listStyle: 'none' }}
                   >
+                    <Box
+                      component="button"
+                      onClick={() => setActing({ entries: [e], meal: m.key, single: true })}
+                      aria-label={`${e.name}: copy, move or remove`}
+                      sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%', minHeight: 56, py: 1, px: 0.5, border: 0, bgcolor: 'transparent', color: 'inherit', font: 'inherit', textAlign: 'left', cursor: 'pointer', borderRadius: 2, '&:active': { bgcolor: 'action.selected' } }}
+                    >
                     <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                       <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
                         {e.source === 'meal_prep' && '🚚 '}
@@ -167,9 +171,8 @@ export default function NutritionToday() {
                     <Typography variant="body2" sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}>
                       {e.kcal} kcal
                     </Typography>
-                    <IconButton size="small" aria-label={`Remove ${e.name}`} onClick={() => void remove(e)}>
-                      <CloseRoundedIcon fontSize="small" />
-                    </IconButton>
+                    <MoreVertRoundedIcon fontSize="small" sx={{ color: 'text.secondary' }} aria-hidden />
+                    </Box>
                   </motion.li>
                 ))}
               </AnimatePresence>
@@ -178,6 +181,7 @@ export default function NutritionToday() {
         );
       })}
 
+      {acting && <MealActions entries={acting.entries} day={day} meal={acting.meal} single={acting.single} onClose={() => setActing(null)} />}
       <AddFoodSheet open={adding !== null} day={day} meal={adding ?? mealNow()} onClose={() => setAdding(null)} />
     </Stack>
   );

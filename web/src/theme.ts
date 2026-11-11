@@ -152,10 +152,21 @@ export function createTrackerTheme(mode: ResolvedThemeMode): Theme {
           },
         },
       },
+      // Touch targets: at least 44px (48 for icon buttons), so taps land where meant.
+      MuiIconButton: {
+        styleOverrides: {
+          root: { minWidth: 48, minHeight: 48 },
+          sizeSmall: { minWidth: 44, minHeight: 44 },
+        },
+      },
+      MuiCheckbox: { styleOverrides: { root: { padding: 12 } } },
+      MuiMenuItem: { styleOverrides: { root: { minHeight: 48 } } },
+      MuiTab: { styleOverrides: { root: { minHeight: 48 } } },
       MuiButton: {
         defaultProps: { disableElevation: true },
         styleOverrides: {
-          root: { borderRadius: 999, paddingInline: 20 },
+          root: { borderRadius: 999, paddingInline: 20, minHeight: 44 },
+          sizeSmall: { minHeight: 40, paddingInline: 14 },
           containedPrimary: {
             background: cta.fill,
             color: cta.text,
@@ -167,7 +178,8 @@ export function createTrackerTheme(mode: ResolvedThemeMode): Theme {
       },
       MuiChip: {
         styleOverrides: {
-          root: { borderRadius: 10, fontWeight: 600 },
+          root: { borderRadius: 10, fontWeight: 600, height: 40 },
+          sizeSmall: { height: 34 },
           colorSecondary: { backgroundColor: tonal, color: onTonal },
         },
       },
@@ -189,6 +201,7 @@ export function createTrackerTheme(mode: ResolvedThemeMode): Theme {
         styleOverrides: {
           root: {
             borderRadius: 999,
+            minHeight: 48,
             '&.Mui-selected, &.Mui-selected:hover': { backgroundColor: tonal, color: onTonal },
             '&.Mui-selected .MuiListItemIcon-root': { color: onTonal },
           },

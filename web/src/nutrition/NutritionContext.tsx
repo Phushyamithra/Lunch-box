@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { Profile } from './engine';
-import type { Entry, Food, FoodInput } from './foodLog';
+import type { Entry, Food, FoodInput, MealSlot } from './foodLog';
 import * as api from './nutritionApi';
 import { cachedLoad, onReconnect, sessionUserId } from '../lib/offlineCache';
 
@@ -15,6 +15,8 @@ interface NutritionValue {
   saveFood: (input: FoodInput, id?: string) => Promise<Food>;
   archiveFood: (id: string) => Promise<void>;
   addEntry: (input: api.EntryInput) => Promise<Entry>;
+  copyEntries: (entries: Entry[], day: string, meal: MealSlot) => Promise<void>;
+  moveEntries: (entries: Entry[], day: string, meal: MealSlot) => Promise<void>;
   /** Soft delete; `false` restores (undo). */
   setEntryDeleted: (entry: Entry, deleted: boolean) => Promise<void>;
   /** Adds imported rows, then reloads from the server. */
@@ -76,6 +78,15 @@ export function NutritionProvider({ client, children }: { client: SupabaseClient
         const row = await api.addEntry(client, input);
         setData((d) => (d ? { ...d, entries: [...d.entries, row] } : d));
         return row;
+      },
+      async copyEntries(entries, day, meal) {
+        const rows = await api.copyEntries(client, entries, day, meal);
+        setData((d) => (d ? { ...d, entries: [...d.entries, ...rows] } : d));
+      },
+      async moveEntries(entries, day, meal) {
+        const rows = await api.moveEntries(client, entries.map((e) => e.id), day, meal);
+        const byId = new Map(rows.map((r) => [r.id, r]));
+        setData((d) => (d ? { ...d, entries: d.entries.map((e) => byId.get(e.id) ?? e) } : d));
       },
       async setEntryDeleted(entry, deleted) {
         const row = await api.setEntryDeleted(client, entry.id, deleted);
