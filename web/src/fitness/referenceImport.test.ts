@@ -109,7 +109,7 @@ describe('parseReference', () => {
   });
 
   it('reports what is missing instead of guessing', () => {
-    expect(parsed.warnings).toContain('Day 6: only 1 of 5 slots found.');
+    expect(parsed.warnings).toContain('Day 6: only 1 slot found.');
     expect(parsed.warnings).toContain('No slots found for day 2.');
     expect(parsed.warnings.some((w) => w.includes('Day 6 slot 1: no variants'))).toBe(true);
   });

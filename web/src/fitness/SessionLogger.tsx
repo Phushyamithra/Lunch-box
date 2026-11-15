@@ -32,6 +32,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../layout/Snackbar';
 import {
+  nextCycleDay,
   EXTRA_SLOT_BASE,
   MAX_EXTRAS,
   buildDayPlan,
@@ -67,6 +68,8 @@ import { Card, minutes } from './ui';
 import { WorkoutEditor, knownExercises } from './WorkoutEditor';
 
 const WEEKDAY = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+/** "Upper — Chest + Back…" → "Upper". */
+const cycleName = (data: FitnessData, d: number) => (data.settings.day_focus[String(d)] ?? `Day ${d}`).split(/\s+[—–-]\s+/)[0];
 const CUSTOM = '__custom__';
 
 type SessionPatch = Partial<Omit<SessionInput, 'day'>>;
@@ -83,12 +86,16 @@ export function SessionLogger({ day, data }: { day: string; data: FitnessData })
   const toast = useSnackbar();
   const { saveSession } = useFitness();
   const weekday = isoWeekday(day);
+  // Rotating cycle: days run Upper → … → Legs in order, whatever the calendar day.
+  const cycle = data.settings.program_mode === 'cycle';
+  const nextDay = nextCycleDay(data.sessions, day, data.settings.rotation_start);
   const session = data.sessions.find((s) => s.day === day);
   // Which day's program you're training today (Tuesday's on a Monday is fine).
   const [chosenDay, setChosenDay] = useState<number | null>(null);
-  const programDay = chosenDay ?? session?.program_weekday ?? weekday;
-  const rotation = variantIndexFor(day, data.settings.rotation_start, data.settings.rotation_offset);
-  const suggestion = suggestVariant(day, data.sessions, data.slots, rotation, programDay);
+  const programDay = chosenDay ?? session?.program_weekday ?? (cycle ? nextDay : weekday);
+  // A cycle starts on V1 (plus any manual advance); each day then moves on after it's done once.
+  const rotation = cycle ? (((data.settings.rotation_offset % 6) + 6) % 6) : variantIndexFor(day, data.settings.rotation_start, data.settings.rotation_offset);
+  const suggestion = suggestVariant(day, data.sessions, data.slots, rotation, programDay, cycle ? data.settings.rotation_start : '');
   const [picking, setPicking] = useState(false);
   const [editing, setEditing] = useState<CustomWorkout | 'new' | null>(null);
   const [restEnd, setRestEnd] = useState<number | null>(null);
@@ -117,7 +124,7 @@ export function SessionLogger({ day, data }: { day: string; data: FitnessData })
   const showPicker = picking || (chosenDay !== null && chosenDay !== sessionDay) || (!session && (hasProgram || dayWorkouts.length > 0));
   const focus = (d: number) => data.settings.day_focus[String(d)] ?? '';
 
-  if (programDay === 7 && !session && dayWorkouts.length === 0) {
+  if (!cycle && programDay === 7 && !session && dayWorkouts.length === 0) {
     return (
       <Card title="😌 Rest day">
         <Typography color="text.secondary">Sunday: walk, stretch, {data.settings.steps_target.toLocaleString('en-IN')} steps.</Typography>
@@ -146,7 +153,9 @@ export function SessionLogger({ day, data }: { day: string; data: FitnessData })
         slots_completed: patch.slots_completed ?? session?.slots_completed ?? 0,
         cardio_done: patch.cardio_done ?? session?.cardio_done ?? false,
         program_weekday:
-          patch.program_weekday !== undefined ? patch.program_weekday : (session?.program_weekday ?? (programDay !== weekday && programDay <= 6 ? programDay : null)),
+          patch.program_weekday !== undefined
+            ? patch.program_weekday
+            : (session?.program_weekday ?? (cycle ? programDay : programDay !== weekday && programDay <= 6 ? programDay : null)),
       });
     } catch (e) {
       toast(`Not saved: ${e instanceof Error ? e.message : 'error'}`, { severity: 'error' });
@@ -159,11 +168,11 @@ export function SessionLogger({ day, data }: { day: string; data: FitnessData })
   const confirmSwitch = (what: string) => daySets.length === 0 || window.confirm(`Switch today to ${what}? Sets already logged keep the exercises you did.`);
   const pickVariant = async (i: number) => {
     if (!confirmSwitch(`V${i + 1}`)) return;
-    const pd = programDay !== weekday && programDay <= 6 ? programDay : null;
+    const pd = cycle ? programDay : programDay !== weekday && programDay <= 6 ? programDay : null;
     if (await persist({ variant_index: i, slot_variants: {}, custom_workout_id: null, program_weekday: pd })) {
       setPicking(false);
       setChosenDay(null);
-      toast(`💪 ${pd ? `${WEEKDAY[pd]}’s ${focus(pd) || 'workout'}, ` : ''}V${i + 1} today`);
+      toast(cycle ? `💪 ${cycleName(data, programDay)}, V${i + 1} today` : `💪 ${pd ? `${WEEKDAY[pd]}’s ${focus(pd) || 'workout'}, ` : ''}V${i + 1} today`);
     }
   };
   const pickWorkout = async (w: CustomWorkout) => {
@@ -191,7 +200,11 @@ export function SessionLogger({ day, data }: { day: string; data: FitnessData })
 
   return (
     <Card
-      title={`${WEEKDAY[weekday]}${focus(programDay) ? ` · ${focus(programDay)}` : ''}${programDay !== weekday ? ` (${WEEKDAY[programDay].slice(0, 3)}’s)` : ''}`}
+      title={
+        cycle
+          ? `🔁 ${focus(programDay) || `Day ${programDay}`}`
+          : `${WEEKDAY[weekday]}${focus(programDay) ? ` · ${focus(programDay)}` : ''}${programDay !== weekday ? ` (${WEEKDAY[programDay].slice(0, 3)}’s)` : ''}`
+      }
       aside={
         session && !showPicker ? (
           <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
@@ -215,7 +228,7 @@ export function SessionLogger({ day, data }: { day: string; data: FitnessData })
               </Stack>
             }
           >
-            No program for {WEEKDAY[weekday]} yet. Import your reference file, or make your own card.
+            No program for {cycle ? cycleName(data, programDay) : WEEKDAY[weekday]} yet. Import your reference file, or make your own card.
           </Alert>
         )}
 
@@ -227,7 +240,7 @@ export function SessionLogger({ day, data }: { day: string; data: FitnessData })
               <DayPicker
                 data={data}
                 weekday={programDay}
-                calendarDay={weekday}
+                calendarDay={cycle ? nextDay : weekday}
                 onDay={setChosenDay}
                 suggested={suggestion.index}
                 suggestedWhy={suggestion.reason}
@@ -299,8 +312,8 @@ export function SessionLogger({ day, data }: { day: string; data: FitnessData })
                           p.kind === 'program'
                             ? async (v) => {
                                 const next = { ...current.slot_variants };
-                                if (v === current.variant_index) delete next[String(p.slot)];
-                                else next[String(p.slot)] = v;
+                                if (v === current.variant_index) delete next[String(p.programSlot)];
+                                else next[String(p.programSlot)] = v;
                                 if (await persist({ slot_variants: next })) toast(`${p.title}: V${v + 1} today`);
                               }
                             : undefined
@@ -365,7 +378,8 @@ export function SessionLogger({ day, data }: { day: string; data: FitnessData })
 
 /** Mon–Sat chips with each day's focus: train any day's program today. */
 function DayChooser({ data, value, today, onChange }: { data: FitnessData; value: number | null; today: number; onChange: (d: number) => void }) {
-  const days = [1, 2, 3, 4, 5, 6].filter((d) => variantsFor(d, data.slots).length > 0);
+  const cycle = data.settings.program_mode === 'cycle';
+  const days = (cycle ? [1, 2, 3, 4, 5] : [1, 2, 3, 4, 5, 6]).filter((d) => variantsFor(d, data.slots).length > 0);
   return (
     <Box sx={{ display: 'flex', gap: 0.75, overflowX: 'auto', pb: 0.5, scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' } }} role="group" aria-label="Which day's workout">
       {days.map((d) => {
@@ -374,7 +388,7 @@ function DayChooser({ data, value, today, onChange }: { data: FitnessData; value
         return (
           <Chip
             key={d}
-            label={`${WEEKDAY[d].slice(0, 3)}${f ? ` · ${f}` : ''}${d === today ? ' (today)' : ''}`}
+            label={cycle ? `${d}. ${cycleName(data, d)}${d === today ? ' (next)' : ''}` : `${WEEKDAY[d].slice(0, 3)}${f ? ` · ${f}` : ''}${d === today ? ' (today)' : ''}`}
             color={active ? 'secondary' : 'default'}
             variant={active ? 'filled' : 'outlined'}
             onClick={() => onChange(d)}
@@ -389,7 +403,7 @@ function DayChooser({ data, value, today, onChange }: { data: FitnessData; value
 
 function groupsFor(p: PlanItem, weekday: number, data: FitnessData, map: Map<string, Muscle>): SwapGroup[] {
   if (p.kind === 'finisher') return [{ label: p.title.replace(' finisher', ''), options: p.options }];
-  const slot = p.kind === 'program' ? data.slots.find((s) => s.weekday === weekday && s.slot === p.slot) : undefined;
+  const slot = p.kind === 'program' ? data.slots.find((s) => s.weekday === weekday && s.slot === p.programSlot) : undefined;
   return swapGroups(p.title, p.options, slot ? slot.variants.flatMap(exerciseOptions) : [], data.slots, map);
 }
 
@@ -630,10 +644,10 @@ function MuscleCoverageCard({ data, day, muscleMap }: { data: FitnessData; day: 
   const start = weekStart(day);
   // What you owe so far: each session's program (Tuesday's on a Monday counts as Tuesday's),
   // missed past days on their own program; today only once it's done.
-  const daysSoFar = programDaysOwed(start, day, data.sessions, (d) => isAway(d, data.away));
+  const daysSoFar = programDaysOwed(start, day, data.sessions, (d) => isAway(d, data.away), data.settings.program_mode === 'cycle');
   const weekSessions = new Map(data.sessions.filter((s) => s.day >= start && s.day <= addDays(start, 6)).map((s) => [s.id, s.day]));
   const logged = data.sets.filter((s) => weekSessions.has(s.session_id)).map((s) => ({ exercise: s.exercise, slot: s.slot, day: weekSessions.get(s.session_id) as string }));
-  const coverage = weeklyCoverage(data.slots, data.settings.finishers, logged, daysSoFar, muscleMap);
+  const coverage = weeklyCoverage(data.slots, data.settings.finishers, logged, daysSoFar, muscleMap, data.settings.program_mode === 'cycle' ? 5 : 6);
   const behind = coverage.filter((c) => c.status === 'behind' && c.expectedSoFar - c.done >= 2 && c.muscle !== 'Abs' && c.muscle !== 'Forearms');
   if (coverage.length === 0) return null;
   return (
@@ -715,7 +729,7 @@ function ExerciseCard({
   const checksMuscle = item.kind === 'program' || item.kind === 'custom';
   const warning = checksMuscle ? swapWarning(item.title, exercise, muscleMap) : null;
   const muscle = (exercise ? muscleOf(exercise, muscleMap) : null) ?? muscleOfCard(item.title, exercise, muscleMap);
-  const slot = item.kind === 'program' ? data.slots.find((s) => s.weekday === programDay && s.slot === item.slot) : undefined;
+  const slot = item.kind === 'program' ? data.slots.find((s) => s.weekday === programDay && s.slot === item.programSlot) : undefined;
   const slotVariants = slot ? slot.variants.map((v, i) => ({ i, first: exerciseOptions(v)[0] })).filter((v) => v.first) : [];
 
   // Re-fill the active row when the exercise or set number changes.

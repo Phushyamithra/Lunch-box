@@ -27,6 +27,8 @@ export interface FitnessSettings {
   rest_compound_sec: number;
   rest_isolation_sec: number;
   day_focus: Record<string, string>;
+  /** 'cycle': program days 1–5 in order (Upper → … → Legs), not tied to weekdays. */
+  program_mode: 'weekday' | 'cycle';
   finishers: ParsedFinisher[];
   reminders: ReminderSettings;
 }
@@ -114,7 +116,8 @@ const NUMERIC_SETTINGS: (keyof FitnessSettings)[] = [
   'rest_compound_sec',
   'rest_isolation_sec',
 ];
-const SETTINGS_COLUMNS = [...NUMERIC_SETTINGS, 'rotation_start', 'phase_start', 'key_lifts', 'weigh_time', 'day_focus', 'finishers', 'reminders'].join(', ');
+// Everything, so the app still loads before the cycle migration (0017) has run.
+const SETTINGS_COLUMNS = '*';
 // Everything, so the app keeps working until the timer migration (0016) has been run.
 const SESSION_COLUMNS = '*';
 const WORKOUT_COLUMNS = 'id, name, weekday, exercises';
@@ -127,6 +130,7 @@ function normaliseSettings(raw: Record<string, unknown>): FitnessSettings {
   out.finishers = Array.isArray(raw.finishers) ? raw.finishers : [];
   out.day_focus = raw.day_focus && typeof raw.day_focus === 'object' ? raw.day_focus : {};
   out.weigh_time = typeof raw.weigh_time === 'string' ? raw.weigh_time : 'morning';
+  out.program_mode = raw.program_mode === 'cycle' ? 'cycle' : 'weekday';
   out.reminders = normaliseReminders(raw.reminders);
   return out as unknown as FitnessSettings;
 }
@@ -395,6 +399,8 @@ export async function importReference(
     .select('id, weekday, slot, label, default_sets, variants');
   if (error) throw new Error(error.message);
   const patch: Partial<FitnessSettings> = { day_focus: parsed.dayFocus, finishers: parsed.finishers, key_lifts: keyLifts };
+  // A rotating cycle starts today on V1; earlier sessions don't count toward it.
+  if (parsed.cycle) Object.assign(patch, { program_mode: 'cycle', rotation_start: new Date().toISOString().slice(0, 10), rotation_offset: 0 });
   if (parsed.baselineDate) patch.phase_start = parsed.baselineDate;
   if (parsed.stepsTarget !== null) patch.steps_target = parsed.stepsTarget;
   if (parsed.phaseMonths !== null) patch.phase_months = parsed.phaseMonths;

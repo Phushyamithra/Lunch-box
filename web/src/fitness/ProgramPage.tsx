@@ -5,21 +5,27 @@ import { Stepper } from '../food/Stepper';
 import { useSnackbar } from '../layout/Snackbar';
 import { useFitness } from './FitnessContext';
 import type { SlotRow } from './fitnessApi';
-import { isoWeekday, variantIndexFor, weekStart } from './rules';
+import { nextCycleDay, suggestVariant } from './dayPlan';
+import { addDays, isoWeekday, variantIndexFor, weekStart } from './rules';
 import { FinishersCard, ImportReferenceCard, PresetsCard } from './ProgramExtras';
 import { Card } from './ui';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const EMPTY = ['', '', '', '', '', '', ''];
 
-/** Six training days × five slots × seven weekly variants. */
+/** The program: Mon–Sat days with weekly variants, or a rotating Upper → Lower → Push → Pull → Legs cycle. */
 export default function ProgramPage() {
   const { data, saveSettings } = useFitness();
   const toast = useSnackbar();
   const today = dayjs().format('YYYY-MM-DD');
-  const [weekday, setWeekday] = useState(Math.min(isoWeekday(today), 6));
+  const cycle = data?.settings.program_mode === 'cycle';
+  const next = data && cycle ? nextCycleDay(data.sessions, addDays(today, 1), data.settings.rotation_start) : 1;
+  const [weekday, setWeekday] = useState(cycle ? next : Math.min(isoWeekday(today), 6));
   if (!data) return null;
-  const current = variantIndexFor(today, data.settings.rotation_start, data.settings.rotation_offset);
+  const current = cycle
+    ? suggestVariant(addDays(today, 1), data.sessions, data.slots, (((data.settings.rotation_offset % 6) + 6) % 6), weekday, data.settings.rotation_start).index
+    : variantIndexFor(today, data.settings.rotation_start, data.settings.rotation_offset);
+  const dayName = (d: number) => (data.settings.day_focus[String(d)] ?? `Day ${d}`).split(/\s+[—–-]\s+/)[0];
 
   const shift = async (by: number) => {
     try {
@@ -33,6 +39,15 @@ export default function ProgramPage() {
   return (
     <Stack spacing={3} sx={{ maxWidth: 820 }}>
       <ImportReferenceCard data={data} />
+      {cycle ? (
+        <Card title="🔁 Rotating cycle" aside={<Chip color="secondary" label={`Next: ${dayName(next)}`} />}>
+          <Typography color="text.secondary" variant="body2">
+            {[1, 2, 3, 4, 5].map(dayName).join(' → ')}, then repeat. Train whenever you can: the next day in the sequence comes up, whatever the calendar says, and rest
+            days don’t skip or reset it. Each day moves to its next variant once you’ve trained it, so the first full pass is V1, the next V2, and so on. Started{' '}
+            {dayjs(data.settings.rotation_start).format('D MMM YYYY')}; you can always pick a different day or variant on the day.
+          </Typography>
+        </Card>
+      ) : (
       <Card title="Weekly rotation" aside={<Chip color="secondary" label={`This week: V${current + 1}`} />}>
         <Typography color="text.secondary" variant="body2" sx={{ mb: 1.5 }}>
           The whole program moves to the next variant every Monday: V1 → V7, then back to V1. Started the week of{' '}
@@ -48,9 +63,10 @@ export default function ProgramPage() {
           </Button>
         </Stack>
       </Card>
+      )}
 
-      <Tabs value={weekday - 1} onChange={(_, v: number) => setWeekday(v + 1)} variant="fullWidth" aria-label="Training day">
-        {DAYS.map((d, i) => (
+      <Tabs value={weekday - 1} onChange={(_, v: number) => setWeekday(v + 1)} variant={cycle ? 'scrollable' : 'fullWidth'} allowScrollButtonsMobile aria-label="Training day">
+        {(cycle ? [1, 2, 3, 4, 5].map(dayName) : DAYS).map((d, i) => (
           <Tab key={d} label={d} value={i} sx={{ minWidth: 0, textTransform: 'none', fontWeight: 600 }} />
         ))}
       </Tabs>
@@ -59,11 +75,11 @@ export default function ProgramPage() {
           {data.settings.day_focus[String(weekday)]}
         </Typography>
       )}
-      {[1, 2, 3, 4, 5].map((slot) => (
+      {(cycle ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 5]).map((slot) => (
         <SlotEditor key={`${weekday}-${slot}`} weekday={weekday} slot={slot} row={data.slots.find((s) => s.weekday === weekday && s.slot === slot)} current={current} />
       ))}
       <FinishersCard data={data} weekday={weekday} />
-      <Alert severity="info">Sunday is the rest day.</Alert>
+      <Alert severity="info">{cycle ? 'Rest whenever you need to: the sequence carries on from the last day you trained.' : 'Sunday is the rest day.'}</Alert>
       <PresetsCard data={data} />
     </Stack>
   );

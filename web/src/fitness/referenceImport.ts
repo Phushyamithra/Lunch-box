@@ -5,8 +5,8 @@
  */
 
 export interface ParsedSlot {
-  weekday: number; // Mon = 1 … Sat = 6
-  slot: number; // 1–5
+  weekday: number; // Mon = 1 … Sat = 6, or the cycle day (Upper = 1 … Legs = 5)
+  slot: number; // 1–6
   label: string; // target, e.g. "Mid Chest"
   sets: number;
   variants: string[]; // 7 entries, "Default / Fallback"
@@ -25,11 +25,16 @@ export interface ParsedReference {
   baselineDate: string | null; // YYYY-MM-DD
   stepsTarget: number | null;
   phaseMonths: number | null;
+  /** "DAY 1 — UPPER" headings: days run in order, not on weekdays. */
+  cycle: boolean;
   warnings: string[];
 }
 
 const WEEKDAYS: Record<string, number> = { monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
 const SHORT_DAYS: Record<string, number> = { mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6, sun: 7 };
+const CYCLE_NAMES: Record<string, number> = { upper: 1, lower: 2, push: 3, pull: 4, legs: 5 };
+/** "(8–12 reps, technique focus …)" is a note, not part of the name; "(bench-rigged)" stays. */
+const tidyVariant = (s: string): string => s.replace(/\s*\(([^)]*\d[^)]*|[^)]{24,})\)/g, '').trim();
 const MONTHS: Record<string, number> = {
   jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, sept: 9, oct: 10, nov: 11, dec: 12,
 };
@@ -56,9 +61,10 @@ export function parseReference(markdown: string): ParsedReference {
   let baselineDate: string | null = null;
   let stepsTarget: number | null = null;
   let phaseMonths: number | null = null;
+  let cycle = false;
 
   let day: number | null = null;
-  let mode: 'slots' | 'variants' | 'finisher' | null = null;
+  let mode: 'slots' | 'variants' | 'finisher' | 'rotation' | null = null;
   let finisher: ParsedFinisher | null = null;
 
   for (const raw of lines) {
@@ -79,6 +85,16 @@ export function parseReference(markdown: string): ParsedReference {
       }
     }
 
+    // "## DAY 1 — UPPER": a rotating cycle.
+    const cycleHead = line.match(/^##\s+DAY\s+(\d)\s*[—–-]\s*(.+)$/i);
+    if (cycleHead && Number(cycleHead[1]) >= 1 && Number(cycleHead[1]) <= 5) {
+      cycle = true;
+      day = Number(cycleHead[1]);
+      if (!dayFocus[String(day)]) dayFocus[String(day)] = titleCase(stripMd(cycleHead[2]));
+      mode = null;
+      finisher = null;
+      continue;
+    }
     // "## MONDAY — CHEST + TRICEPS"
     const dayHead = line.match(/^##\s+([A-Za-z]+)\s*[—–-]\s*(.+)$/);
     if (dayHead && WEEKDAYS[dayHead[1].toLowerCase()]) {
@@ -106,7 +122,7 @@ export function parseReference(markdown: string): ParsedReference {
     if (finHead) {
       const days = finHead[2]
         .split(/[\s/,]+/)
-        .map((d) => SHORT_DAYS[d.toLowerCase().slice(0, 3)])
+        .map((d) => CYCLE_NAMES[d.toLowerCase()] ?? SHORT_DAYS[d.toLowerCase().slice(0, 3)])
         .filter((d): d is number => Boolean(d) && d <= 6);
       if (days.length) {
         finisher = { name: titleCase(stripMd(finHead[1])), days, exercises: [] };
@@ -130,10 +146,22 @@ export function parseReference(markdown: string): ParsedReference {
       continue;
     }
     if (mode === 'finisher' && header[0] === 'exercise') continue;
+    // "| Order | Day | Focus | Sets | Finisher |": names the cycle days.
+    if (header[0] === 'order' && header[1] === 'day') {
+      mode = 'rotation';
+      continue;
+    }
+    if (mode === 'rotation' && !day && /^\d$/.test(row[0])) {
+      const n = Number(row[0]);
+      const name = (row[1] ?? '').trim();
+      const focus = (row[2] ?? '').replace(/\s*\([^)]*\)/g, '').trim();
+      if (n >= 1 && n <= 5 && name) dayFocus[String(n)] = focus ? `${name} — ${focus}` : name;
+      continue;
+    }
 
     if (day && (mode === 'slots' || mode === 'variants') && /^\d$/.test(row[0])) {
       const slot = Number(row[0]);
-      if (slot < 1 || slot > 5) continue;
+      if (slot < 1 || slot > 6) continue;
       const key = `${day}-${slot}`;
       const current = slotMap.get(key) ?? { weekday: day, slot, label: '', sets: 3, variants: ['', '', '', '', '', '', ''] };
       if (mode === 'slots') {
@@ -141,8 +169,8 @@ export function parseReference(markdown: string): ParsedReference {
         const sets = Number(row[2]);
         if (Number.isFinite(sets) && sets >= 1 && sets <= 6) current.sets = sets;
       } else {
-        current.variants = Array.from({ length: 7 }, (_, i) => (row[i + 1] ?? '').trim());
-        if (row.length < 8) warnings.push(`Day ${day} slot ${slot}: fewer than 7 variants found.`);
+        current.variants = Array.from({ length: 7 }, (_, i) => tidyVariant(row[i + 1] ?? ''));
+        if (row.length < 7) warnings.push(`Day ${day} slot ${slot}: fewer than 6 variants found.`);
       }
       slotMap.set(key, current);
       continue;
@@ -155,14 +183,14 @@ export function parseReference(markdown: string): ParsedReference {
   }
 
   const slots = [...slotMap.values()].sort((a, b) => a.weekday - b.weekday || a.slot - b.slot);
-  for (let d = 1; d <= 6; d += 1) {
+  for (let d = 1; d <= (cycle ? 5 : 6); d += 1) {
     const count = slots.filter((s) => s.weekday === d).length;
-    if (count && count < 5) warnings.push(`Day ${d}: only ${count} of 5 slots found.`);
+    if (count && count < 5) warnings.push(`Day ${d}: only ${count} slot${count === 1 ? '' : 's'} found.`);
     if (!count) warnings.push(`No slots found for day ${d}.`);
   }
   for (const s of slots) if (s.variants.every((v) => !v)) warnings.push(`Day ${s.weekday} slot ${s.slot}: no variants found.`);
 
-  return { dayFocus, slots, finishers, baselineDate, stepsTarget, phaseMonths, warnings };
+  return { dayFocus, slots, finishers, baselineDate, stepsTarget, phaseMonths, cycle, warnings };
 }
 
 /** "Barbell Bench / DB Bench" → ["Barbell Bench", "DB Bench"]: default first, then fallbacks. */

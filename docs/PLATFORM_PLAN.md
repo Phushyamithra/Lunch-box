@@ -157,3 +157,9 @@ migrations.
 - **Gym timer:** Start and Finish on the day's session, kept on the session row so it survives closing the app. Needs migration 0016; the app still loads without it, and Start says to run it.
 - **Bulk add (`/templates`):** a CSV template per record type (expenses, measurements, workouts, food log, foods). Upload .csv or .xlsx, see a preview, then add. It only adds: rows already here are skipped, a day's steps are never replaced, and rows starting with EXAMPLE are ignored. Imported workouts become finished sessions under V1, with exercises in the free slots (21-40).
 - **Spacing:** roomier cards, page gaps and gutters across the app.
+
+## Rotating training cycle (dev, 2026-11-16)
+
+- A reference file with "DAY 1 — UPPER" style days switches Fitness to a rotating cycle (migration 0017): Upper → Lower → Push → Pull → Legs, done in order whenever you train, not on weekdays. Days are program days 1–5; the next one follows the last day trained since the cycle started.
+- Each day moves to its next variant once trained (V1 for the first full pass, then V2…), wrapping after V6. Up to 6 slots per day; slot 6 sets are logged in set slot 41 because slot 6 holds finisher sets.
+- Finishers are matched by day name ("after Upper / Push / Legs"). Weekly muscle coverage counts only days actually trained. Weekday programs keep working unchanged.

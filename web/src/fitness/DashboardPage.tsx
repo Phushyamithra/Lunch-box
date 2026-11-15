@@ -12,6 +12,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { nextCycleDay } from './dayPlan';
 import { useFitness } from './FitnessContext';
 import {
   addDays,
@@ -167,7 +168,20 @@ export default function DashboardPage() {
       </Stack>
 
       <Stack spacing={2}>
-        <Card title="Training this week" aside={<Chip size="small" color="secondary" label={`V${variant + 1}`} />}>
+        <Card
+          title="Training this week"
+          aside={
+            <Chip
+              size="small"
+              color="secondary"
+              label={
+                data.settings.program_mode === 'cycle'
+                  ? `Next: ${(data.settings.day_focus[String(nextCycleDay(data.sessions, dayjs(today).add(1, 'day').format('YYYY-MM-DD'), data.settings.rotation_start))] ?? '').split(/\s+[—–-]\s+/)[0]}`
+                  : `V${variant + 1}`
+              }
+            />
+          }
+        >
           <Metric value={`${adherence[0].completed}/${adherence[0].eligible}`} caption={`sessions${adherence[0].awayDays ? ` · ${adherence[0].awayDays} away day${adherence[0].awayDays === 1 ? '' : 's'} excluded` : ''}`} />
           <Stack spacing={1} sx={{ mt: 1.5 }}>
             {adherence.slice(1).map((w) => (

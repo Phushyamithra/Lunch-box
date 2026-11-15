@@ -54,7 +54,8 @@ export function ImportReferenceCard({ data }: { data: FitnessData }) {
       toast('Program loaded from your reference file');
       setParsed(null);
     } catch (err) {
-      toast(`Not imported: ${err instanceof Error ? err.message : 'error'}`, { severity: 'error' });
+      const msg = err instanceof Error ? err.message : 'error';
+      toast(/program_mode|slot_check|check constraint/i.test(msg) ? 'Run migration 0017 in Supabase first (it allows the rotating cycle and 6 slots), then import again.' : `Not imported: ${msg}`, { severity: 'error' });
     } finally {
       setBusy(false);
     }
@@ -64,8 +65,8 @@ export function ImportReferenceCard({ data }: { data: FitnessData }) {
   return (
     <Card title="Load from your reference file">
       <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-        Choose your <code>00_Daily_Reference_Bulk.md</code> to fill all six days, the five slots, the V1–V7 variants
-        (default / fallback), set counts, finishers and targets. Re-import any time you edit the file.
+        Choose your <code>00_Daily_Reference_Bulk.md</code> to fill the training days, their slots and variants (default / fallback), set
+        counts, finishers and targets. A file with “DAY 1 — UPPER” style days switches to the rotating cycle. Re-import any time you edit the file.
       </Typography>
       <Button variant={hasProgram ? 'outlined' : 'contained'} component="label" startIcon={<UploadFileRoundedIcon />}>
         {hasProgram ? 'Re-import file' : 'Import reference file'}
@@ -82,14 +83,14 @@ export function ImportReferenceCard({ data }: { data: FitnessData }) {
                 if (!slots.length) return null;
                 return (
                   <Typography key={d} variant="body2">
-                    <strong>{DAY[d]}</strong> · {parsed.dayFocus[String(d)] ?? ''} · {slots.map((s) => s.sets).join(' / ')} ={' '}
+                    <strong>{parsed.cycle ? `Day ${d}` : DAY[d]}</strong> · {parsed.dayFocus[String(d)] ?? ''} · {slots.map((s) => s.sets).join(' / ')} ={' '}
                     {slots.reduce((a, s) => a + s.sets, 0)} sets
                   </Typography>
                 );
               })}
               {parsed.finishers.map((f) => (
                 <Typography key={f.name} variant="body2">
-                  <strong>{f.name}</strong> on {f.days.map((d) => DAY[d]).join(', ')}: {f.exercises.map((e) => e.name).join(', ')}
+                  <strong>{f.name}</strong> after {f.days.map((d) => (parsed.cycle ? (parsed.dayFocus[String(d)] ?? `Day ${d}`).split(/\s+[—–-]\s+/)[0] : DAY[d])).join(', ')}: {f.exercises.map((e) => e.name).join(', ')}
                 </Typography>
               ))}
               <Typography variant="body2" color="text.secondary">
@@ -97,6 +98,9 @@ export function ImportReferenceCard({ data }: { data: FitnessData }) {
                 {parsed.stepsTarget !== null && `Steps target ${parsed.stepsTarget.toLocaleString('en-IN')}. `}
                 {keyLifts.length > 0 && `Key lifts: ${keyLifts.map((k) => k.label).join(', ')}.`}
               </Typography>
+              {parsed.cycle && (
+                <Alert severity="info">Rotating cycle: days run in order from Day 1, whatever the weekday, starting today on V1. Needs migration 0017.</Alert>
+              )}
               {parsed.warnings.map((w) => (
                 <Alert key={w} severity="warning">
                   {w}

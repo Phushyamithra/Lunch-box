@@ -5,7 +5,11 @@
  * different variant ("mix"), a day can run one of your own workout cards
  * instead, and extra exercises can be added on the spot.
  *
- * Set slots: 1–5 program, 6 finishers, 7–20 custom card, 21–40 extras.
+ * Set slots: 1–5 program, 6 finishers, 7–20 custom card, 21–40 extras,
+ * 41 program slot 6.
+ *
+ * Program days are weekdays (Mon = 1 … Sat = 6), or in a rotating cycle
+ * the cycle days (Upper = 1 … Legs = 5) done in order whenever you train.
  */
 import type { FinisherDef, ProgramSlot } from './muscles';
 import { exerciseOptions } from './referenceImport';
@@ -16,6 +20,20 @@ export const CUSTOM_SLOT_BASE = 7;
 export const EXTRA_SLOT_BASE = 21;
 export const MAX_CUSTOM_EXERCISES = 14;
 export const MAX_EXTRAS = 20;
+export const CYCLE_DAYS = 5;
+/** Where a program slot's sets are logged (slot 6 already holds finishers). */
+export const setSlotFor = (programSlot: number): number => (programSlot === 6 ? 41 : programSlot);
+
+/**
+ * The next cycle day: the one after the last program day you trained
+ * (since the cycle started), else day 1. Your own cards don't move it.
+ */
+export function nextCycleDay(sessions: (Pick<DaySession, 'day' | 'program_weekday' | 'custom_workout_id'>)[], day: string, since: string): number {
+  const last = sessions
+    .filter((s) => s.day < day && s.day >= since && !s.custom_workout_id && s.program_weekday !== null && s.program_weekday <= CYCLE_DAYS)
+    .sort((a, b) => b.day.localeCompare(a.day))[0];
+  return last ? ((last.program_weekday as number) % CYCLE_DAYS) + 1 : 1;
+}
 
 export interface CustomExercise {
   label: string;
@@ -48,6 +66,8 @@ export interface PlanItem {
   key: string;
   kind: PlanKind;
   slot: number;
+  /** The program slot (1–6) for program items; null otherwise. */
+  programSlot: number | null;
   /** What the slot trains ("Upper Chest"); drives the muscle and swap warning. */
   title: string;
   options: string[];
@@ -78,12 +98,14 @@ export function suggestVariant(
   rotationVariant: number,
   /** Train another day's program (e.g. Tuesday's on a Monday). */
   programDay: number = isoWeekday(day),
+  /** Only sessions from this day on count (a rotating cycle starts fresh). */
+  since = '',
 ): { index: number; reason: 'next' | 'rotation' } {
   const weekday = programDay;
   const available = variantsFor(weekday, slots);
   if (available.length === 0) return { index: rotationVariant, reason: 'rotation' };
   const last = sessions
-    .filter((s) => s.day < day && !s.custom_workout_id && programDayOf({ day: s.day, program_weekday: s.program_weekday ?? null }) === weekday)
+    .filter((s) => s.day < day && s.day >= since && !s.custom_workout_id && programDayOf({ day: s.day, program_weekday: s.program_weekday ?? null }) === weekday)
     .sort((a, b) => b.day.localeCompare(a.day))[0];
   if (last) {
     const next = available.find((i) => i > last.variant_index) ?? available[0];
@@ -119,6 +141,7 @@ export function buildDayPlan(input: {
         key: `custom-${custom.id}-${i}`,
         kind: 'custom',
         slot: CUSTOM_SLOT_BASE + i,
+        programSlot: null,
         title: e.label.trim() || e.exercise,
         options: exerciseOptions(e.exercise),
         sets: e.sets,
@@ -134,7 +157,8 @@ export function buildDayPlan(input: {
       items.push({
         key: `slot-${s.slot}`,
         kind: 'program',
-        slot: s.slot,
+        slot: setSlotFor(s.slot),
+        programSlot: s.slot,
         title: s.label || `Slot ${s.slot}`,
         options: exerciseOptions(s.variants[v] ?? ''),
         sets: s.default_sets,
@@ -150,6 +174,7 @@ export function buildDayPlan(input: {
         key: `fin-${f.name}-${i}`,
         kind: 'finisher',
         slot: FINISHER_SLOT,
+        programSlot: null,
         title: `${f.name} finisher`,
         options: exerciseOptions(e.name),
         sets: e.sets,
@@ -165,6 +190,7 @@ export function buildDayPlan(input: {
       key: `extra-${i}`,
       kind: 'extra',
       slot: EXTRA_SLOT_BASE + i,
+      programSlot: null,
       title: e.label.trim() || e.exercise,
       options: exerciseOptions(e.exercise),
       sets: e.sets,
@@ -228,6 +254,8 @@ export function programDaysOwed(
   today: string,
   sessions: (Pick<DaySession, 'day' | 'program_weekday' | 'custom_workout_id'> & { completed: boolean })[],
   isAwayDay: (day: string) => boolean,
+  /** A rotating cycle has no "missed Tuesday": only days you trained count. */
+  cycle = false,
 ): number[] {
   const owed: number[] = [];
   for (let i = 0; i < 7; i += 1) {
@@ -239,7 +267,7 @@ export function programDaysOwed(
       if (s.custom_workout_id || (d === today && !s.completed)) continue;
       const p = programDayOf(s);
       if (p >= 1 && p <= 6) owed.push(p);
-    } else if (d < today && isoWeekday(d) <= 6) {
+    } else if (!cycle && d < today && isoWeekday(d) <= 6) {
       owed.push(isoWeekday(d));
     }
   }
