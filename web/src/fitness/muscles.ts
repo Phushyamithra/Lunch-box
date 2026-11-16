@@ -242,19 +242,19 @@ export function weeklyCoverage(
   logged: LoggedSet[],
   trainingDaysSoFar: number[],
   map: Map<string, Muscle>,
-  /** Last program day: 6 for Mon–Sat, 5 in a rotating cycle (old Saturday rows don't count). */
-  lastDay = 6,
+  /** The active split's program days (Mon–Sat 1–6, or the cycle's 11–15); the other split doesn't count. */
+  days: number[] = [1, 2, 3, 4, 5, 6],
 ): MuscleCoverage[] {
   const planned = new Map<Muscle, number>();
   const expected = new Map<Muscle, number>();
   const add = (m: Map<Muscle, number>, muscle: Muscle | null, n: number) => muscle && m.set(muscle, (m.get(muscle) ?? 0) + n);
   for (const s of slots) {
-    if (s.weekday < 1 || s.weekday > lastDay || !s.variants.some(Boolean)) continue;
+    if (!days.includes(s.weekday) || !s.variants.some(Boolean)) continue;
     const muscle = muscleForTarget(s.label);
     add(planned, muscle, s.default_sets);
     add(expected, muscle, s.default_sets * trainingDaysSoFar.filter((d) => d === s.weekday).length);
   }
-  for (const f of finishers) {
+  for (const f of finishers.filter((x) => x.days.some((d) => days.includes(d)))) {
     const muscle = muscleForTarget(f.name);
     const perDay = f.exercises.reduce((a, e) => a + e.sets, 0);
     add(planned, muscle, perDay * f.days.length);

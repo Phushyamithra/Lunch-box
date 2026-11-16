@@ -1,11 +1,11 @@
-import { Alert, Box, Button, Chip, Stack, Tab, Tabs, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Chip, Stack, Tab, Tabs, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { Stepper } from '../food/Stepper';
 import { useSnackbar } from '../layout/Snackbar';
 import { useFitness } from './FitnessContext';
 import type { SlotRow } from './fitnessApi';
-import { nextCycleDay, suggestVariant } from './dayPlan';
+import { CYCLE_DAYS, WEEK_DAYS, finisherCards, nextCycleDay, suggestVariant } from './dayPlan';
 import { addDays, isoWeekday, variantIndexFor, weekStart } from './rules';
 import { FinishersCard, ImportReferenceCard, PresetsCard } from './ProgramExtras';
 import { Card } from './ui';
@@ -13,19 +13,24 @@ import { Card } from './ui';
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const EMPTY = ['', '', '', '', '', '', ''];
 
-/** The program: Mon–Sat days with weekly variants, or a rotating Upper → Lower → Push → Pull → Legs cycle. */
+/** Two splits side by side: Mon–Sat with weekly variants, and the rotating Upper → Lower → Push → Pull → Legs cycle. Pick which one is active. */
 export default function ProgramPage() {
-  const { data, saveSettings } = useFitness();
+  const { data, saveSettings, saveWorkout } = useFitness();
   const toast = useSnackbar();
   const today = dayjs().format('YYYY-MM-DD');
   const cycle = data?.settings.program_mode === 'cycle';
-  const next = data && cycle ? nextCycleDay(data.sessions, addDays(today, 1), data.settings.rotation_start) : 1;
-  const [weekday, setWeekday] = useState(cycle ? next : Math.min(isoWeekday(today), 6));
+  const since = data ? (data.settings.cycle_start ?? data.settings.rotation_start) : today;
+  const next = data ? nextCycleDay(data.sessions, addDays(today, 1), since) : CYCLE_DAYS[0];
+  const [day, setDay] = useState<number | null>(null);
   if (!data) return null;
+  const days = cycle ? CYCLE_DAYS : WEEK_DAYS;
+  const weekday = day !== null && days.includes(day) ? day : cycle ? next : Math.min(isoWeekday(today), 6);
   const current = cycle
-    ? suggestVariant(addDays(today, 1), data.sessions, data.slots, (((data.settings.rotation_offset % 6) + 6) % 6), weekday, data.settings.rotation_start).index
+    ? suggestVariant(addDays(today, 1), data.sessions, data.slots, (((data.settings.rotation_offset % 6) + 6) % 6), weekday, since).index
     : variantIndexFor(today, data.settings.rotation_start, data.settings.rotation_offset);
-  const dayName = (d: number) => (data.settings.day_focus[String(d)] ?? `Day ${d}`).split(/\s+[—–-]\s+/)[0];
+  const dayName = (d: number) => (data.settings.day_focus[String(d)] ?? `Day ${d - 10}`).split(/\s+[—–-]\s+/)[0];
+  const hasSplit = (ds: number[]) => data.slots.some((s) => ds.includes(s.weekday) && s.variants.some(Boolean));
+  const cards = finisherCards(data.settings.finishers, data.workouts);
 
   const shift = async (by: number) => {
     try {
@@ -35,16 +40,59 @@ export default function ProgramPage() {
       toast(`Not saved: ${e instanceof Error ? e.message : 'error'}`, { severity: 'error' });
     }
   };
+  const switchTo = async (mode: 'weekday' | 'cycle') => {
+    if (mode === data.settings.program_mode) return;
+    try {
+      await saveSettings(mode === 'cycle' && !data.settings.cycle_start ? { program_mode: mode, cycle_start: today } : { program_mode: mode });
+      setDay(null);
+      toast(mode === 'cycle' ? `🔁 Rotating cycle on: next is ${dayName(next)}` : '📅 Weekly split on');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'error';
+      toast(/program_mode|cycle_start/.test(msg) ? 'Run migration 0018 in Supabase first, then switch.' : `Not saved: ${msg}`, { severity: 'error' });
+    }
+  };
+  const makeCards = async () => {
+    try {
+      for (const c of cards) await saveWorkout(c);
+      toast(`⭐ ${cards.map((c) => c.name).join(' and ')} card${cards.length === 1 ? '' : 's'} added: pick them on any day`);
+    } catch (e) {
+      toast(`Not saved: ${e instanceof Error ? e.message : 'error'}`, { severity: 'error' });
+    }
+  };
 
   return (
     <Stack spacing={3} sx={{ maxWidth: 820 }}>
+      <Card title="Your split">
+        <ToggleButtonGroup exclusive fullWidth value={data.settings.program_mode} onChange={(_, v) => v && void switchTo(v)} aria-label="Active split">
+          <ToggleButton value="weekday" sx={{ minHeight: 48 }}>
+            📅 Weekly (Mon–Sat)
+          </ToggleButton>
+          <ToggleButton value="cycle" sx={{ minHeight: 48 }}>
+            🔁 Rotating 5-day
+          </ToggleButton>
+        </ToggleButtonGroup>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+          Both splits are kept; Today follows the one picked here. Switch any time: history stays as it was.
+          {!hasSplit(days) && ' This split is empty: load its reference file below.'}
+        </Typography>
+      </Card>
       <ImportReferenceCard data={data} />
+      {cards.length > 0 && (
+        <Card title="⭐ Quick cards">
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+            Turn your finishers into cards ({cards.map((c) => c.name).join(', ')}) you can pick on any day, as a short session of their own.
+          </Typography>
+          <Button variant="contained" onClick={() => void makeCards()}>
+            Add {cards.map((c) => c.name).join(' and ')} card{cards.length === 1 ? '' : 's'}
+          </Button>
+        </Card>
+      )}
       {cycle ? (
         <Card title="🔁 Rotating cycle" aside={<Chip color="secondary" label={`Next: ${dayName(next)}`} />}>
           <Typography color="text.secondary" variant="body2">
-            {[1, 2, 3, 4, 5].map(dayName).join(' → ')}, then repeat. Train whenever you can: the next day in the sequence comes up, whatever the calendar says, and rest
+            {CYCLE_DAYS.map(dayName).join(' → ')}, then repeat. Train whenever you can: the next day in the sequence comes up, whatever the calendar says, and rest
             days don’t skip or reset it. Each day moves to its next variant once you’ve trained it, so the first full pass is V1, the next V2, and so on. Started{' '}
-            {dayjs(data.settings.rotation_start).format('D MMM YYYY')}; you can always pick a different day or variant on the day.
+            {dayjs(since).format('D MMM YYYY')}; you can always pick a different day or variant on the day.
           </Typography>
         </Card>
       ) : (
@@ -65,8 +113,8 @@ export default function ProgramPage() {
       </Card>
       )}
 
-      <Tabs value={weekday - 1} onChange={(_, v: number) => setWeekday(v + 1)} variant={cycle ? 'scrollable' : 'fullWidth'} allowScrollButtonsMobile aria-label="Training day">
-        {(cycle ? [1, 2, 3, 4, 5].map(dayName) : DAYS).map((d, i) => (
+      <Tabs value={days.indexOf(weekday)} onChange={(_, v: number) => setDay(days[v])} variant={cycle ? 'scrollable' : 'fullWidth'} allowScrollButtonsMobile aria-label="Training day">
+        {(cycle ? CYCLE_DAYS.map(dayName) : DAYS).map((d, i) => (
           <Tab key={d} label={d} value={i} sx={{ minWidth: 0, textTransform: 'none', fontWeight: 600 }} />
         ))}
       </Tabs>

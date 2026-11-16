@@ -55,7 +55,7 @@ export function ImportReferenceCard({ data }: { data: FitnessData }) {
       setParsed(null);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'error';
-      toast(/program_mode|slot_check|check constraint/i.test(msg) ? 'Run migration 0017 in Supabase first (it allows the rotating cycle and 6 slots), then import again.' : `Not imported: ${msg}`, { severity: 'error' });
+      toast(/program_mode|cycle_start|_check|check constraint/i.test(msg) ? 'Run migration 0018 in Supabase first (it lets both splits live side by side), then import again.' : `Not imported: ${msg}`, { severity: 'error' });
     } finally {
       setBusy(false);
     }
@@ -66,7 +66,8 @@ export function ImportReferenceCard({ data }: { data: FitnessData }) {
     <Card title="Load from your reference file">
       <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
         Choose your <code>00_Daily_Reference_Bulk.md</code> to fill the training days, their slots and variants (default / fallback), set
-        counts, finishers and targets. A file with “DAY 1 — UPPER” style days switches to the rotating cycle. Re-import any time you edit the file.
+        counts, finishers and targets. Mon–Sat files load the weekly split, “DAY 1 — UPPER” files the rotating cycle; both are kept and you switch between them
+        below. Importing a split makes it the active one. Re-import any time you edit the file.
       </Typography>
       <Button variant={hasProgram ? 'outlined' : 'contained'} component="label" startIcon={<UploadFileRoundedIcon />}>
         {hasProgram ? 'Re-import file' : 'Import reference file'}
@@ -78,12 +79,12 @@ export function ImportReferenceCard({ data }: { data: FitnessData }) {
         <DialogContent>
           {parsed && (
             <Stack spacing={1.5}>
-              {[1, 2, 3, 4, 5, 6].map((d) => {
+              {(parsed.cycle ? [11, 12, 13, 14, 15] : [1, 2, 3, 4, 5, 6]).map((d) => {
                 const slots = parsed.slots.filter((s) => s.weekday === d);
                 if (!slots.length) return null;
                 return (
                   <Typography key={d} variant="body2">
-                    <strong>{parsed.cycle ? `Day ${d}` : DAY[d]}</strong> · {parsed.dayFocus[String(d)] ?? ''} · {slots.map((s) => s.sets).join(' / ')} ={' '}
+                    <strong>{parsed.cycle ? `Day ${d - 10}` : DAY[d]}</strong> · {parsed.dayFocus[String(d)] ?? ''} · {slots.map((s) => s.sets).join(' / ')} ={' '}
                     {slots.reduce((a, s) => a + s.sets, 0)} sets
                   </Typography>
                 );
@@ -99,7 +100,7 @@ export function ImportReferenceCard({ data }: { data: FitnessData }) {
                 {keyLifts.length > 0 && `Key lifts: ${keyLifts.map((k) => k.label).join(', ')}.`}
               </Typography>
               {parsed.cycle && (
-                <Alert severity="info">Rotating cycle: days run in order from Day 1, whatever the weekday, starting today on V1. Needs migration 0017.</Alert>
+                <Alert severity="info">Rotating cycle: days run in order from Day 1, whatever the weekday, starting on V1. Your weekly split stays as it is. Needs migration 0018.</Alert>
               )}
               {parsed.warnings.map((w) => (
                 <Alert key={w} severity="warning">

@@ -176,7 +176,7 @@ export default function DashboardPage() {
               color="secondary"
               label={
                 data.settings.program_mode === 'cycle'
-                  ? `Next: ${(data.settings.day_focus[String(nextCycleDay(data.sessions, dayjs(today).add(1, 'day').format('YYYY-MM-DD'), data.settings.rotation_start))] ?? '').split(/\s+[—–-]\s+/)[0]}`
+                  ? `Next: ${(data.settings.day_focus[String(nextCycleDay(data.sessions, dayjs(today).add(1, 'day').format('YYYY-MM-DD'), data.settings.cycle_start ?? data.settings.rotation_start))] ?? '').split(/\s+[—–-]\s+/)[0]}`
                   : `V${variant + 1}`
               }
             />

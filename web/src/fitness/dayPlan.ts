@@ -8,8 +8,9 @@
  * Set slots: 1–5 program, 6 finishers, 7–20 custom card, 21–40 extras,
  * 41 program slot 6.
  *
- * Program days are weekdays (Mon = 1 … Sat = 6), or in a rotating cycle
- * the cycle days (Upper = 1 … Legs = 5) done in order whenever you train.
+ * Two splits can live side by side: the weekly split on program days 1–6
+ * (Mon–Sat) and the rotating cycle on 11–15 (Upper → … → Legs), done in
+ * order whenever you train. Settings' program_mode says which is active.
  */
 import type { FinisherDef, ProgramSlot } from './muscles';
 import { exerciseOptions } from './referenceImport';
@@ -20,7 +21,9 @@ export const CUSTOM_SLOT_BASE = 7;
 export const EXTRA_SLOT_BASE = 21;
 export const MAX_CUSTOM_EXERCISES = 14;
 export const MAX_EXTRAS = 20;
-export const CYCLE_DAYS = 5;
+export const CYCLE_DAYS = [11, 12, 13, 14, 15];
+export const WEEK_DAYS = [1, 2, 3, 4, 5, 6];
+export const isCycleDay = (d: number | null | undefined): boolean => d !== null && d !== undefined && d >= 11 && d <= 15;
 /** Where a program slot's sets are logged (slot 6 already holds finishers). */
 export const setSlotFor = (programSlot: number): number => (programSlot === 6 ? 41 : programSlot);
 
@@ -30,9 +33,9 @@ export const setSlotFor = (programSlot: number): number => (programSlot === 6 ? 
  */
 export function nextCycleDay(sessions: (Pick<DaySession, 'day' | 'program_weekday' | 'custom_workout_id'>)[], day: string, since: string): number {
   const last = sessions
-    .filter((s) => s.day < day && s.day >= since && !s.custom_workout_id && s.program_weekday !== null && s.program_weekday <= CYCLE_DAYS)
+    .filter((s) => s.day < day && s.day >= since && !s.custom_workout_id && isCycleDay(s.program_weekday))
     .sort((a, b) => b.day.localeCompare(a.day))[0];
-  return last ? ((last.program_weekday as number) % CYCLE_DAYS) + 1 : 1;
+  return last ? CYCLE_DAYS[(CYCLE_DAYS.indexOf(last.program_weekday as number) + 1) % CYCLE_DAYS.length] : CYCLE_DAYS[0];
 }
 
 export interface CustomExercise {
@@ -266,10 +269,24 @@ export function programDaysOwed(
     if (s) {
       if (s.custom_workout_id || (d === today && !s.completed)) continue;
       const p = programDayOf(s);
-      if (p >= 1 && p <= 6) owed.push(p);
+      if ((p >= 1 && p <= 6) || isCycleDay(p)) owed.push(p);
     } else if (!cycle && d < today && isoWeekday(d) <= 6) {
       owed.push(isoWeekday(d));
     }
   }
   return owed;
+}
+
+/** Your own cards from finishers (Abs, Forearms…), for any day; skips names you already have a card for. */
+export function finisherCards(finishers: FinisherDef[], workouts: Pick<CustomWorkout, 'name'>[]): Omit<CustomWorkout, 'id'>[] {
+  const have = new Set(workouts.map((w) => w.name.trim().toLowerCase()));
+  const seen = new Set<string>();
+  const out: Omit<CustomWorkout, 'id'>[] = [];
+  for (const f of finishers) {
+    const name = f.name.trim();
+    if (!name || have.has(name.toLowerCase()) || seen.has(name.toLowerCase()) || !f.exercises.length) continue;
+    seen.add(name.toLowerCase());
+    out.push({ name, weekday: null, exercises: f.exercises.slice(0, MAX_CUSTOM_EXERCISES).map((e) => ({ label: name, exercise: e.name, sets: e.sets, reps: e.reps })) });
+  }
+  return out;
 }

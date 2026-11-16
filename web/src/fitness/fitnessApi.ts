@@ -29,6 +29,8 @@ export interface FitnessSettings {
   day_focus: Record<string, string>;
   /** 'cycle': program days 1–5 in order (Upper → … → Legs), not tied to weekdays. */
   program_mode: 'weekday' | 'cycle';
+  /** When the rotating cycle started (sessions before it don't count toward it). */
+  cycle_start: string | null;
   finishers: ParsedFinisher[];
   reminders: ReminderSettings;
 }
@@ -131,6 +133,7 @@ function normaliseSettings(raw: Record<string, unknown>): FitnessSettings {
   out.day_focus = raw.day_focus && typeof raw.day_focus === 'object' ? raw.day_focus : {};
   out.weigh_time = typeof raw.weigh_time === 'string' ? raw.weigh_time : 'morning';
   out.program_mode = raw.program_mode === 'cycle' ? 'cycle' : 'weekday';
+  out.cycle_start = typeof raw.cycle_start === 'string' ? raw.cycle_start : null;
   out.reminders = normaliseReminders(raw.reminders);
   return out as unknown as FitnessSettings;
 }
@@ -388,6 +391,7 @@ export async function importReference(
   client: SupabaseClient,
   parsed: ParsedReference,
   keyLifts: KeyLiftGroup[],
+  current: FitnessSettings,
 ): Promise<{ slots: SlotRow[]; settings: FitnessSettings }> {
   const now = new Date().toISOString();
   const { data, error } = await client
@@ -398,9 +402,19 @@ export async function importReference(
     )
     .select('id, weekday, slot, label, default_sets, variants');
   if (error) throw new Error(error.message);
-  const patch: Partial<FitnessSettings> = { day_focus: parsed.dayFocus, finishers: parsed.finishers, key_lifts: keyLifts };
-  // A rotating cycle starts today on V1; earlier sessions don't count toward it.
-  if (parsed.cycle) Object.assign(patch, { program_mode: 'cycle', rotation_start: new Date().toISOString().slice(0, 10), rotation_offset: 0 });
+  // Only this split's days are replaced: the other split's names and finishers stay.
+  const mine = (d: number) => (parsed.cycle ? d >= 11 && d <= 15 : d >= 1 && d <= 7);
+  const lifts = new Map(current.key_lifts.map((g) => [g.label, new Set(g.exercises)]));
+  for (const g of keyLifts) lifts.set(g.label, new Set([...(lifts.get(g.label) ?? []), ...g.exercises]));
+  const patch: Partial<FitnessSettings> = {
+    day_focus: { ...Object.fromEntries(Object.entries(current.day_focus).filter(([k]) => !mine(Number(k)))), ...parsed.dayFocus },
+    finishers: [...current.finishers.filter((f) => !f.days.some(mine)), ...parsed.finishers],
+    key_lifts: [...lifts].map(([label, ex]) => ({ label, exercises: [...ex].sort() })),
+    // Importing a split makes it the active one.
+    program_mode: parsed.cycle ? 'cycle' : 'weekday',
+  };
+  // A rotating cycle starts on the day it's first imported; re-importing doesn't restart it.
+  if (parsed.cycle && !current.cycle_start) patch.cycle_start = new Date().toISOString().slice(0, 10);
   if (parsed.baselineDate) patch.phase_start = parsed.baselineDate;
   if (parsed.stepsTarget !== null) patch.steps_target = parsed.stepsTarget;
   if (parsed.phaseMonths !== null) patch.phase_months = parsed.phaseMonths;

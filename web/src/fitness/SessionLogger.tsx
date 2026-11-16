@@ -32,6 +32,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../layout/Snackbar';
 import {
+  CYCLE_DAYS,
+  WEEK_DAYS,
+  isCycleDay,
   nextCycleDay,
   EXTRA_SLOT_BASE,
   MAX_EXTRAS,
@@ -69,7 +72,7 @@ import { WorkoutEditor, knownExercises } from './WorkoutEditor';
 
 const WEEKDAY = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 /** "Upper — Chest + Back…" → "Upper". */
-const cycleName = (data: FitnessData, d: number) => (data.settings.day_focus[String(d)] ?? `Day ${d}`).split(/\s+[—–-]\s+/)[0];
+const cycleName = (data: FitnessData, d: number) => (data.settings.day_focus[String(d)] ?? `Day ${d - 10}`).split(/\s+[—–-]\s+/)[0];
 const CUSTOM = '__custom__';
 
 type SessionPatch = Partial<Omit<SessionInput, 'day'>>;
@@ -88,14 +91,15 @@ export function SessionLogger({ day, data }: { day: string; data: FitnessData })
   const weekday = isoWeekday(day);
   // Rotating cycle: days run Upper → … → Legs in order, whatever the calendar day.
   const cycle = data.settings.program_mode === 'cycle';
-  const nextDay = nextCycleDay(data.sessions, day, data.settings.rotation_start);
+  const cycleSince = data.settings.cycle_start ?? data.settings.rotation_start;
+  const nextDay = nextCycleDay(data.sessions, day, cycleSince);
   const session = data.sessions.find((s) => s.day === day);
   // Which day's program you're training today (Tuesday's on a Monday is fine).
   const [chosenDay, setChosenDay] = useState<number | null>(null);
   const programDay = chosenDay ?? session?.program_weekday ?? (cycle ? nextDay : weekday);
   // A cycle starts on V1 (plus any manual advance); each day then moves on after it's done once.
   const rotation = cycle ? (((data.settings.rotation_offset % 6) + 6) % 6) : variantIndexFor(day, data.settings.rotation_start, data.settings.rotation_offset);
-  const suggestion = suggestVariant(day, data.sessions, data.slots, rotation, programDay, cycle ? data.settings.rotation_start : '');
+  const suggestion = suggestVariant(day, data.sessions, data.slots, rotation, programDay, isCycleDay(programDay) ? cycleSince : '');
   const [picking, setPicking] = useState(false);
   const [editing, setEditing] = useState<CustomWorkout | 'new' | null>(null);
   const [restEnd, setRestEnd] = useState<number | null>(null);
@@ -379,7 +383,7 @@ export function SessionLogger({ day, data }: { day: string; data: FitnessData })
 /** Mon–Sat chips with each day's focus: train any day's program today. */
 function DayChooser({ data, value, today, onChange }: { data: FitnessData; value: number | null; today: number; onChange: (d: number) => void }) {
   const cycle = data.settings.program_mode === 'cycle';
-  const days = (cycle ? [1, 2, 3, 4, 5] : [1, 2, 3, 4, 5, 6]).filter((d) => variantsFor(d, data.slots).length > 0);
+  const days = (cycle ? CYCLE_DAYS : WEEK_DAYS).filter((d) => variantsFor(d, data.slots).length > 0);
   return (
     <Box sx={{ display: 'flex', gap: 0.75, overflowX: 'auto', pb: 0.5, scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' } }} role="group" aria-label="Which day's workout">
       {days.map((d) => {
@@ -388,7 +392,7 @@ function DayChooser({ data, value, today, onChange }: { data: FitnessData; value
         return (
           <Chip
             key={d}
-            label={cycle ? `${d}. ${cycleName(data, d)}${d === today ? ' (next)' : ''}` : `${WEEKDAY[d].slice(0, 3)}${f ? ` · ${f}` : ''}${d === today ? ' (today)' : ''}`}
+            label={cycle ? `${d - 10}. ${cycleName(data, d)}${d === today ? ' (next)' : ''}` : `${WEEKDAY[d].slice(0, 3)}${f ? ` · ${f}` : ''}${d === today ? ' (today)' : ''}`}
             color={active ? 'secondary' : 'default'}
             variant={active ? 'filled' : 'outlined'}
             onClick={() => onChange(d)}
@@ -647,7 +651,7 @@ function MuscleCoverageCard({ data, day, muscleMap }: { data: FitnessData; day: 
   const daysSoFar = programDaysOwed(start, day, data.sessions, (d) => isAway(d, data.away), data.settings.program_mode === 'cycle');
   const weekSessions = new Map(data.sessions.filter((s) => s.day >= start && s.day <= addDays(start, 6)).map((s) => [s.id, s.day]));
   const logged = data.sets.filter((s) => weekSessions.has(s.session_id)).map((s) => ({ exercise: s.exercise, slot: s.slot, day: weekSessions.get(s.session_id) as string }));
-  const coverage = weeklyCoverage(data.slots, data.settings.finishers, logged, daysSoFar, muscleMap, data.settings.program_mode === 'cycle' ? 5 : 6);
+  const coverage = weeklyCoverage(data.slots, data.settings.finishers, logged, daysSoFar, muscleMap, data.settings.program_mode === 'cycle' ? CYCLE_DAYS : WEEK_DAYS);
   const behind = coverage.filter((c) => c.status === 'behind' && c.expectedSoFar - c.done >= 2 && c.muscle !== 'Abs' && c.muscle !== 'Forearms');
   if (coverage.length === 0) return null;
   return (

@@ -162,4 +162,5 @@ migrations.
 
 - A reference file with "DAY 1 — UPPER" style days switches Fitness to a rotating cycle (migration 0017): Upper → Lower → Push → Pull → Legs, done in order whenever you train, not on weekdays. Days are program days 1–5; the next one follows the last day trained since the cycle started.
 - Each day moves to its next variant once trained (V1 for the first full pass, then V2…), wrapping after V6. Up to 6 slots per day; slot 6 sets are logged in set slot 41 because slot 6 holds finisher sets.
+- Two splits side by side (migration 0018, which includes 0017): the weekly split on program days 1–6 and the cycle on 11–15. Program → Your split picks the active one; importing a file makes its split active and replaces only that split's days, names and finishers. 0018 moves a cycle that the earlier version put on days 1–5 to 11–15. Finishers also become ⭐ cards (Abs, Forearms) you can pick on any day.
 - Finishers are matched by day name ("after Upper / Push / Legs"). Weekly muscle coverage counts only days actually trained. Weekday programs keep working unchanged.

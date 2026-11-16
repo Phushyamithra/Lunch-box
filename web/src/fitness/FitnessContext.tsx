@@ -1,3 +1,4 @@
+import { finisherCards } from './dayPlan';
 import type { MeasurementPlan, WorkoutPlan } from '../bulk/templates';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
@@ -176,12 +177,19 @@ export function FitnessProvider({ client, children }: { client: SupabaseClient; 
         patch((d) => ({ ...d, presets: d.presets.filter((p) => p.id !== id) }));
       },
       async importProgram(parsed) {
-        const { slots, settings } = await api.importReference(client, parsed, deriveKeyLifts(parsed.slots));
+        const current = data?.settings;
+        if (!current) throw new Error('Fitness is still loading.');
+        const { slots, settings } = await api.importReference(client, parsed, deriveKeyLifts(parsed.slots), current);
         patch((d) => ({
           ...d,
           settings,
           slots: [...d.slots.filter((s) => !slots.some((n) => n.weekday === s.weekday && n.slot === s.slot)), ...slots],
         }));
+        // Finishers (Abs, Forearms…) also become cards you can pick on any day.
+        for (const card of finisherCards(parsed.finishers, data?.workouts ?? [])) {
+          const row = await api.saveWorkout(client, card);
+          patch((d) => ({ ...d, workouts: [...d.workouts, row] }));
+        }
       },
       async removeSet(id) {
         await api.deleteSet(client, id);
