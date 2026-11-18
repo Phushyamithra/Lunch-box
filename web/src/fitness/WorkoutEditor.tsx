@@ -145,7 +145,7 @@ export function WorkoutEditor({
             <AnimatePresence initial={false}>
               {rows.map((r, i) => (
                 <motion.li key={i} layout initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }}>
-                  <Box sx={{ display: 'grid', gap: 1, gridTemplateColumns: '1fr auto', alignItems: 'start', p: 1.25, borderRadius: '4px', border: 1, borderColor: 'divider' }}>
+                  <Box sx={{ display: 'grid', gap: 1, gridTemplateColumns: '1fr auto', alignItems: 'start', p: 1.25, borderRadius: 1, border: 1, borderColor: 'divider' }}>
                     <Autocomplete
                       freeSolo
                       options={options}

@@ -22,7 +22,7 @@ import {
 } from '@mui/material';
 import { GlobalStyles, ThemeProvider } from '@mui/material';
 import { useEffect, useMemo, type ReactElement } from 'react';
-import { moodFor } from '../moods';
+import { moodFor, tornMask } from '../moods';
 import { createTrackerTheme, globalStyles } from '../theme';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useSettings, type SyncState } from '../settings/SettingsContext';
@@ -69,7 +69,7 @@ export function AppShell() {
   }, [c.band]);
   return (
     <ThemeProvider theme={theme}>
-      <GlobalStyles styles={globalStyles(c, theme.palette.mode === 'dark')} />
+      <GlobalStyles styles={globalStyles(c, theme.palette.mode === 'dark', theme.tracker.grain)} />
       <ShellFrame />
     </ThemeProvider>
   );
@@ -130,9 +130,18 @@ function ShellFrame() {
 
       <Box sx={{ flexGrow: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
         {/* The ink band: the screen's name in condensed capitals, like a results-sheet mast. */}
-        <AppBar position="sticky" elevation={0} sx={{ top: 0, pt: 'env(safe-area-inset-top)' }}>
-          <Toolbar sx={{ gap: 1, minHeight: { xs: 60, sm: 64 } }}>
-            <Typography variant="h5" component="h1" sx={{ flexGrow: 1, fontSize: { xs: '1.9rem', sm: '2.1rem' } }}>
+        {/* Rounded at its foot, or torn like a sheet off a pad where the mood is paper. */}
+        <AppBar
+          position="sticky"
+          elevation={0}
+          sx={{
+            top: 0,
+            pt: 'env(safe-area-inset-top)',
+            ...(theme.tracker.torn ? { pb: '8px', ...tornMask('bottom') } : { borderRadius: '0 0 24px 24px' }),
+          }}
+        >
+          <Toolbar sx={{ gap: 1, minHeight: { xs: 56, sm: 60 } }}>
+            <Typography variant="h5" component="h1" sx={{ flexGrow: 1, fontSize: { xs: '1.55rem', sm: '1.75rem' } }}>
               {title}
             </Typography>
             <SyncIndicator />
@@ -173,9 +182,10 @@ function ShellFrame() {
             bottom: 0,
             pb: 'env(safe-area-inset-bottom)',
             zIndex: 10,
-            borderRadius: 0,
             backgroundColor: theme.tracker.mood.band,
-            borderTop: theme.tracker.minimal ? `1px solid ${theme.tracker.mood.rule}` : 0,
+            ...(theme.tracker.torn
+              ? { borderRadius: 0, pt: '8px', ...tornMask('top') }
+              : { borderRadius: '24px 24px 0 0', borderTop: theme.tracker.minimal ? `1px solid ${theme.tracker.mood.rule}` : 0 }),
           }}
         >
           <BottomNavigation
@@ -198,7 +208,7 @@ function ShellFrame() {
                   '& .nav-pill': {
                     width: { xs: 46, sm: 56 },
                     height: 32,
-                    borderRadius: '4px',
+                    borderRadius: 999,
                     display: 'grid',
                     placeItems: 'center',
                     mb: 0.5,

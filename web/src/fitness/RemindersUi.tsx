@@ -34,7 +34,7 @@ export function DueToday({ data, today }: { data: FitnessData; today: string }) 
     <AnimatePresence initial={false}>
       {items.length > 0 && (
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }}>
-          <Paper variant="outlined" sx={{ p: 1.5, borderRadius: '4px' }}>
+          <Paper variant="outlined" sx={{ p: 1.5 }}>
             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
               Due today
             </Typography>
@@ -52,7 +52,7 @@ export function DueToday({ data, today }: { data: FitnessData; today: string }) 
                         width: '100%',
                         p: 1,
                         border: 0,
-                        borderRadius: '4px',
+                        borderRadius: 1,
                         textAlign: 'left',
                         font: 'inherit',
                         color: 'inherit',

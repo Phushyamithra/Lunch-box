@@ -26,7 +26,7 @@ export function GoalsLayout() {
           mb: 2,
           minHeight: 44,
           '& .MuiTabs-indicator': { display: 'none' },
-          '& .MuiTab-root': { minHeight: 48, borderRadius: '4px', textTransform: 'none', fontWeight: 600, px: 2, mr: 0.5 },
+          '& .MuiTab-root': { minHeight: 48, borderRadius: 1, textTransform: 'none', fontWeight: 600, px: 2, mr: 0.5 },
           '& .Mui-selected': { bgcolor: (t) => t.tracker.cta, color: (t) => `${t.tracker.onCta} !important` },
         }}
       >

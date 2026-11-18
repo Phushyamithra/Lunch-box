@@ -25,7 +25,7 @@ export function GlassIcon({ icon, size = 44 }: { icon: ReactElement; tint?: Icon
         width: size,
         height: size,
         flexShrink: 0,
-        borderRadius: '4px',
+        borderRadius: 1,
         display: 'grid',
         placeItems: 'center',
         color: c.ink,

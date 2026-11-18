@@ -36,6 +36,7 @@ export function createTrackerTheme(mode: ResolvedThemeMode, moodName: MoodName =
     lineHeight: mood.display.lineHeight,
   };
   const buttonFont = mood.button.font === 'display' ? mood.fonts.display : mood.fonts.body;
+  const grain = mood.grain ? (appDark ? mood.grain.dark : mood.grain.light) : null;
 
   const theme = createTheme({
     palette: {
@@ -89,26 +90,28 @@ export function createTrackerTheme(mode: ResolvedThemeMode, moodName: MoodName =
       moodName,
       fonts: mood.fonts,
       displayUppercase: mood.display.uppercase,
+      grain,
+      torn: !!mood.torn,
     },
     components: {
-      MuiCssBaseline: { styleOverrides: globalStyles(c, groundDark) },
+      MuiCssBaseline: { styleOverrides: globalStyles(c, groundDark, grain) },
       MuiPaper: {
         defaultProps: { elevation: 0 },
         styleOverrides: {
           root: { backgroundImage: 'none', backgroundColor: c.paper },
-          rounded: { borderRadius: Math.min(mood.radius.surface, 16) },
-          outlined: mood.surface(c, appDark),
+          rounded: { borderRadius: Math.min(mood.radius.surface, 24) },
+          outlined: { ...mood.surface(c, appDark), ...(grain ? { backgroundImage: grain } : {}) },
         },
       },
       MuiDialog: {
         styleOverrides: {
-          paper: { borderRadius: Math.min(mood.radius.surface, 20), backgroundColor: groundDark ? c.paper2 : c.paper, borderTop: `4px solid ${moodName === 'squeeze' ? c.accent : c.ink}` },
+          paper: { borderRadius: 24, backgroundImage: grain ?? 'none', backgroundColor: groundDark ? c.paper2 : c.paper, borderTop: `4px solid ${moodName === 'squeeze' ? c.accent : c.ink}` },
         },
       },
       MuiDialogTitle: { styleOverrides: { root: { ...display, fontSize: '1.5rem' } } },
       MuiAlert: {
         styleOverrides: {
-          root: { borderRadius: Math.min(mood.radius.surface, 12), border: `1px solid ${c.rule}` },
+          root: { borderRadius: 16, border: `1px solid ${c.rule}` },
           standardInfo: { backgroundColor: c.paper2, color: c.ink },
         },
       },
@@ -193,7 +196,7 @@ export function createTrackerTheme(mode: ResolvedThemeMode, moodName: MoodName =
           notchedOutline: { borderColor: moodName === 'solstice' ? c.ink : c.rule2 },
         },
       },
-      MuiTooltip: { styleOverrides: { tooltip: { backgroundColor: c.band, color: c.onBand, borderRadius: 4, fontSize: 13 } } },
+      MuiTooltip: { styleOverrides: { tooltip: { backgroundColor: c.band, color: c.onBand, borderRadius: 10, fontSize: 13 } } },
       MuiSnackbarContent: { styleOverrides: { root: { backgroundColor: c.band, color: c.onBand, borderRadius: Math.min(mood.radius.control, 12) } } },
       MuiSwitch: {
         styleOverrides: {
@@ -206,11 +209,12 @@ export function createTrackerTheme(mode: ResolvedThemeMode, moodName: MoodName =
 }
 
 /** Page-level styles for a mood (also applied when a section switches mood). */
-export function globalStyles(c: MoodColors, groundDark: boolean) {
+export function globalStyles(c: MoodColors, groundDark: boolean, grain: string | null = null) {
   return {
     ':root': { colorScheme: groundDark ? 'dark' : 'light' },
     'html, body': { overflowX: 'clip', backgroundColor: c.paper },
-    body: { color: c.ink, fontVariantNumeric: 'tabular-nums' },
+    // The mood's paper grain, if it has one (Finance's cotton stock).
+    body: { color: c.ink, fontVariantNumeric: 'tabular-nums', backgroundImage: grain ?? 'none' },
     '::selection': { background: c.accent, color: c.onAccent },
     // Every control shows focus at once.
     ':focus-visible': { outline: `2px solid ${c.focus}`, outlineOffset: 2 },
@@ -240,6 +244,10 @@ export interface TrackerTokens {
   moodName: MoodName;
   fonts: { display: string; body: string; mono: string };
   displayUppercase: boolean;
+  /** The mood's paper grain (a CSS background image), or null. */
+  grain: string | null;
+  /** The mood tears its paper edges (header band, tab bar, hero cards). */
+  torn: boolean;
 }
 
 declare module '@mui/material/styles' {

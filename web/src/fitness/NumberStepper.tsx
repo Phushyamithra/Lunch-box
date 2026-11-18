@@ -34,7 +34,7 @@ export function NumberStepper({ label, unit, value, step, min = 0, max = 999, de
     <Box
       role="group"
       aria-label={label}
-      sx={{ display: 'inline-flex', alignItems: 'center', borderRadius: '4px', bgcolor: 'action.hover', p: 0.25 }}
+      sx={{ display: 'inline-flex', alignItems: 'center', borderRadius: 1, bgcolor: 'action.hover', p: 0.25 }}
     >
       <IconButton size="small" aria-label={`Less ${label}`} disabled={value <= min} onClick={() => onChange(clamp(value - step))}>
         <RemoveRoundedIcon fontSize="small" />

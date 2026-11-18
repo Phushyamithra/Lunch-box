@@ -217,7 +217,7 @@ function UnlockScreen() {
             onClick={() => void touch()}
             disabled={busy}
             startIcon={<FingerprintRoundedIcon sx={{ fontSize: '32px !important' }} />}
-            sx={{ py: 1.5, px: 3, borderRadius: '4px' }}
+            sx={{ py: 1.5, px: 3, borderRadius: 1 }}
           >
             {busy ? 'Waiting for fingerprint…' : 'Unlock with fingerprint'}
           </Button>

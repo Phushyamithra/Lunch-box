@@ -242,7 +242,7 @@ export default function FoodPage() {
                         flexShrink: 0,
                         display: 'grid',
                         placeItems: 'center',
-                        borderRadius: '4px',
+                        borderRadius: 1,
                         bgcolor: theme.tracker.tonal,
                         boxShadow: `inset 0 0 0 1.5px ${category?.color ?? 'transparent'}55`,
                       }}
@@ -272,7 +272,7 @@ export default function FoodPage() {
                 ['carbs', totals.carbs],
                 ['fat', totals.fat],
               ].map(([label, value]) => (
-                <Box key={label} sx={{ textAlign: 'center', py: 1, borderRadius: '4px', bgcolor: 'action.hover' }}>
+                <Box key={label} sx={{ textAlign: 'center', py: 1, borderRadius: 1, bgcolor: 'action.hover' }}>
                   <Typography variant="subtitle1" component="div">
                     {Math.round(Number(value))}
                     {label === 'kcal' ? '' : ' g'}

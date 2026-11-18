@@ -10,6 +10,7 @@ import { cardStatus, combinedCap, monthOf, monthSummary, salaryDate, salaryRecei
 import { useFinance } from './FinanceContext';
 import { balanceEntries, MONEY_IN_KINDS, simpleBalance, type BalanceEntry, type CardOwed, type MoneyInKind } from './balance';
 import { budgetMonth, formatINR, planFor, type MoneyEvent, type Paise, type SalaryReceipt, type Transaction } from './model';
+import { tornMask } from '../moods';
 import { WeeklyCapBar } from './PlannerCards';
 import { EditTransactionDialog, QuickAdd, TransactionRow } from './TransactionForm';
 import { AmountField, FINANCE_SECTIONS } from './ui';
@@ -213,9 +214,11 @@ export default function FinanceToday() {
 
   return (
     <Stack spacing={3} sx={{ maxWidth: 860 }}>
-      <Paper variant="outlined" sx={{ p: 3 }}>
+      {/* The balance slip, torn off the pad; its shadow sits on a wrapper since the tear masks it. */}
+      <Box sx={(t) => ({ filter: t.tracker.minimal ? 'none' : 'drop-shadow(5px 5px 6px rgba(80,58,46,0.22)) drop-shadow(0 0 0.5px rgba(80,58,46,0.35))' })}>
+      <Paper variant="outlined" sx={(t) => ({ p: 3, pb: 4, boxShadow: 'none', borderBottomLeftRadius: 0, borderBottomRightRadius: 0, ...(t.tracker.torn ? tornMask('bottom') : {}) })}>
         <Typography color="text.secondary">Bank balance</Typography>
-        <Typography component="p" sx={{ fontSize: 40, fontWeight: 700, lineHeight: 1.15, my: 0.5, fontVariantNumeric: 'tabular-nums' }} color={account.balance < 0 ? 'error.main' : undefined}>
+        <Typography component="p" sx={{ fontSize: { xs: 30, sm: 34 }, fontWeight: 650, lineHeight: 1.15, my: 0.5, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }} color={account.balance < 0 ? 'error.main' : undefined}>
           {formatINR(account.balance)}
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ fontVariantNumeric: 'tabular-nums' }}>
@@ -248,6 +251,7 @@ export default function FinanceToday() {
           </Typography>
         )}
       </Paper>
+      </Box>
 
       {gaps.length > 0 && (
         <Alert severity="info" action={<Button color="inherit" onClick={() => navigate('/finance/settings')}>Settings</Button>}>

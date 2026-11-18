@@ -579,7 +579,7 @@ function PickCard({ active, index, dashed, children }: { active: boolean; index:
           p: 1.5,
           height: '100%',
           minHeight: 260,
-          borderRadius: '4px',
+          borderRadius: 1,
           borderColor: active ? 'secondary.main' : undefined,
           borderWidth: active ? 2 : 1,
           borderStyle: dashed ? 'dashed' : 'solid',
@@ -607,9 +607,9 @@ function AddExerciseCard({ data, full, onAdd }: { data: FitnessData; full: boole
     setBusy(false);
   };
   return (
-    <Paper variant="outlined" sx={{ p: 1.75, borderRadius: '4px', borderStyle: 'dashed', height: '100%', display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+    <Paper variant="outlined" sx={{ p: 1.75, borderStyle: 'dashed', height: '100%', display: 'flex', flexDirection: 'column', gap: 1.25 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Box aria-hidden sx={{ width: 44, height: 44, borderRadius: '4px', display: 'grid', placeItems: 'center', fontSize: 24, bgcolor: (t) => t.tracker.tonal }}>
+        <Box aria-hidden sx={{ width: 44, height: 44, borderRadius: 1, display: 'grid', placeItems: 'center', fontSize: 24, bgcolor: (t) => t.tracker.tonal }}>
           ➕
         </Box>
         <Box>
@@ -786,7 +786,7 @@ function ExerciseCard({
         variant="outlined"
         sx={{
           p: 1.75,
-          borderRadius: '4px',
+          borderRadius: 1,
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
@@ -797,7 +797,7 @@ function ExerciseCard({
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <motion.div key={`${exercise}-${complete}`} initial={{ scale: 0.6, rotate: -10 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: 'spring', stiffness: 400, damping: 18 }}>
-            <Box aria-hidden sx={{ width: 44, height: 44, borderRadius: '4px', display: 'grid', placeItems: 'center', fontSize: 24, bgcolor: (t) => t.tracker.tonal }}>
+            <Box aria-hidden sx={{ width: 44, height: 44, borderRadius: 1, display: 'grid', placeItems: 'center', fontSize: 24, bgcolor: (t) => t.tracker.tonal }}>
               {complete ? '✅' : exerciseEmoji(exercise || item.title)}
             </Box>
           </motion.div>
@@ -976,7 +976,7 @@ function SessionTimer({ day, session, ensureSession }: { day: string; session: S
 
   if (!session && day !== dayjs().format('YYYY-MM-DD')) return null;
   return (
-    <Paper variant="outlined" role="timer" sx={{ p: 1, pl: 2, borderRadius: '4px', display: 'flex', alignItems: 'center', gap: 1 }}>
+    <Paper variant="outlined" role="timer" sx={{ p: 1, pl: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
       <TimerRoundedIcon color={running ? 'secondary' : 'disabled'} />
       <Typography sx={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', flexGrow: 1 }}>
         {running ? clock(elapsed) : session?.duration_sec !== null && session?.duration_sec !== undefined ? minutes(session.duration_sec) : 'Time in gym'}
@@ -1031,7 +1031,7 @@ function RestTimer({ endsAt, onDone, onAdd }: { endsAt: number; onDone: () => vo
     }
   }, [left]);
   return (
-    <Paper variant="outlined" role="timer" aria-live="polite" sx={{ p: 1, pl: 1.5, borderRadius: '4px', display: 'flex', alignItems: 'center', gap: 1 }}>
+    <Paper variant="outlined" role="timer" aria-live="polite" sx={{ p: 1, pl: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
       <TimerRoundedIcon color={left === 0 ? 'success' : 'secondary'} />
       <Typography sx={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', flexGrow: 1 }}>
         {left === 0 ? '⏰ Rest done, next set' : `Rest ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`}

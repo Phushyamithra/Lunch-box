@@ -29,7 +29,7 @@ export default function NutritionDays() {
         const { total, byMeal } = dayTotals(entries, day);
         const target = activeTarget(nd.targets, day);
         return (
-          <Paper key={day} variant="outlined" component="button" onClick={() => navigate('/nutrition', { state: { day } })} sx={{ display: 'block', width: '100%', p: 2.5, borderRadius: '4px', textAlign: 'left', cursor: 'pointer', color: 'inherit', font: 'inherit' }}>
+          <Paper key={day} variant="outlined" component="button" onClick={() => navigate('/nutrition', { state: { day } })} sx={{ display: 'block', width: '100%', p: 2.5, borderRadius: 1, textAlign: 'left', cursor: 'pointer', color: 'inherit', font: 'inherit' }}>
             <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, flexWrap: 'wrap', mb: 1.25 }}>
               <Typography sx={{ fontWeight: 700, flexGrow: 1 }}>{dayjs(day).format('ddd D MMM')}</Typography>
               <Typography sx={{ fontWeight: 700 }}>

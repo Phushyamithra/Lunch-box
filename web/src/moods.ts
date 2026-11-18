@@ -59,6 +59,10 @@ export interface Mood {
   bodyWeight: number;
   button: { font: 'display' | 'body'; weight: number; uppercase: boolean };
   radius: { surface: number; control: number; chip: number };
+  /** Paper grain laid over the page and cards (a CSS background image), per app mode. */
+  grain?: { light: string; dark: string };
+  /** Torn paper edges on the header band, the tab bar and hero cards. */
+  torn?: boolean;
   /** A section of a screen (an outlined Paper). */
   surface: (c: MoodColors, dark: boolean) => CSSObject;
   /** The primary control (a contained primary Button). */
@@ -68,6 +72,29 @@ export interface Mood {
 }
 
 const SANS = "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
+
+/** Fine paper grain: fractal noise tinted to the paper's fibre colour, tiled. */
+function grain(r: number, g: number, b: number, alpha: number): string {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 ${r} 0 0 0 0 ${g} 0 0 0 0 ${b} 0 0 0 ${alpha} 0'/></filter><rect width='100%' height='100%' filter='url(#n)'/></svg>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+}
+
+/** A 120×10 strip of torn edge (filled = paper kept), torn along its bottom. */
+const TORN_PATH = 'M0 0H120V6L115 8.5 109 5.5 103 9 97 6 90 9.5 84 5 78 8 71 4.5 65 8.5 58 6 52 9.5 45 5.5 39 8 32 4.5 26 9 19 6 13 8.5 7 5 0 6Z';
+const tornStrip = (flip: boolean) =>
+  `url("data:image/svg+xml,${encodeURIComponent(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='120' height='10'><path d='${TORN_PATH}'${flip ? " transform='matrix(1 0 0 -1 0 10)'" : ''}/></svg>`,
+  )}")`;
+
+/**
+ * A CSS mask that tears an element's top or bottom edge (10px deep). Masks
+ * clip shadows too, so put any shadow on a wrapper as a drop-shadow filter.
+ */
+export function tornMask(edge: 'top' | 'bottom'): CSSObject {
+  const solid = `linear-gradient(#000 0 0) ${edge === 'top' ? 'bottom' : 'top'} / 100% calc(100% - 9px) no-repeat`;
+  const mask = `${solid}, ${tornStrip(edge === 'top')} ${edge} / 120px 10px repeat-x`;
+  return { WebkitMask: mask, mask };
+}
 
 export const MOODS: Record<MoodName, Mood> = {
   sport: {
@@ -82,9 +109,9 @@ export const MOODS: Record<MoodName, Mood> = {
     display: { weight: 800, uppercase: true, tracking: '-0.01em', lineHeight: 1.02 },
     bodyWeight: 400,
     button: { font: 'display', weight: 800, uppercase: true },
-    radius: { surface: 4, control: 4, chip: 4 },
-    // A well: a paper step under a bar rule.
-    surface: (c) => ({ backgroundColor: c.paper2, border: 0, borderTop: `2px solid ${c.rule2}`, borderRadius: '0 0 4px 4px' }),
+    radius: { surface: 20, control: 14, chip: 999 },
+    // A well: a paper step with the bar rule drawn inside its rounded top.
+    surface: (c) => ({ backgroundColor: c.paper2, border: 0, borderRadius: 20, boxShadow: `inset 0 3px 0 ${c.rule2}` }),
     primary: (c) => ({ backgroundColor: c.accent, color: c.onAccent, '&:hover': { backgroundColor: c.accent, borderColor: c.onAccent } }),
     secondary: (c) => ({ borderWidth: 2, borderColor: c.ink, color: c.ink, '&:hover': { borderWidth: 2, borderColor: c.ink, backgroundColor: c.paper2 } }),
   },
@@ -121,12 +148,14 @@ export const MOODS: Record<MoodName, Mood> = {
     display: { weight: 600, uppercase: false, tracking: '-0.03em', lineHeight: 1.05 },
     bodyWeight: 400,
     button: { font: 'body', weight: 600, uppercase: false },
-    radius: { surface: 8, control: 8, chip: 999 },
+    radius: { surface: 20, control: 14, chip: 999 },
+    grain: { light: grain(0.31, 0.23, 0.18, 0.2), dark: grain(0.93, 0.9, 0.88, 0.07) },
+    torn: true,
     // Cotton stationery lit from the left: a lit edge top-left, a cast falling right.
     surface: (c, dark) => ({
       backgroundColor: c.card,
       border: 0,
-      borderRadius: 8,
+      borderRadius: 20,
       boxShadow: dark
         ? `0 0 0 1px ${c.rule}, 6px 5px 14px -8px rgba(0,0,0,0.6)`
         : 'inset 0 1px 0 rgba(255,255,255,0.9), 0 0 0 0.5px rgba(80,58,46,0.22), 0 1px 0 rgba(80,58,46,0.12), 6px 5px 10px -6px rgba(80,58,46,0.3)',
@@ -202,9 +231,9 @@ export const MOODS: Record<MoodName, Mood> = {
     display: { weight: 400, uppercase: false, tracking: '-0.005em', lineHeight: 1.05 },
     bodyWeight: 400,
     button: { font: 'body', weight: 600, uppercase: false },
-    radius: { surface: 0, control: 999, chip: 999 },
-    // A raised well: square, a 2px ink border and a hard paper shadow, no blur.
-    surface: (c) => ({ backgroundColor: c.paper2, border: `2px solid ${c.ink}`, borderRadius: 0, boxShadow: `6px 6px 0 ${c.paper3}` }),
+    radius: { surface: 22, control: 999, chip: 999 },
+    // A raised well: a 2px ink border and a hard paper shadow, no blur, with rounded corners.
+    surface: (c) => ({ backgroundColor: c.paper2, border: `2px solid ${c.ink}`, borderRadius: 22, boxShadow: `6px 6px 0 ${c.paper3}` }),
     primary: (c) => ({
       backgroundColor: c.accent,
       color: c.onAccent,

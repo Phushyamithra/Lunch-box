@@ -99,7 +99,7 @@ function QuickAction({ icon, label, onClick }: { icon: ReactElement; label: stri
         gap: 0.75,
         cursor: 'pointer',
         border: 0,
-        borderRadius: '4px',
+        borderRadius: 1,
         minHeight: 80,
         bgcolor: (t) => t.tracker.mood.band,
         color: (t) => t.tracker.mood.onBand,
@@ -128,7 +128,7 @@ function TodayList({ items }: { items: { key: string; emoji: string; title: stri
             key={i.key}
             component="button"
             onClick={i.onClick}
-            sx={{ display: 'flex', alignItems: 'center', gap: 1.25, width: '100%', minHeight: 56, p: 1.25, border: 0, borderLeft: (t) => `4px solid ${t.tracker.cta}`, borderRadius: '4px', textAlign: 'left', font: 'inherit', color: 'inherit', cursor: 'pointer', bgcolor: (t) => t.tracker.mood.paper }}
+            sx={{ display: 'flex', alignItems: 'center', gap: 1.25, width: '100%', minHeight: 56, p: 1.25, border: 0, borderLeft: (t) => `4px solid ${t.tracker.cta}`, borderRadius: 1, textAlign: 'left', font: 'inherit', color: 'inherit', cursor: 'pointer', bgcolor: (t) => t.tracker.mood.paper }}
           >
             <Box sx={{ minWidth: 0 }}>
               <Typography sx={{ fontWeight: 700 }}>{i.title}</Typography>
@@ -266,7 +266,7 @@ export default function Home() {
   return (
     <Stack spacing={3}>
       <Box>
-        <Typography variant="h4" component="h1" sx={{ fontSize: { xs: '2.4rem', sm: '3rem' } }}>
+        <Typography variant="h4" component="h1" sx={{ fontSize: { xs: '2rem', sm: '2.4rem' } }}>
           {greeting()}
         </Typography>
         <Typography color="text.secondary">{dayjs().format('dddd, D MMMM')}</Typography>

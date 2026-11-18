@@ -26,7 +26,7 @@ export function Card({ title, aside, children, id }: { title: string; aside?: Re
 export function Metric({ value, unit, caption }: { value: string; unit?: string; caption: string }) {
   return (
     <Box>
-      <Typography component="p" sx={(t) => ({ fontFamily: t.tracker.fonts.display, fontSize: 44, fontWeight: t.typography.h1.fontWeight, lineHeight: 0.95, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' })}>
+      <Typography component="p" sx={(t) => ({ fontFamily: t.tracker.fonts.display, fontSize: 34, fontWeight: t.typography.h1.fontWeight, lineHeight: 1, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' })}>
         {value}
         {unit && (
           <Typography component="span" sx={{ fontSize: 16, fontWeight: 600, ml: 0.5 }} color="text.secondary">
@@ -77,7 +77,7 @@ export function FitnessLayout() {
           mb: 2,
           minHeight: 44,
           '& .MuiTabs-indicator': { display: 'none' },
-          '& .MuiTab-root': { minHeight: 48, borderRadius: '4px', textTransform: 'none', fontWeight: 600, px: 2, mr: 0.5 },
+          '& .MuiTab-root': { minHeight: 48, borderRadius: 1, textTransform: 'none', fontWeight: 600, px: 2, mr: 0.5 },
           '& .Mui-selected': { bgcolor: (t) => t.tracker.cta, color: (t) => `${t.tracker.onCta} !important` },
         }}
       >

@@ -378,7 +378,7 @@ function PastPlan({ state }: { state: PlanState }) {
   const overrides = logsInPlan(state.plan.id, data.logs).filter((l) => l.cap_override).length;
   const plan: PlanRow = state.plan;
   return (
-    <Box sx={{ p: 1.5, borderRadius: '4px', bgcolor: 'action.hover' }}>
+    <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: 'action.hover' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
         <Typography sx={{ fontWeight: 600, flexGrow: 1 }}>{plan.name}</Typography>
         <Chip
