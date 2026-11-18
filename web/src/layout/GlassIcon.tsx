@@ -17,7 +17,7 @@ export interface IconTint {
  */
 export function GlassIcon({ icon, size = 44 }: { icon: ReactElement; tint?: IconTint; size?: number }) {
   const theme = useTheme();
-  const c = theme.tracker.sport;
+  const c = theme.tracker.mood;
   return (
     <Box
       aria-hidden

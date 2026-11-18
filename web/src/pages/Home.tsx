@@ -2,7 +2,6 @@ import MonitorWeightRoundedIcon from '@mui/icons-material/MonitorWeightRounded';
 import PaymentsRoundedIcon from '@mui/icons-material/PaymentsRounded';
 import RestaurantRoundedIcon from '@mui/icons-material/RestaurantRounded';
 import FitnessCenterRoundedIcon from '@mui/icons-material/FitnessCenterRounded';
-import { FONT_DISPLAY } from '../theme';
 import type { ReactElement } from 'react';
 import InstallMobileRoundedIcon from '@mui/icons-material/InstallMobileRounded';
 import { Alert, Box, Button, Chip, LinearProgress, Paper, Stack, Typography } from '@mui/material';
@@ -102,14 +101,14 @@ function QuickAction({ icon, label, onClick }: { icon: ReactElement; label: stri
         border: 0,
         borderRadius: '4px',
         minHeight: 80,
-        bgcolor: (t) => t.tracker.sport.band,
-        color: (t) => t.tracker.sport.onBand,
+        bgcolor: (t) => t.tracker.mood.band,
+        color: (t) => t.tracker.mood.onBand,
         '& .MuiSvgIcon-root': { fontSize: 26, color: (t) => t.tracker.cta },
         '&:hover': { opacity: 0.92 },
       }}
     >
       {icon}
-      <Typography component="span" sx={{ fontFamily: FONT_DISPLAY, fontWeight: 800, textTransform: 'uppercase', fontSize: 15, lineHeight: 1.05, textAlign: 'center' }}>
+      <Typography component="span" sx={(t) => ({ fontFamily: t.tracker.fonts.display, fontWeight: t.typography.h1.fontWeight, textTransform: t.tracker.displayUppercase ? 'uppercase' : 'none', fontSize: 15, lineHeight: 1.05, textAlign: 'center' })}>
         {label}
       </Typography>
     </Box>
@@ -129,7 +128,7 @@ function TodayList({ items }: { items: { key: string; emoji: string; title: stri
             key={i.key}
             component="button"
             onClick={i.onClick}
-            sx={{ display: 'flex', alignItems: 'center', gap: 1.25, width: '100%', minHeight: 56, p: 1.25, border: 0, borderLeft: (t) => `4px solid ${t.tracker.cta}`, borderRadius: '4px', textAlign: 'left', font: 'inherit', color: 'inherit', cursor: 'pointer', bgcolor: (t) => t.tracker.sport.paper }}
+            sx={{ display: 'flex', alignItems: 'center', gap: 1.25, width: '100%', minHeight: 56, p: 1.25, border: 0, borderLeft: (t) => `4px solid ${t.tracker.cta}`, borderRadius: '4px', textAlign: 'left', font: 'inherit', color: 'inherit', cursor: 'pointer', bgcolor: (t) => t.tracker.mood.paper }}
           >
             <Box sx={{ minWidth: 0 }}>
               <Typography sx={{ fontWeight: 700 }}>{i.title}</Typography>

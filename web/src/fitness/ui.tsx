@@ -1,7 +1,6 @@
 import { Alert, Box, Button, CircularProgress, Paper, Tab, Tabs, Typography } from '@mui/material';
 import type { ReactNode } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { FONT_DISPLAY } from '../theme';
 import { useFitness } from './FitnessContext';
 
 /** A leading emoji isn't an icon in this material: the condensed title carries it alone. */
@@ -27,7 +26,7 @@ export function Card({ title, aside, children, id }: { title: string; aside?: Re
 export function Metric({ value, unit, caption }: { value: string; unit?: string; caption: string }) {
   return (
     <Box>
-      <Typography component="p" sx={{ fontFamily: FONT_DISPLAY, fontSize: 44, fontWeight: 800, lineHeight: 0.95, fontVariantNumeric: 'tabular-nums' }}>
+      <Typography component="p" sx={(t) => ({ fontFamily: t.tracker.fonts.display, fontSize: 44, fontWeight: t.typography.h1.fontWeight, lineHeight: 0.95, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' })}>
         {value}
         {unit && (
           <Typography component="span" sx={{ fontSize: 16, fontWeight: 600, ml: 0.5 }} color="text.secondary">

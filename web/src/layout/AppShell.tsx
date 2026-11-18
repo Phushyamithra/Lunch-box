@@ -20,7 +20,10 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import type { ReactElement } from 'react';
+import { GlobalStyles, ThemeProvider } from '@mui/material';
+import { useEffect, useMemo, type ReactElement } from 'react';
+import { moodFor } from '../moods';
+import { createTrackerTheme, globalStyles } from '../theme';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useSettings, type SyncState } from '../settings/SettingsContext';
 import { GlassIcon, type IconTint } from './GlassIcon';
@@ -55,6 +58,25 @@ function SyncIndicator() {
  * on laptops, one header with sync status and Settings.
  */
 export function AppShell() {
+  const outer = useTheme();
+  const { pathname } = useLocation();
+  const mood = moodFor(pathname);
+  const theme = useMemo(() => createTrackerTheme(outer.tracker.appMode, mood), [outer.tracker.appMode, mood]);
+  const c = theme.tracker.mood;
+  // The phone's status bar takes the mood's band.
+  useEffect(() => {
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', c.band);
+  }, [c.band]);
+  return (
+    <ThemeProvider theme={theme}>
+      <GlobalStyles styles={globalStyles(c, theme.palette.mode === 'dark')} />
+      <ShellFrame />
+    </ThemeProvider>
+  );
+}
+
+/** The frame itself, inside the section's mood. */
+function ShellFrame() {
   const theme = useTheme();
   const wide = useMediaQuery(theme.breakpoints.up('md'));
   const location = useLocation();
@@ -81,7 +103,7 @@ export function AppShell() {
             p: 1.5,
             borderRadius: 0,
             borderTop: 0,
-            borderRight: `1px solid ${theme.tracker.sport.rule}`,
+            borderRight: `1px solid ${theme.tracker.mood.rule}`,
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, px: 1, py: 1.5 }}>
@@ -152,8 +174,8 @@ export function AppShell() {
             pb: 'env(safe-area-inset-bottom)',
             zIndex: 10,
             borderRadius: 0,
-            backgroundColor: theme.tracker.sport.band,
-            borderTop: theme.tracker.minimal ? `1px solid ${theme.tracker.sport.rule}` : 0,
+            backgroundColor: theme.tracker.mood.band,
+            borderTop: theme.tracker.minimal ? `1px solid ${theme.tracker.mood.rule}` : 0,
           }}
         >
           <BottomNavigation
@@ -171,7 +193,7 @@ export function AppShell() {
                 sx={{
                   minWidth: 0,
                   px: 0.5,
-                  color: theme.tracker.sport.onBand,
+                  color: theme.tracker.mood.onBand,
                   opacity: 0.72,
                   '& .nav-pill': {
                     width: { xs: 46, sm: 56 },
@@ -182,7 +204,7 @@ export function AppShell() {
                     mb: 0.5,
                     transition: 'background-color 150ms',
                   },
-                  '&.Mui-selected': { color: theme.tracker.sport.onBand, opacity: 1 },
+                  '&.Mui-selected': { color: theme.tracker.mood.onBand, opacity: 1 },
                   '&.Mui-selected .nav-pill': { bgcolor: theme.tracker.cta, color: theme.tracker.onCta },
                   '& .MuiBottomNavigationAction-label': { fontWeight: 600, fontSize: { xs: 11, sm: 12 }, whiteSpace: 'nowrap' },
                   '& .MuiBottomNavigationAction-label.Mui-selected': { fontSize: { xs: 11, sm: 12 } },
