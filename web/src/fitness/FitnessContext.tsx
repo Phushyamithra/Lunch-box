@@ -36,7 +36,8 @@ interface FitnessValue {
   savePreset: (exercise: string, weight: number, reps: number) => Promise<void>;
   removePreset: (id: string) => Promise<void>;
   /** Loads the program, finishers and targets from a parsed reference file. */
-  importProgram: (parsed: ParsedReference) => Promise<void>;
+  /** Load a split; `activate` (default true) also makes it the one Today follows. */
+  importProgram: (parsed: ParsedReference, activate?: boolean) => Promise<void>;
 }
 
 const FitnessContext = createContext<FitnessValue | null>(null);
@@ -176,10 +177,10 @@ export function FitnessProvider({ client, children }: { client: SupabaseClient; 
         await api.deletePreset(client, id);
         patch((d) => ({ ...d, presets: d.presets.filter((p) => p.id !== id) }));
       },
-      async importProgram(parsed) {
+      async importProgram(parsed, activate = true) {
         const current = data?.settings;
         if (!current) throw new Error('Fitness is still loading.');
-        const { slots, settings } = await api.importReference(client, parsed, deriveKeyLifts(parsed.slots), current);
+        const { slots, settings } = await api.importReference(client, parsed, deriveKeyLifts(parsed.slots), current, activate);
         patch((d) => ({
           ...d,
           settings,

@@ -392,6 +392,7 @@ export async function importReference(
   parsed: ParsedReference,
   keyLifts: KeyLiftGroup[],
   current: FitnessSettings,
+  activate = true,
 ): Promise<{ slots: SlotRow[]; settings: FitnessSettings }> {
   const now = new Date().toISOString();
   const { data, error } = await client
@@ -410,8 +411,8 @@ export async function importReference(
     day_focus: { ...Object.fromEntries(Object.entries(current.day_focus).filter(([k]) => !mine(Number(k)))), ...parsed.dayFocus },
     finishers: [...current.finishers.filter((f) => !f.days.some(mine)), ...parsed.finishers],
     key_lifts: [...lifts].map(([label, ex]) => ({ label, exercises: [...ex].sort() })),
-    // Importing a split makes it the active one.
-    program_mode: parsed.cycle ? 'cycle' : 'weekday',
+    // Importing a split makes it the active one (unless asked to just load it).
+    ...(activate ? { program_mode: parsed.cycle ? ('cycle' as const) : ('weekday' as const) } : {}),
   };
   // A rotating cycle starts on the day it's first imported; re-importing doesn't restart it.
   if (parsed.cycle && !current.cycle_start) patch.cycle_start = new Date().toISOString().slice(0, 10);

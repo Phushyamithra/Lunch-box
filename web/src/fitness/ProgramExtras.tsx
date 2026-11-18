@@ -1,5 +1,6 @@
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
+import HistoryRoundedIcon from '@mui/icons-material/HistoryRounded';
 import UploadFileRoundedIcon from '@mui/icons-material/UploadFileRounded';
 import {
   Alert,
@@ -20,11 +21,77 @@ import { useMemo, useState, type ChangeEvent } from 'react';
 import { useSnackbar } from '../layout/Snackbar';
 import { useFitness } from './FitnessContext';
 import type { FitnessData } from './fitnessApi';
+import { classicWeekly } from './classicSplit';
 import { NumberStepper } from './NumberStepper';
 import { deriveKeyLifts, exerciseOptions, parseReference, type ParsedReference } from './referenceImport';
 import { Card } from './ui';
 
 const DAY = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/**
+ * The classic Mon–Sat split, built in: loads its six days (five slots, seven
+ * variants each) and the Abs / Forearms finishers without needing the old
+ * reference file. The rotating cycle and the active split are left alone.
+ */
+export function ClassicSplitCard({ data }: { data: FitnessData }) {
+  const { importProgram } = useFitness();
+  const toast = useSnackbar();
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const classic = useMemo(() => classicWeekly(), []);
+  const loaded = [1, 2, 3, 4, 5].every((d) => data.slots.some((s) => s.weekday === d && s.variants.some(Boolean)));
+
+  const load = async () => {
+    setBusy(true);
+    try {
+      await importProgram(classic, false);
+      toast('Classic weekly split loaded. Pick “Weekly” above to train it.');
+      setOpen(false);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'error';
+      toast(/program_mode|cycle_start|_check|check constraint/i.test(msg) ? 'Run migration 0018 in Supabase first, then load again.' : `Not loaded: ${msg}`, { severity: 'error' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card title="Classic weekly split">
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+        The older Mon–Sat split, built in, with all seven variants per slot:
+      </Typography>
+      <Stack spacing={0.5} sx={{ mb: 2 }}>
+        {[1, 2, 3, 4, 5, 6].map((d) => (
+          <Typography key={d} variant="body2">
+            <strong>{DAY[d]}</strong> · {classic.dayFocus[String(d)] ?? ''}
+          </Typography>
+        ))}
+      </Stack>
+      <Button variant={loaded ? 'outlined' : 'contained'} startIcon={<HistoryRoundedIcon />} onClick={() => setOpen(true)}>
+        {loaded ? 'Reload classic split' : 'Load classic split'}
+      </Button>
+      <Dialog open={open} onClose={() => !busy && setOpen(false)} maxWidth="sm" fullWidth aria-labelledby="classic-title">
+        <DialogTitle id="classic-title">Load the classic weekly split?</DialogTitle>
+        <DialogContent>
+          <Stack spacing={1.5}>
+            <Typography variant="body2">
+              Fills Mon–Sat with its slots, set counts and variants, and adds the Abs (Mon, Wed, Fri) and Forearms (Tue, Thu, Sat) finishers.
+            </Typography>
+            <Alert severity="info">Your rotating cycle, targets and logged sessions stay as they are. Today keeps following the split you picked above.</Alert>
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setOpen(false)} disabled={busy}>
+            Cancel
+          </Button>
+          <Button variant="contained" onClick={() => void load()} disabled={busy}>
+            {busy ? 'Loading…' : 'Load split'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Card>
+  );
+}
 
 /** One-tap import of the Daily Reference file, with a preview first. */
 export function ImportReferenceCard({ data }: { data: FitnessData }) {
