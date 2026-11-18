@@ -145,7 +145,7 @@ export function YearlyBillsCard() {
               <Typography variant="body2" sx={{ width: 64, flexShrink: 0, fontWeight: p.peak ? 700 : 400 }}>
                 {ym(p.month, 'MMM YY')}
               </Typography>
-              <Box sx={{ flexGrow: 1, height: 10, borderRadius: 5, bgcolor: 'action.hover', overflow: 'hidden' }}>
+              <Box sx={{ flexGrow: 1, height: 10, borderRadius: 1, bgcolor: 'action.hover', overflow: 'hidden' }}>
                 <Box sx={{ width: `${(p.committed / max) * 100}%`, height: '100%', bgcolor: p.peak ? 'warning.main' : 'primary.main', opacity: p.peak ? 1 : 0.6 }} />
               </Box>
               <Typography variant="body2" sx={{ width: 84, textAlign: 'right', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>

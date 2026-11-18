@@ -111,7 +111,7 @@ export default function NutritionToday() {
       {MEALS.map((m) => {
         const { entries, total: mt } = byMeal[m.key];
         return (
-          <Paper key={m.key} variant="outlined" sx={{ p: 2, borderRadius: '20px' }}>
+          <Paper key={m.key} variant="outlined" sx={{ p: 2, borderRadius: '4px' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Typography sx={{ fontWeight: 700, flexGrow: 1 }}>
                 {m.emoji} {m.label}
@@ -153,7 +153,7 @@ export default function NutritionToday() {
                     <Box
                       component="button"
                       onClick={() => setActing({ entries: [e], meal: m.key, single: true })}
-                      aria-label={`${e.name}: copy, move or remove`}
+                      aria-label={`${e.name}: change amount, copy, move or remove`}
                       sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%', minHeight: 56, py: 1, px: 0.5, border: 0, bgcolor: 'transparent', color: 'inherit', font: 'inherit', textAlign: 'left', cursor: 'pointer', borderRadius: 2, '&:active': { bgcolor: 'action.selected' } }}
                     >
                     <Box sx={{ flexGrow: 1, minWidth: 0 }}>
@@ -209,7 +209,7 @@ function CalorieHeadline({ p }: { p: MacroProgress }) {
         variant="determinate"
         value={pct}
         color={p.status === 'over' ? 'warning' : 'secondary'}
-        sx={{ height: 10, borderRadius: 999, mt: 0.5, '& .MuiLinearProgress-bar': { transition: 'transform 500ms cubic-bezier(.2,.8,.2,1)' } }}
+        sx={{ height: 10, borderRadius: '4px', mt: 0.5, '& .MuiLinearProgress-bar': { transition: 'transform 500ms cubic-bezier(.2,.8,.2,1)' } }}
         aria-label={`${p.eaten} of ${p.aim} kcal`}
       />
     </Box>
@@ -237,7 +237,7 @@ function MacroBar({ p, delay }: { p: MacroProgress; delay: number }) {
           variant="determinate"
           value={Math.min(100, (p.eaten / scaleMax) * 100)}
           color={p.status === 'over' ? 'warning' : p.status === 'in_range' ? 'success' : 'secondary'}
-          sx={{ height: 8, borderRadius: 999, '& .MuiLinearProgress-bar': { transition: 'transform 500ms cubic-bezier(.2,.8,.2,1)' } }}
+          sx={{ height: 8, borderRadius: '4px', '& .MuiLinearProgress-bar': { transition: 'transform 500ms cubic-bezier(.2,.8,.2,1)' } }}
           aria-label={`${l.label} ${p.eaten} of ${range} ${l.unit}`}
         />
         {p.min !== null && p.max !== null && (
@@ -251,7 +251,7 @@ function MacroBar({ p, delay }: { p: MacroProgress; delay: number }) {
               width: `${((p.max - p.min) / scaleMax) * 100}%`,
               border: 2,
               borderColor: 'success.main',
-              borderRadius: 999,
+              borderRadius: '4px',
               opacity: 0.6,
             }}
           />

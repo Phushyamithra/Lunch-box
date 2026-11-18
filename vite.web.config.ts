@@ -21,8 +21,8 @@ export default defineConfig({
         start_url: '/',
         scope: '/',
         display: 'standalone',
-        background_color: '#101314',
-        theme_color: '#101314',
+        background_color: '#F6F9FC',
+        theme_color: '#00082E',
         icons: [
           { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
@@ -32,7 +32,7 @@ export default defineConfig({
       workbox: {
         // App shell only. Supabase API traffic is never cached by the
         // service worker — cloud data must not be served stale silently.
-        globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
+        globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2}'],
         navigateFallback: '/index.html',
       },
     }),

@@ -164,3 +164,10 @@ migrations.
 - Each day moves to its next variant once trained (V1 for the first full pass, then V2…), wrapping after V6. Up to 6 slots per day; slot 6 sets are logged in set slot 41 because slot 6 holds finisher sets.
 - Two splits side by side (migration 0018, which includes 0017): the weekly split on program days 1–6 and the cycle on 11–15. Program → Your split picks the active one; importing a file makes its split active and replaces only that split's days, names and finishers. 0018 moves a cycle that the earlier version put on days 1–5 to 11–15. Finishers also become ⭐ cards (Abs, Forearms) you can pick on any day.
 - Finishers are matched by day name ("after Upper / Push / Legs"). Weekly muscle coverage counts only days actually trained. Weekday programs keep working unchanged.
+
+## Sport redesign (dev, 2026-11-18)
+
+- The whole web app now wears Hallmark's "Sport" material (github.com/nutlope/hallmark, themes/sport.md): cool concrete paper, blue-black ink, Saira Condensed 800 capitals for heads, buttons and big figures over Albert Sans, JetBrains Mono for times, square 4px corners, rules and paper steps instead of glass and shadows, and volt green only as a fill (the primary action, the active tab and section). Fonts are self-hosted (@fontsource) and precached for offline use.
+- Dark mode is the same system re-derived (paper L 15%, ink L 94%, a dark band for the header and tab bar). The old teal/butter/amber glass theme is gone.
+- Hallmark floor rules applied app-wide: no emoji as icons in card titles, quick actions or tiles; no labels in tracked capitals; no gradients; visible focus rings; no page fade-ins (content never waits on an animation).
+- Nutrition: tap a logged food to change how much you had; its calories and macros are recounted (from the food when known, else scaled).

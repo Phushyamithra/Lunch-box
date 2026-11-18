@@ -167,7 +167,7 @@ const readFilter = (): DietFilter => {
 
 function FoodRow({ f, onPick }: { f: Food; onPick: (f: Food) => void }) {
   return (
-    <ListItemButton onClick={() => onPick(f)} sx={{ borderRadius: '12px' }}>
+    <ListItemButton onClick={() => onPick(f)} sx={{ borderRadius: '4px' }}>
       <ListItemText
         primary={
           <>
@@ -306,7 +306,7 @@ function SearchStep({
                   />
                 }
               >
-                <ListItemButton onClick={() => (food ? onPick(food, f.last.quantity, f.last.unit) : void again(f.last))} sx={{ borderRadius: '12px' }}>
+                <ListItemButton onClick={() => (food ? onPick(food, f.last.quantity, f.last.unit) : void again(f.last))} sx={{ borderRadius: '4px' }}>
                   <ListItemText
                     primary={f.name}
                     secondary={`${food ? `${f.last.quantity} × ${f.last.unit}` : 'tap to add again'} · ${f.last.kcal} kcal · ${f.last.protein} g protein · ${f.count}× in 30 days`}
@@ -319,7 +319,7 @@ function SearchStep({
         {q.trim() && menuHits.length > 0 && <ListSubheader disableSticky>Restaurants</ListSubheader>}
         {q.trim() &&
           menuHits.map((i) => (
-            <ListItemButton key={i.id} onClick={() => onPickMenu(i)} sx={{ borderRadius: '12px' }}>
+            <ListItemButton key={i.id} onClick={() => onPickMenu(i)} sx={{ borderRadius: '4px' }}>
               <ListItemText
                 primary={`${DIET[i.diet].emoji} ${i.name}`}
                 secondary={`${chainOf(i.chain).emoji} ${chainOf(i.chain).name} · ${Math.round(i.options[0].kcal)} kcal${i.options.length > 1 ? ` · ${i.options.length} sizes` : ''}`}
@@ -341,7 +341,7 @@ function SearchStep({
       </List>
       {!q.trim() && !category && categories.length > 0 && (
         <Box>
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
             Browse
           </Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 0.75 }}>
@@ -473,7 +473,7 @@ function PortionStep({
         </TextField>
       </Box>
       <motion.div key={`${qty}-${unitKey}`} initial={{ scale: 0.98, opacity: 0.6 }} animate={{ scale: 1, opacity: 1 }}>
-        <Box sx={{ p: 1.5, borderRadius: '16px', bgcolor: (t) => t.tracker.tonal, display: 'grid', gap: 0.5, gridTemplateColumns: 'repeat(4, 1fr)', textAlign: 'center' }}>
+        <Box sx={{ p: 1.5, borderRadius: '4px', bgcolor: (t) => t.tracker.tonal, display: 'grid', gap: 0.5, gridTemplateColumns: 'repeat(4, 1fr)', textAlign: 'center' }}>
           {[
             ['kcal', nutrients.kcal],
             ['protein', `${nutrients.protein} g`],
@@ -573,7 +573,7 @@ function MealPrepStep({ day, meal }: { day: string; meal: MealSlot }) {
         const m = meals.get(l.meal_id);
         const done = linked.has(l.id);
         return (
-          <Box key={l.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1.25, borderRadius: '14px', border: 1, borderColor: 'divider' }}>
+          <Box key={l.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1.25, borderRadius: '4px', border: 1, borderColor: 'divider' }}>
             <Box sx={{ flexGrow: 1, minWidth: 0 }}>
               <Typography sx={{ fontWeight: 700 }} noWrap>
                 {m?.name ?? 'Unknown meal'}

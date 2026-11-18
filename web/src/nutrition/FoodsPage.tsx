@@ -51,7 +51,7 @@ export default function FoodsPage() {
           ) : (
             <List dense disablePadding>
               {shown.map((f) => (
-                <ListItemButton key={f.id} onClick={() => setEditing(f)} sx={{ borderRadius: '12px' }}>
+                <ListItemButton key={f.id} onClick={() => setEditing(f)} sx={{ borderRadius: '4px' }}>
                   <ListItemText
                     primary={`${f.barcode ? '📦 ' : ''}${f.diet ? `${DIET[f.diet].emoji} ` : ''}${f.name}${f.brand ? ` · ${f.brand}` : ''}`}
                     secondary={`${Math.round(f.kcal)} kcal · P ${f.protein} · C ${f.carbs} · F ${f.fat} ${f.basis === 'serving' ? 'per serving' : f.basis === '100ml' ? 'per 100 ml' : 'per 100 g'}${

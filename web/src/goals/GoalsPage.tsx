@@ -111,7 +111,7 @@ function GoalCard({ s, today, onEdit, onToggleCheckin, busy }: { s: GoalSummary;
           {s.progress === null ? 'No data yet' : `${fmt(s.progress)} / ${fmt(target)} ${metric.unit}`}
         </Typography>
         {s.progress !== null && metric.direction === 'up' && goal.params.direction !== 'down' && (
-          <LinearProgress variant="determinate" value={Math.min(100, (s.progress / target) * 100)} sx={{ height: 8, borderRadius: 4 }} />
+          <LinearProgress variant="determinate" value={Math.min(100, (s.progress / target) * 100)} sx={{ height: 8, borderRadius: 1 }} />
         )}
       </Box>
     );
@@ -131,7 +131,7 @@ function GoalCard({ s, today, onEdit, onToggleCheckin, busy }: { s: GoalSummary;
               variant="determinate"
               color={current.status === 'met' ? 'success' : 'primary'}
               value={current.value === null ? 0 : Math.min(100, (current.value / current.target) * 100)}
-              sx={{ height: 8, borderRadius: 4 }}
+              sx={{ height: 8, borderRadius: 1 }}
             />
           </Box>
         )}

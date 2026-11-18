@@ -86,9 +86,9 @@ export function BarcodeScanner({ onCode }: { onCode: (code: string) => void }) {
     <Stack spacing={1.5}>
       {cameraScanSupported ? (
         scanning ? (
-          <Box sx={{ position: 'relative', borderRadius: '18px', overflow: 'hidden', bgcolor: 'black', aspectRatio: '4 / 3' }}>
+          <Box sx={{ position: 'relative', borderRadius: '4px', overflow: 'hidden', bgcolor: 'black', aspectRatio: '4 / 3' }}>
             <video ref={video} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} aria-label="Camera preview" />
-            <Box aria-hidden sx={{ position: 'absolute', inset: '30% 10%', border: '2px solid rgba(255,255,255,0.85)', borderRadius: '12px' }} />
+            <Box aria-hidden sx={{ position: 'absolute', inset: '30% 10%', border: '2px solid rgba(255,255,255,0.85)', borderRadius: '4px' }} />
             <Button variant="contained" size="small" onClick={stop} sx={{ position: 'absolute', bottom: 10, right: 10 }}>
               Stop
             </Button>

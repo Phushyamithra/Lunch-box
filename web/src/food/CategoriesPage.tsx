@@ -72,7 +72,7 @@ export default function CategoriesPage() {
                 sx={{
                   width: 40,
                   height: 40,
-                  borderRadius: '12px',
+                  borderRadius: '4px',
                   display: 'grid',
                   placeItems: 'center',
                   fontSize: 22,

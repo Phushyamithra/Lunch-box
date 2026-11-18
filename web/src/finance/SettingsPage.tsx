@@ -477,7 +477,7 @@ export default function FinanceSettingsPage() {
 
       {dirty && (
         <Box sx={{ position: 'sticky', bottom: { xs: 88, md: 16 }, zIndex: 2 }}>
-          <Stack direction="row" spacing={1} useFlexGap alignItems="center" sx={{ p: 1.25, borderRadius: 3, bgcolor: 'background.paper', boxShadow: 6, flexWrap: 'wrap', rowGap: 1 }}>
+          <Stack direction="row" spacing={1} useFlexGap alignItems="center" sx={{ p: 1.25, borderRadius: 1, bgcolor: 'background.paper', boxShadow: 6, flexWrap: 'wrap', rowGap: 1 }}>
             <Typography variant="body2" sx={{ flexGrow: 1 }} color={error ? 'warning.main' : 'text.secondary'}>
               {error ?? 'Unsaved changes'}
             </Typography>

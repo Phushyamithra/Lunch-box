@@ -1,222 +1,241 @@
-import { alpha, createTheme, type Theme } from '@mui/material/styles';
+import { createTheme, type Theme } from '@mui/material/styles';
 import type { ResolvedThemeMode } from '../../src/models';
 
 /**
- * Tracker palette. Light mode: slate teal, butter and amber, with brick
- * and maroon as minor accents. Dark mode is deliberately minimal: neutral
- * graphite with one soft-teal accent and no gold. Worn two ways —
- * iOS-style frosted glass for surfaces, and Material You tonal "pop" for
- * actions (pill buttons, tonal containers, pill nav indicators).
+ * Tracker in Hallmark's "Sport" material (github.com/nutlope/hallmark,
+ * themes/sport.md): a results sheet. Cool concrete paper, blue-black ink,
+ * Saira Condensed 800 capitals over an Albert Sans body, big condensed
+ * figures, JetBrains Mono for times, hairlines and one heavier bar rule,
+ * square 4px corners, and volt as the only colour: a fill with ink on it
+ * (the primary action, the active tab, one highlighted figure), never type.
+ * No gradients, no glass, no shadows: depth is paper steps and rules.
  *
- * Contrast is WCAG AA, checked against the worst case of each glass layer
- * over the background glow. Light: body ≥ 10:1, secondary ≥ 5.8:1, CTA
- * text ≥ 5.3:1. Dark: body ≥ 14:1, secondary ≥ 6.6:1, CTA text ≥ 7.6:1.
+ * Dark mode is the same system re-derived (Hallmark dark-mode.md): paper
+ * L 15%, ink L 94%, elevation lighter by paper step, volt eased in chroma.
+ * Contrast (WCAG): light ink/paper 18.5, muted/paper 5.7, ink on volt 14.1;
+ * dark ink/paper 16.5, muted/paper 7.4, ink on volt 15.4.
  */
-export const PALETTE = {
-  teal: '#335C67',
-  butter: '#FFF3B0',
-  amber: '#E09F3E',
-  brick: '#9E2A2B',
-  maroon: '#540B0E',
-  // Derived tints/shades of the five above.
-  butterLight: '#FFF8D4', // light-mode page
-  amberLight: '#F0BE6E',
-  amberDeep: '#9A6A1F', // amber that reads on butter (4.5:1+)
-  tealDeep: '#1F3A41', // light-mode text; text on amber/butter fills
-  tealLight: '#4A7A86',
-  // Minimal dark mode: graphite neutrals + one soft teal (from #335C67).
-  night: '#101314', // dark-mode page
-  surface: '#1A1E20', // dark-mode glass base
-  mist: '#E8ECEC', // dark-mode text
-  mistMuted: '#9BA6A8', // dark-mode secondary text
-  tealSoft: '#8CC2CC', // dark-mode accent
-  tealSoftDeep: '#7DB3BE',
-  onTealSoft: '#0F1A1D',
-  /** Text on light fills (butter, amber, the CTA gradient). */
-  ink: '#1F3A41',
+export const SPORT = {
+  light: {
+    paper: '#F6F9FC',
+    paper2: '#EBEFF2',
+    paper3: '#DFE3E7',
+    ink: '#00082E',
+    ink2: '#071A36',
+    muted: '#5B646F',
+    rule: '#B4B8BC',
+    rule2: '#273E5C',
+    accent: '#C8E928',
+    accentDeep: '#678802',
+    /** The ink band (header, tab bar, quick actions) and the type on it. */
+    band: '#00082E',
+    onBand: '#F6F9FC',
+    error: '#B3261E',
+    warning: '#8A5A00',
+    success: '#2F6B2F',
+  },
+  dark: {
+    paper: '#080C10',
+    paper2: '#0D1217',
+    paper3: '#13191F',
+    ink: '#E6ECF3',
+    ink2: '#C8D2DE',
+    muted: '#95A0AB',
+    rule: '#292E34',
+    rule2: '#5E738F',
+    accent: '#D3F163',
+    accentDeep: '#A0C849',
+    // Dark keeps the band dark: one paper step up, light type, never a pale strip.
+    band: '#141B24',
+    onBand: '#E6ECF3',
+    error: '#F2B8B5',
+    warning: '#E8C06A',
+    success: '#9CD39C',
+  },
 } as const;
 
-/** Primary call-to-action fill per mode; its text colour passes on every stop. */
-export const CTA = {
-  light: { fill: `linear-gradient(135deg, ${PALETTE.amberLight} 0%, ${PALETTE.amber} 100%)`, text: PALETTE.ink },
-  dark: { fill: `linear-gradient(135deg, ${PALETTE.tealSoft} 0%, ${PALETTE.tealSoftDeep} 100%)`, text: PALETTE.onTealSoft },
-} as const;
+/** Ink on volt in both modes (the light ink reads on both volts). */
+const ON_VOLT = SPORT.light.ink;
+
+export const FONT_DISPLAY = "'Saira Condensed', 'Arial Narrow', sans-serif";
+export const FONT_BODY = "'Albert Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
+export const FONT_MONO = "'JetBrains Mono', ui-monospace, 'SF Mono', Consolas, monospace";
+
+/** Display heads: upright condensed capitals, never slanted or loosely tracked. */
+const display = { fontFamily: FONT_DISPLAY, fontWeight: 800, textTransform: 'uppercase' as const, letterSpacing: '-0.01em', lineHeight: 1.02 };
 
 export function createTrackerTheme(mode: ResolvedThemeMode): Theme {
   const dark = mode === 'dark';
-  const glassFill = dark ? alpha(PALETTE.surface, 0.72) : alpha('#FFFFFF', 0.6);
-  const glassBorder = dark ? alpha(PALETTE.mist, 0.08) : alpha('#FFFFFF', 0.8);
-  const glassShadow = dark
-    ? '0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(232,236,236,0.05)'
-    : '0 8px 32px rgba(31,58,65,0.1), inset 0 1px 0 rgba(255,255,255,0.9)';
-  const tonal = dark ? '#1F3237' : '#D5E5E7'; // teal containers
-  const onTonal = dark ? PALETTE.mist : PALETTE.tealDeep;
-  const cta = dark ? CTA.dark : CTA.light;
+  const c = dark ? SPORT.dark : SPORT.light;
 
   const theme = createTheme({
-    palette: dark
-      ? {
-          mode,
-          primary: { main: PALETTE.tealSoft, contrastText: PALETTE.onTealSoft },
-          secondary: { main: PALETTE.tealSoft, contrastText: PALETTE.onTealSoft },
-          error: { main: '#F2A7A0' },
-          warning: { main: '#D9B26F' },
-          success: { main: '#9CC5A1' },
-          info: { main: PALETTE.tealSoft },
-          background: { default: PALETTE.night, paper: PALETTE.surface },
-          text: { primary: PALETTE.mist, secondary: PALETTE.mistMuted },
-          divider: alpha(PALETTE.mist, 0.08),
-        }
-      : {
-          mode,
-          primary: { main: PALETTE.teal, contrastText: PALETTE.butter },
-          secondary: { main: PALETTE.amberDeep, contrastText: '#FFFFFF' },
-          error: { main: PALETTE.brick },
-          warning: { main: PALETTE.amberDeep },
-          success: { main: '#3E6B4A' },
-          info: { main: PALETTE.teal },
-          background: { default: PALETTE.butterLight, paper: '#FFFBEA' },
-          text: { primary: PALETTE.tealDeep, secondary: PALETTE.teal },
-          divider: alpha(PALETTE.tealDeep, 0.1),
-        },
-    shape: { borderRadius: 14 },
+    palette: {
+      mode,
+      primary: { main: c.ink, contrastText: c.paper },
+      secondary: { main: c.accentDeep, contrastText: ON_VOLT },
+      error: { main: c.error },
+      warning: { main: c.warning },
+      success: { main: c.success },
+      info: { main: c.rule2 },
+      background: { default: c.paper, paper: c.paper },
+      text: { primary: c.ink, secondary: c.muted },
+      divider: c.rule,
+    },
+    shape: { borderRadius: 4 },
     typography: {
-      fontFamily:
-        "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI Variable Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
-      h5: { fontWeight: 700, letterSpacing: -0.3 },
-      h6: { fontWeight: 700, letterSpacing: -0.2 },
-      subtitle1: { fontWeight: 650 },
-      subtitle2: { fontWeight: 650 },
-      button: { textTransform: 'none', fontWeight: 650 },
+      fontFamily: FONT_BODY,
+      fontWeightRegular: dark ? 350 : 400,
+      h1: display,
+      h2: display,
+      h3: display,
+      h4: display,
+      h5: { ...display, fontSize: '1.75rem' },
+      h6: { ...display, fontSize: '1.4rem' },
+      // Card and section titles.
+      subtitle1: { ...display, fontSize: '1.3rem' },
+      subtitle2: { fontWeight: 600 },
+      body1: { fontSize: '1rem' },
+      button: { fontFamily: FONT_DISPLAY, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0, fontSize: '1rem' },
+      caption: { fontWeight: 500 },
     },
   });
 
   return createTheme(theme, {
-    tracker: { tonal, onTonal, glassFill, glassBorder, cta: cta.fill, onCta: cta.text, minimal: dark },
+    tracker: {
+      tonal: c.paper3,
+      onTonal: c.ink,
+      glassFill: c.paper,
+      glassBorder: c.rule,
+      cta: c.accent,
+      onCta: ON_VOLT,
+      minimal: dark,
+      sport: c,
+    },
     components: {
       MuiCssBaseline: {
         styleOverrides: {
-          // Soft colour glow behind the glass. A fixed layer (not
-          // background-attachment) so it also stays put on iOS Safari.
-          'body::before': {
-            content: '""',
-            position: 'fixed',
-            inset: 0,
-            zIndex: -1,
-            pointerEvents: 'none',
-            background: dark
-              ? `radial-gradient(60vmax 45vmax at 0% 0%, ${alpha(PALETTE.teal, 0.28)}, transparent 60%),
-                 radial-gradient(55vmax 40vmax at 100% 100%, ${alpha(PALETTE.teal, 0.12)}, transparent 60%),
-                 ${PALETTE.night}`
-              : `radial-gradient(60vmax 45vmax at 0% 0%, ${alpha(PALETTE.amber, 0.32)}, transparent 60%),
-                 radial-gradient(55vmax 40vmax at 100% 100%, ${alpha(PALETTE.teal, 0.25)}, transparent 60%),
-                 ${PALETTE.butterLight}`,
+          ':root': { colorScheme: dark ? 'dark' : 'light' },
+          'html, body': { overflowX: 'clip' },
+          body: { backgroundColor: c.paper, fontVariantNumeric: 'tabular-nums' },
+          '::selection': { background: c.accent, color: ON_VOLT },
+          // Every control shows focus at once, in the deep volt.
+          ':focus-visible': { outline: `2px solid ${c.accentDeep}`, outlineOffset: 2 },
+          a: { color: 'inherit', textDecorationColor: c.rule, textUnderlineOffset: 3 },
+          'a:hover': { textDecorationColor: c.accentDeep },
+          '@media (prefers-reduced-motion: reduce)': {
+            '*, *::before, *::after': { transitionDuration: '0.01ms !important', animationDuration: '0.01ms !important' },
           },
-          body: { backgroundColor: 'transparent' },
         },
       },
       MuiPaper: {
         defaultProps: { elevation: 0 },
         styleOverrides: {
-          root: {
-            backgroundImage: 'none',
-            backgroundColor: glassFill,
-            backdropFilter: 'blur(20px) saturate(160%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(160%)',
-            // Solid fallback where blur is unsupported or unwanted.
-            '@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)))': {
-              backgroundColor: dark ? PALETTE.surface : '#FFFBEA',
-            },
-            '@media (prefers-reduced-transparency: reduce)': {
-              backgroundColor: dark ? PALETTE.surface : '#FFFBEA',
-              backdropFilter: 'none',
-            },
-          },
-          rounded: { borderRadius: 22 },
-          outlined: { borderColor: glassBorder, boxShadow: glassShadow },
+          root: { backgroundImage: 'none', backgroundColor: c.paper },
+          rounded: { borderRadius: 4 },
+          // A "well": a paper step under a bar rule, never a boxed card or a shadow.
+          outlined: { backgroundColor: c.paper2, border: 0, borderTop: `2px solid ${c.rule2}`, borderRadius: '0 0 4px 4px' },
         },
       },
       MuiDialog: {
-        styleOverrides: { paper: { borderRadius: 28 } },
+        styleOverrides: { paper: { borderRadius: 4, backgroundColor: c.paper, borderTop: `4px solid ${c.ink}` } },
       },
+      MuiDialogTitle: { styleOverrides: { root: { ...display, fontSize: '1.5rem' } } },
       MuiAlert: {
         styleOverrides: {
-          root: { borderRadius: 14, backdropFilter: 'none', WebkitBackdropFilter: 'none' },
+          root: { borderRadius: 4, border: `1px solid ${c.rule}` },
+          standardInfo: { backgroundColor: c.paper2, color: c.ink },
         },
       },
       MuiAppBar: {
-        styleOverrides: {
-          root: {
-            backgroundColor: dark ? alpha(PALETTE.night, 0.55) : alpha(PALETTE.butterLight, 0.55),
-            borderRadius: 0,
-          },
-        },
+        styleOverrides: { root: { backgroundColor: c.band, color: c.onBand, borderRadius: 0, borderBottom: dark ? `1px solid ${c.rule}` : 0 } },
       },
-      // Touch targets: at least 44px (48 for icon buttons), so taps land where meant.
       MuiIconButton: {
         styleOverrides: {
-          root: { minWidth: 48, minHeight: 48 },
+          root: { minWidth: 48, minHeight: 48, borderRadius: 4 },
           sizeSmall: { minWidth: 44, minHeight: 44 },
         },
       },
       MuiCheckbox: { styleOverrides: { root: { padding: 12 } } },
       MuiMenuItem: { styleOverrides: { root: { minHeight: 48 } } },
-      MuiTab: { styleOverrides: { root: { minHeight: 48 } } },
+      MuiTab: { styleOverrides: { root: { minHeight: 48, fontFamily: FONT_BODY, fontWeight: 600, textTransform: 'none', fontSize: '0.95rem' } } },
       MuiButton: {
         defaultProps: { disableElevation: true },
         styleOverrides: {
-          root: { borderRadius: 999, paddingInline: 20, minHeight: 44 },
-          sizeSmall: { minHeight: 40, paddingInline: 14 },
+          root: { borderRadius: 4, paddingInline: 18, minHeight: 44, border: '2px solid transparent' },
+          sizeSmall: { minHeight: 40, paddingInline: 12, fontSize: '0.9rem' },
+          sizeLarge: { fontSize: '1.15rem' },
+          // The primary control: a volt block with ink capitals.
           containedPrimary: {
-            background: cta.fill,
-            color: cta.text,
-            boxShadow: dark ? '0 6px 18px rgba(0,0,0,0.35)' : `0 6px 18px ${alpha(PALETTE.amber, 0.45)}`,
-            '&:hover': { background: cta.fill, filter: 'brightness(1.04)' },
-            '&.Mui-disabled': { background: alpha(dark ? PALETTE.tealSoft : PALETTE.amber, 0.3), color: alpha(cta.text, 0.6) },
+            backgroundColor: c.accent,
+            color: ON_VOLT,
+            '&:hover': { backgroundColor: c.accent, borderColor: ON_VOLT },
+            '&.Mui-disabled': { backgroundColor: c.paper3, color: c.muted },
           },
+          containedSecondary: { backgroundColor: c.ink, color: c.paper, '&:hover': { backgroundColor: c.ink2 } },
+          // Its partner: 2px ink border, same capitals.
+          outlined: { borderWidth: 2, borderColor: c.ink, color: c.ink, '&:hover': { borderWidth: 2, borderColor: c.ink, backgroundColor: c.paper2 } },
+          outlinedError: { borderColor: c.error, color: c.error, '&:hover': { borderColor: c.error } },
+          text: { '&:hover': { backgroundColor: c.paper3 } },
         },
       },
       MuiChip: {
         styleOverrides: {
-          root: { borderRadius: 10, fontWeight: 600, height: 40 },
+          root: { borderRadius: 4, fontWeight: 500, height: 40 },
           sizeSmall: { height: 34 },
-          colorSecondary: { backgroundColor: tonal, color: onTonal },
+          outlined: { borderColor: c.rule },
+          colorSecondary: { backgroundColor: c.accent, color: ON_VOLT },
+          colorPrimary: { backgroundColor: c.ink, color: c.paper },
+          outlinedPrimary: { backgroundColor: 'transparent', borderColor: c.ink, color: c.ink },
+          outlinedSecondary: { backgroundColor: 'transparent', borderColor: c.accentDeep, color: c.ink },
         },
       },
       MuiToggleButtonGroup: {
-        styleOverrides: { root: { borderRadius: 999, gap: 4, padding: 4, backgroundColor: alpha(dark ? '#000' : '#fff', 0.2) } },
+        styleOverrides: { root: { borderRadius: 4, gap: 4, padding: 4, backgroundColor: c.paper2 } },
       },
       MuiToggleButton: {
         styleOverrides: {
           root: {
+            fontFamily: FONT_BODY,
             textTransform: 'none',
-            fontWeight: 650,
+            fontWeight: 600,
+            fontSize: '0.95rem',
             border: 0,
-            borderRadius: '999px !important',
-            '&.Mui-selected, &.Mui-selected:hover': { backgroundColor: tonal, color: onTonal },
+            borderRadius: '4px !important',
+            color: c.muted,
+            '&.Mui-selected, &.Mui-selected:hover': { backgroundColor: c.accent, color: ON_VOLT },
           },
         },
       },
       MuiListItemButton: {
         styleOverrides: {
           root: {
-            borderRadius: 999,
+            borderRadius: 4,
             minHeight: 48,
-            '&.Mui-selected, &.Mui-selected:hover': { backgroundColor: tonal, color: onTonal },
-            '&.Mui-selected .MuiListItemIcon-root': { color: onTonal },
+            '&.Mui-selected, &.Mui-selected:hover': { backgroundColor: c.accent, color: ON_VOLT },
+            '&.Mui-selected .MuiListItemIcon-root': { color: ON_VOLT },
           },
         },
       },
       MuiLinearProgress: {
         styleOverrides: {
-          root: { height: 10, borderRadius: 999, backgroundColor: alpha(dark ? PALETTE.mist : PALETTE.tealDeep, 0.1) },
-          bar: { borderRadius: 999 },
-          barColorSecondary: { background: cta.fill },
+          root: { height: 10, borderRadius: 2, backgroundColor: c.paper3 },
+          bar: { borderRadius: 2 },
+          barColorPrimary: { backgroundColor: c.ink },
+          barColorSecondary: { backgroundColor: c.accent },
         },
       },
       MuiOutlinedInput: {
         styleOverrides: {
-          root: { borderRadius: 14, backgroundColor: alpha(dark ? '#000' : '#fff', dark ? 0.15 : 0.5) },
+          root: { borderRadius: 4, backgroundColor: c.paper, '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: c.accentDeep } },
+          notchedOutline: { borderColor: c.rule },
+        },
+      },
+      MuiTooltip: { styleOverrides: { tooltip: { backgroundColor: c.band, color: c.onBand, borderRadius: 4, fontSize: 13 } } },
+      MuiSnackbarContent: { styleOverrides: { root: { backgroundColor: c.band, color: c.onBand, borderRadius: 4 } } },
+      MuiSwitch: {
+        styleOverrides: {
+          switchBase: { '&.Mui-checked + .MuiSwitch-track': { backgroundColor: c.accentDeep, opacity: 1 } },
+          track: { backgroundColor: c.rule, opacity: 1 },
         },
       },
     },
@@ -224,15 +243,18 @@ export function createTrackerTheme(mode: ResolvedThemeMode): Theme {
 }
 
 export interface TrackerTokens {
+  /** A paper step for selected or tinted areas, and the ink on it. */
   tonal: string;
   onTonal: string;
   glassFill: string;
   glassBorder: string;
-  /** Call-to-action fill and its text colour (mode-specific). */
+  /** Volt: the primary action's fill, and the ink on it. */
   cta: string;
   onCta: string;
-  /** Dark mode: monochrome icon tiles, no decorative colour. */
+  /** Dark mode. */
   minimal: boolean;
+  /** The full Sport palette for the current mode. */
+  sport: (typeof SPORT)['light' | 'dark'];
 }
 
 declare module '@mui/material/styles' {

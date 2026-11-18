@@ -36,6 +36,7 @@ export interface Nutrients {
   sodium_mg: number | null;
 }
 export const NUTRIENT_KEYS = ['kcal', 'protein', 'carbs', 'fat', 'fibre', 'sugar', 'sodium_mg'] as const;
+export type NutrientKey = (typeof NUTRIENT_KEYS)[number];
 export const ZERO: Nutrients = { kcal: 0, protein: 0, carbs: 0, fat: 0, fibre: 0, sugar: null, sodium_mg: null };
 
 export interface Portion {
@@ -111,6 +112,32 @@ export function nutrientsFor(food: Food, quantity: number, unitKey: string): { n
       sugar: scale(food.sugar),
       sodium_mg: food.sodium_mg === null ? null : Math.round(food.sodium_mg * factor),
     },
+  };
+}
+
+/**
+ * A logged entry at a new amount (same unit). From the food when it's known,
+ * else scaled from what the entry counted (quick adds, restaurants, meal prep).
+ */
+export function rescaleEntry(entry: Entry, quantity: number, food?: Food): Pick<Entry, 'quantity' | 'grams' | NutrientKey> {
+  if (food) {
+    const unitKey = unitsFor(food).find((u) => u.key === entry.unit || u.key === `p:${entry.unit}`)?.key;
+    if (unitKey) {
+      const { nutrients, grams } = nutrientsFor(food, quantity, unitKey);
+      return { ...nutrients, quantity, grams };
+    }
+  }
+  const f = entry.quantity > 0 ? quantity / entry.quantity : 0;
+  return {
+    quantity,
+    grams: entry.grams === null ? null : r1(entry.grams * f),
+    kcal: Math.round(entry.kcal * f),
+    protein: r1(entry.protein * f),
+    carbs: r1(entry.carbs * f),
+    fat: r1(entry.fat * f),
+    fibre: r1(entry.fibre * f),
+    sugar: entry.sugar === null ? null : r1(entry.sugar * f),
+    sodium_mg: entry.sodium_mg === null ? null : Math.round(entry.sodium_mg * f),
   };
 }
 

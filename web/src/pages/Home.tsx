@@ -1,3 +1,9 @@
+import MonitorWeightRoundedIcon from '@mui/icons-material/MonitorWeightRounded';
+import PaymentsRoundedIcon from '@mui/icons-material/PaymentsRounded';
+import RestaurantRoundedIcon from '@mui/icons-material/RestaurantRounded';
+import FitnessCenterRoundedIcon from '@mui/icons-material/FitnessCenterRounded';
+import { FONT_DISPLAY } from '../theme';
+import type { ReactElement } from 'react';
 import InstallMobileRoundedIcon from '@mui/icons-material/InstallMobileRounded';
 import { Alert, Box, Button, Chip, LinearProgress, Paper, Stack, Typography } from '@mui/material';
 import dayjs from 'dayjs';
@@ -70,7 +76,7 @@ function Bars({ bars }: { bars: MiniBar[] }) {
                 {b.text}
               </Typography>
             </Stack>
-            <LinearProgress variant="determinate" value={Math.min(100, ratio * 100)} color={ratio > 1.1 ? 'warning' : ratio >= 0.9 ? 'success' : 'primary'} sx={{ height: 6, borderRadius: 3 }} />
+            <LinearProgress variant="determinate" value={Math.min(100, ratio * 100)} color={ratio > 1.1 ? 'warning' : ratio >= 0.9 ? 'success' : 'primary'} sx={{ height: 6, borderRadius: 1 }} />
           </Box>
         );
       })}
@@ -78,30 +84,43 @@ function Bars({ bars }: { bars: MiniBar[] }) {
   );
 }
 
-function QuickAction({ emoji, label, onClick }: { emoji: string; label: string; onClick: () => void }) {
+/** One-tap start for the day's main jobs: an ink block, its label in condensed capitals. */
+function QuickAction({ icon, label, onClick }: { icon: ReactElement; label: string; onClick: () => void }) {
   return (
-    <Paper
-      variant="outlined"
+    <Box
       component={motion.button}
-      whileTap={{ scale: 0.95 }}
+      whileTap={{ scale: 0.96 }}
       onClick={onClick}
-      sx={{ p: 1.25, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5, cursor: 'pointer', color: 'inherit', font: 'inherit', borderRadius: '18px', minHeight: 72 }}
+      sx={{
+        p: 1.25,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 0.75,
+        cursor: 'pointer',
+        border: 0,
+        borderRadius: '4px',
+        minHeight: 80,
+        bgcolor: (t) => t.tracker.sport.band,
+        color: (t) => t.tracker.sport.onBand,
+        '& .MuiSvgIcon-root': { fontSize: 26, color: (t) => t.tracker.cta },
+        '&:hover': { opacity: 0.92 },
+      }}
     >
-      <Box aria-hidden sx={{ fontSize: 24, lineHeight: 1 }}>
-        {emoji}
-      </Box>
-      <Typography variant="caption" sx={{ fontWeight: 600, textAlign: 'center', lineHeight: 1.2 }}>
+      {icon}
+      <Typography component="span" sx={{ fontFamily: FONT_DISPLAY, fontWeight: 800, textTransform: 'uppercase', fontSize: 15, lineHeight: 1.05, textAlign: 'center' }}>
         {label}
       </Typography>
-    </Paper>
+    </Box>
   );
 }
 
 function TodayList({ items }: { items: { key: string; emoji: string; title: string; detail: string; onClick: () => void }[] }) {
   if (!items.length) return null;
   return (
-    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: '20px' }}>
-      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4 }}>
+    <Paper variant="outlined" sx={{ p: 2 }}>
+      <Typography variant="subtitle1" component="h2">
         Due today
       </Typography>
       <Stack spacing={0.75} sx={{ mt: 0.75 }}>
@@ -110,11 +129,8 @@ function TodayList({ items }: { items: { key: string; emoji: string; title: stri
             key={i.key}
             component="button"
             onClick={i.onClick}
-            sx={{ display: 'flex', alignItems: 'center', gap: 1.25, width: '100%', p: 1, border: 0, borderRadius: '14px', textAlign: 'left', font: 'inherit', color: 'inherit', cursor: 'pointer', bgcolor: (t) => t.tracker.tonal }}
+            sx={{ display: 'flex', alignItems: 'center', gap: 1.25, width: '100%', minHeight: 56, p: 1.25, border: 0, borderLeft: (t) => `4px solid ${t.tracker.cta}`, borderRadius: '4px', textAlign: 'left', font: 'inherit', color: 'inherit', cursor: 'pointer', bgcolor: (t) => t.tracker.sport.paper }}
           >
-            <Box aria-hidden sx={{ fontSize: 22 }}>
-              {i.emoji}
-            </Box>
             <Box sx={{ minWidth: 0 }}>
               <Typography sx={{ fontWeight: 700 }}>{i.title}</Typography>
               <Typography variant="body2" color="text.secondary">
@@ -241,17 +257,17 @@ export default function Home() {
       : { path: '/food', title: MODULES.food.title, chip: food.loading ? 'Loading' : 'Import needed' },
   );
 
-  const actions: { emoji: string; label: string; go: () => void }[] = [
-    { emoji: '⚖️', label: 'Weigh in', go: () => goTo('/fitness', 'weight-card') },
-    { emoji: '🍛', label: 'Log food', go: () => goTo('/nutrition') },
-    { emoji: '🏋️', label: 'Workout', go: () => goTo('/fitness') },
-    { emoji: '💸', label: 'Expense', go: () => goTo('/finance') },
+  const actions: { icon: ReactElement; label: string; go: () => void }[] = [
+    { icon: <MonitorWeightRoundedIcon />, label: 'Weigh in', go: () => goTo('/fitness', 'weight-card') },
+    { icon: <RestaurantRoundedIcon />, label: 'Log food', go: () => goTo('/nutrition') },
+    { icon: <FitnessCenterRoundedIcon />, label: 'Workout', go: () => goTo('/fitness') },
+    { icon: <PaymentsRoundedIcon />, label: 'Expense', go: () => goTo('/finance') },
   ];
 
   return (
     <Stack spacing={3}>
       <Box>
-        <Typography variant="h5" component="h1" sx={{ fontWeight: 700 }}>
+        <Typography variant="h4" component="h1" sx={{ fontSize: { xs: '2.4rem', sm: '3rem' } }}>
           {greeting()}
         </Typography>
         <Typography color="text.secondary">{dayjs().format('dddd, D MMMM')}</Typography>
@@ -273,7 +289,7 @@ export default function Home() {
 
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1 }}>
         {actions.map((a) => (
-          <QuickAction key={a.label} emoji={a.emoji} label={a.label} onClick={a.go} />
+          <QuickAction key={a.label} icon={a.icon} label={a.label} onClick={a.go} />
         ))}
       </Box>
 

@@ -68,7 +68,7 @@ export function BarcodeLookup({ onFood }: { onFood: (food: Food) => void }) {
 
       {state.step === 'off' && state.result.draft && (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-          <Stack spacing={1.25} sx={{ p: 1.5, borderRadius: '18px', border: 1, borderColor: 'divider' }}>
+          <Stack spacing={1.25} sx={{ p: 1.5, borderRadius: '4px', border: 1, borderColor: 'divider' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Typography sx={{ fontWeight: 800, flexGrow: 1 }}>{state.result.draft.name}</Typography>
               <Chip size="small" variant="outlined" label="Open Food Facts" />

@@ -16,6 +16,9 @@
   "dependencies": {
     "@emotion/react": "^11.13.5",
     "@emotion/styled": "^11.13.5",
+    "@fontsource/albert-sans": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "@fontsource/saira-condensed": "^5.3.0",
     "@mui/icons-material": "^6.1.9",
     "@mui/material": "^6.1.9",
     "@supabase/supabase-js": "^2.45.4",

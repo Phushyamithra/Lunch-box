@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { Profile } from './engine';
-import type { Entry, Food, FoodInput, MealSlot } from './foodLog';
+import { rescaleEntry, type Entry, type Food, type FoodInput, type MealSlot } from './foodLog';
 import * as api from './nutritionApi';
 import { cachedLoad, onReconnect, sessionUserId } from '../lib/offlineCache';
 
@@ -16,6 +16,8 @@ interface NutritionValue {
   archiveFood: (id: string) => Promise<void>;
   addEntry: (input: api.EntryInput) => Promise<Entry>;
   copyEntries: (entries: Entry[], day: string, meal: MealSlot) => Promise<void>;
+  /** Changes how much of a logged food you had (its numbers follow). */
+  setEntryAmount: (entry: Entry, quantity: number) => Promise<Entry>;
   moveEntries: (entries: Entry[], day: string, meal: MealSlot) => Promise<void>;
   /** Soft delete; `false` restores (undo). */
   setEntryDeleted: (entry: Entry, deleted: boolean) => Promise<void>;
@@ -77,6 +79,12 @@ export function NutritionProvider({ client, children }: { client: SupabaseClient
       async addEntry(input) {
         const row = await api.addEntry(client, input);
         setData((d) => (d ? { ...d, entries: [...d.entries, row] } : d));
+        return row;
+      },
+      async setEntryAmount(entry, quantity) {
+        const food = entry.food_id ? data?.foods.find((f) => f.id === entry.food_id) : undefined;
+        const row = await api.updateEntryAmount(client, entry.id, rescaleEntry(entry, quantity, food));
+        setData((d) => (d ? { ...d, entries: d.entries.map((e) => (e.id === row.id ? row : e)) } : d));
         return row;
       },
       async copyEntries(entries, day, meal) {

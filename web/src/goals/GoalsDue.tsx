@@ -33,8 +33,8 @@ export function GoalsDue() {
     <AnimatePresence initial={false}>
       {items.length > 0 && (
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }}>
-          <Paper variant="outlined" sx={{ p: 1.5, borderRadius: '20px' }}>
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4 }}>
+          <Paper variant="outlined" sx={{ p: 1.5, borderRadius: '4px' }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
               Goals
             </Typography>
             <Stack spacing={0.75} sx={{ mt: 0.75 }}>
@@ -58,7 +58,7 @@ export function GoalsDue() {
                       width: '100%',
                       p: 1,
                       border: 0,
-                      borderRadius: '14px',
+                      borderRadius: '4px',
                       textAlign: 'left',
                       font: 'inherit',
                       color: 'inherit',

@@ -160,6 +160,11 @@ export async function copyEntries(client: SupabaseClient, entries: Entry[], day:
   return (check(await client.from('food_log_entries').insert(rows).select(ENTRY_COLUMNS)) as Entry[]).map(normaliseEntry);
 }
 
+/** A logged entry's new amount and what it counts. */
+export async function updateEntryAmount(client: SupabaseClient, id: string, patch: Pick<Entry, 'quantity' | 'grams' | 'kcal' | 'protein' | 'carbs' | 'fat' | 'fibre' | 'sugar' | 'sodium_mg'>): Promise<Entry> {
+  return normaliseEntry(check(await client.from('food_log_entries').update(patch).eq('id', id).select(ENTRY_COLUMNS).single()) as Entry);
+}
+
 /** Moves log entries to another day and/or meal. */
 export async function moveEntries(client: SupabaseClient, ids: string[], day: string, meal: MealSlot): Promise<Entry[]> {
   return (check(await client.from('food_log_entries').update({ day, meal }).in('id', ids).select(ENTRY_COLUMNS)) as Entry[]).map(normaliseEntry);

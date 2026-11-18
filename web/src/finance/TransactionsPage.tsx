@@ -149,7 +149,7 @@ export default function TransactionsPage() {
             variant="determinate"
             value={Math.min(100, (budget.spent / (budget.limit || 1)) * 100)}
             color={budget.spent > (budget.limit ?? 0) ? 'warning' : 'primary'}
-            sx={{ height: 8, borderRadius: 4, mb: 1 }}
+            sx={{ height: 8, borderRadius: 1, mb: 1 }}
             aria-label={`${category} budget used`}
           />
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
@@ -199,7 +199,7 @@ export default function TransactionsPage() {
       </Stack>
       {selecting && (
         <Box sx={{ position: 'sticky', top: 72, zIndex: 2 }}>
-          <Stack direction="row" spacing={1} alignItems="center" useFlexGap sx={{ p: 1.25, borderRadius: 3, bgcolor: 'background.paper', boxShadow: 4, flexWrap: 'wrap', rowGap: 1 }}>
+          <Stack direction="row" spacing={1} alignItems="center" useFlexGap sx={{ p: 1.25, borderRadius: 1, bgcolor: 'background.paper', boxShadow: 4, flexWrap: 'wrap', rowGap: 1 }}>
             <Typography variant="body2" sx={{ flexGrow: 1 }}>
               {selected.length} selected
             </Typography>

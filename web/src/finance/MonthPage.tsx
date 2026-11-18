@@ -23,7 +23,7 @@ export function Bar({ label, value, max, detail, warnAt = 0.8 }: { label: string
           {formatINR(value)} / {formatINR(max)}
         </Typography>
       </Stack>
-      <LinearProgress variant="determinate" color={color} value={Math.min(100, ratio * 100)} sx={{ height: 8, borderRadius: 4 }} aria-label={`${label}: ${Math.round(ratio * 100)}%`} />
+      <LinearProgress variant="determinate" color={color} value={Math.min(100, ratio * 100)} sx={{ height: 8, borderRadius: 1 }} aria-label={`${label}: ${Math.round(ratio * 100)}%`} />
       {detail && (
         <Typography variant="caption" color={ratio > 1 ? 'error.main' : 'text.secondary'}>
           {detail}

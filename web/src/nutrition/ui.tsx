@@ -1,5 +1,4 @@
 import { Alert, Box, Button, CircularProgress, Tab, Tabs } from '@mui/material';
-import { motion } from 'framer-motion';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useFitness } from '../fitness/FitnessContext';
 import type { FitnessData } from '../fitness/fitnessApi';
@@ -37,8 +36,8 @@ export function NutritionLayout() {
           mb: 2,
           minHeight: 44,
           '& .MuiTabs-indicator': { display: 'none' },
-          '& .MuiTab-root': { minHeight: 48, borderRadius: 999, textTransform: 'none', fontWeight: 600, px: 2, mr: 0.5 },
-          '& .Mui-selected': { bgcolor: (t) => t.tracker.tonal, color: (t) => `${t.tracker.onTonal} !important` },
+          '& .MuiTab-root': { minHeight: 48, borderRadius: '4px', textTransform: 'none', fontWeight: 600, px: 2, mr: 0.5 },
+          '& .Mui-selected': { bgcolor: (t) => t.tracker.cta, color: (t) => `${t.tracker.onCta} !important` },
         }}
       >
         {TABS.map((t) => (
@@ -63,9 +62,9 @@ export function NutritionLayout() {
           <CircularProgress aria-label="Loading nutrition data" />
         </Box>
       ) : (
-        <motion.div key={pathname} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}>
+        <div key={pathname}>
           <Outlet />
-        </motion.div>
+        </div>
       )}
     </Box>
   );

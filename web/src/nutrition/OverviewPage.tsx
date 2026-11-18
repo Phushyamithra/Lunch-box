@@ -75,7 +75,7 @@ function TargetCard({ target }: { target: TargetRow }) {
         <Box sx={{ display: 'grid', gap: 1, gridTemplateColumns: 'repeat(2, 1fr)' }}>
           {rows.map((r, i) => (
             <motion.div key={r.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-              <Box sx={{ p: 1.25, borderRadius: '16px', bgcolor: (t) => t.tracker.tonal }}>
+              <Box sx={{ p: 1.25, borderRadius: '4px', bgcolor: (t) => t.tracker.tonal }}>
                 <Typography variant="caption" sx={{ fontWeight: 700 }}>
                   {r.emoji} {r.label}
                 </Typography>

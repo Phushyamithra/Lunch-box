@@ -84,7 +84,7 @@ export function MonthCalendar({ month, selected, logsByDate, colorForMeal, onMon
                 aspectRatio: '1 / 1',
                 minHeight: 44,
                 border: 0,
-                borderRadius: '14px',
+                borderRadius: '4px',
                 font: 'inherit',
                 cursor: future ? 'default' : 'pointer',
                 display: 'flex',

@@ -1,15 +1,20 @@
 import { Alert, Box, Button, CircularProgress, Paper, Tab, Tabs, Typography } from '@mui/material';
-import { motion } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { FONT_DISPLAY } from '../theme';
 import { useFitness } from './FitnessContext';
 
+/** A leading emoji isn't an icon in this material: the condensed title carries it alone. */
+const LEADING_EMOJI = /^(?:\p{Extended_Pictographic}|\p{Emoji_Presentation})[\uFE0F\u200D\p{Extended_Pictographic}]*\s*/u;
+export const plainTitle = (title: string) => title.replace(LEADING_EMOJI, '');
+
+/** A section of a screen: a paper well under a bar rule, its title in condensed capitals. */
 export function Card({ title, aside, children, id }: { title: string; aside?: ReactNode; children: ReactNode; id?: string }) {
   return (
     <Paper variant="outlined" id={id} sx={{ p: { xs: 2.5, sm: 3 }, scrollMarginTop: 96 }}>
-      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mb: 2 }}>
-        <Typography variant="subtitle1" component="h2" sx={{ flexGrow: 1 }}>
-          {title}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+        <Typography variant="subtitle1" component="h2" sx={{ flexGrow: 1, minWidth: 0, overflowWrap: 'break-word' }}>
+          {plainTitle(title)}
         </Typography>
         {aside}
       </Box>
@@ -22,7 +27,7 @@ export function Card({ title, aside, children, id }: { title: string; aside?: Re
 export function Metric({ value, unit, caption }: { value: string; unit?: string; caption: string }) {
   return (
     <Box>
-      <Typography component="p" sx={{ fontSize: 32, fontWeight: 700, lineHeight: 1.1 }}>
+      <Typography component="p" sx={{ fontFamily: FONT_DISPLAY, fontSize: 44, fontWeight: 800, lineHeight: 0.95, fontVariantNumeric: 'tabular-nums' }}>
         {value}
         {unit && (
           <Typography component="span" sx={{ fontSize: 16, fontWeight: 600, ml: 0.5 }} color="text.secondary">
@@ -73,8 +78,8 @@ export function FitnessLayout() {
           mb: 2,
           minHeight: 44,
           '& .MuiTabs-indicator': { display: 'none' },
-          '& .MuiTab-root': { minHeight: 40, borderRadius: 999, textTransform: 'none', fontWeight: 600, px: 2, mr: 0.5 },
-          '& .Mui-selected': { bgcolor: (t) => t.tracker.tonal, color: (t) => `${t.tracker.onTonal} !important` },
+          '& .MuiTab-root': { minHeight: 48, borderRadius: '4px', textTransform: 'none', fontWeight: 600, px: 2, mr: 0.5 },
+          '& .Mui-selected': { bgcolor: (t) => t.tracker.cta, color: (t) => `${t.tracker.onCta} !important` },
         }}
       >
         {TABS.map((t) => (
@@ -90,9 +95,9 @@ export function FitnessLayout() {
           <CircularProgress aria-label="Loading fitness data" />
         </Box>
       ) : (
-        <motion.div key={pathname} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}>
+        <div key={pathname}>
           <Outlet />
-        </motion.div>
+        </div>
       )}
     </Box>
   );

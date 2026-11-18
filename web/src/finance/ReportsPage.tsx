@@ -151,7 +151,7 @@ export default function ReportsPage() {
                           {formatINR(c.total)} · avg {formatINR(Math.round(c.total / months.length))}/mo
                         </Typography>
                       </Stack>
-                      <LinearProgress variant="determinate" value={(c.total / max) * 100} sx={{ height: 6, borderRadius: 3 }} />
+                      <LinearProgress variant="determinate" value={(c.total / max) * 100} sx={{ height: 6, borderRadius: 1 }} />
                       <Typography variant="caption" color="text.secondary">
                         {c.byMonth.map((v, i) => `${mon(months[i], 'MMM')} ${v ? formatINR(v) : '—'}`).join(' · ')}
                       </Typography>
@@ -205,7 +205,7 @@ export default function ReportsPage() {
                   {g.saved >= g.target ? 'done' : `${formatINR(g.saved)} / ${formatINR(g.target)}${g.eta ? ` · ${mon(g.eta, 'MMM YYYY')}` : ''}`}
                 </Typography>
               </Stack>
-              <LinearProgress variant="determinate" value={Math.min(100, (g.saved / g.target) * 100)} color={g.saved >= g.target ? 'success' : 'primary'} sx={{ height: 8, borderRadius: 4 }} />
+              <LinearProgress variant="determinate" value={Math.min(100, (g.saved / g.target) * 100)} color={g.saved >= g.target ? 'success' : 'primary'} sx={{ height: 8, borderRadius: 1 }} />
             </Box>
           ))}
         </Stack>

@@ -46,7 +46,7 @@ export default function SavingsPage() {
                   {g.percent}%
                 </Typography>
               </Stack>
-              <LinearProgress variant="determinate" value={g.percent} color={g.done ? 'success' : 'primary'} sx={{ height: 10, borderRadius: 5, opacity: g.done || active ? 1 : 0.5 }} />
+              <LinearProgress variant="determinate" value={g.percent} color={g.done ? 'success' : 'primary'} sx={{ height: 10, borderRadius: 1, opacity: g.done || active ? 1 : 0.5 }} />
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                 {g.done ? 'Done.' : `${formatINR(g.remaining)} to go · expected ${g.eta ? ym(g.eta) : 'beyond 10 years at this rate'} (estimate)`}
               </Typography>

@@ -95,7 +95,7 @@ export const SwipeRow = forwardRef<SwipeRowHandle, SwipeRowProps>(function Swipe
                 height: 7,
                 p: 0,
                 border: 0,
-                borderRadius: 999,
+                borderRadius: '4px',
                 cursor: 'pointer',
                 bgcolor: i === index ? 'secondary.main' : 'action.disabled',
                 transition: 'width 200ms ease, background-color 200ms ease',

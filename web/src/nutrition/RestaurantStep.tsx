@@ -83,7 +83,7 @@ export function RestaurantStep({ day, meal, filter, initialItem }: { day: string
           ...items
             .filter((i) => i.category === cat)
             .map((i) => (
-              <ListItemButton key={i.id} onClick={() => setView({ kind: 'item', item: i })} sx={{ borderRadius: '12px' }}>
+              <ListItemButton key={i.id} onClick={() => setView({ kind: 'item', item: i })} sx={{ borderRadius: '4px' }}>
                 <ListItemText
                   primary={`${DIET[i.diet].emoji} ${i.name}`}
                   secondary={`${q.trim() ? `${chainOf(i.chain).name} · ` : ''}${Math.round(i.options[0].kcal)} kcal · P ${i.options[0].protein} g${i.options.length > 1 ? ` · ${i.options.length} sizes` : ''}`}
@@ -125,7 +125,7 @@ function OfficialNote({ chain }: { chain: ChainId }) {
 function NutrientStrip({ n }: { n: Pick<Nutrients, 'kcal' | 'protein' | 'carbs' | 'fat'> }) {
   return (
     <motion.div key={`${n.kcal}-${n.protein}`} initial={{ scale: 0.98, opacity: 0.6 }} animate={{ scale: 1, opacity: 1 }}>
-      <Box sx={{ p: 1.5, borderRadius: '16px', bgcolor: (t) => t.tracker.tonal, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', textAlign: 'center' }}>
+      <Box sx={{ p: 1.5, borderRadius: '4px', bgcolor: (t) => t.tracker.tonal, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', textAlign: 'center' }}>
         {[
           ['kcal', n.kcal],
           ['protein', `${n.protein} g`],
@@ -357,7 +357,7 @@ function BurritoBuilder({ day, meal, onBack }: { day: string; meal: MealSlot; on
       </Box>
       {groups.map((g) => (
         <Box key={g.key}>
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
             {g.label}
             {g.pick === 'many' ? ' · any' : g.pick === 'fixed' ? ' · included' : ''}
           </Typography>

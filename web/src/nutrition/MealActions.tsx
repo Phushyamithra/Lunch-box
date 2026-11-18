@@ -3,7 +3,8 @@ import dayjs from 'dayjs';
 import { useState } from 'react';
 import { addDays } from '../fitness/rules';
 import { useSnackbar } from '../layout/Snackbar';
-import { MEALS, type Entry, type MealSlot } from './foodLog';
+import { NumberStepper } from '../fitness/NumberStepper';
+import { MEALS, rescaleEntry, type Entry, type MealSlot } from './foodLog';
 import { useNutrition } from './NutritionContext';
 
 const KEY = 'YYYY-MM-DD';
@@ -14,7 +15,7 @@ const mealLabel = (m: MealSlot) => MEALS.find((x) => x.key === m)?.label ?? m;
  * lunch → dinner, yesterday's breakfast → today. One food can also be removed here.
  */
 export function MealActions({ entries, day, meal, single, onClose }: { entries: Entry[]; day: string; meal: MealSlot; single?: boolean; onClose: () => void }) {
-  const { copyEntries, moveEntries, setEntryDeleted } = useNutrition();
+  const { data, copyEntries, moveEntries, setEntryDeleted, setEntryAmount } = useNutrition();
   const toast = useSnackbar();
   const today = dayjs().format(KEY);
   const [mode, setMode] = useState<'copy' | 'move'>('copy');
@@ -22,6 +23,12 @@ export function MealActions({ entries, day, meal, single, onClose }: { entries: 
   const [toDay, setToDay] = useState(day === today ? today : today);
   const [toMeal, setToMeal] = useState<MealSlot>(day === today ? (MEALS.find((m) => m.key !== meal)?.key ?? meal) : meal);
   const [busy, setBusy] = useState(false);
+  // One food: change how much you had.
+  const one = single ? entries[0] : null;
+  const [qty, setQty] = useState(one?.quantity ?? 1);
+  const byWeight = one ? one.unit === 'g' || one.unit === 'ml' : false;
+  const food = one?.food_id ? data?.foods.find((f) => f.id === one.food_id) : undefined;
+  const preview = one ? rescaleEntry(one, qty || 0, food) : null;
   const same = toDay === day && toMeal === meal;
   const what = single ? entries[0].name : `${mealLabel(meal)} (${entries.length} item${entries.length === 1 ? '' : 's'})`;
   const where = `${mealLabel(toMeal)}, ${toDay === today ? 'today' : toDay === addDays(today, -1) ? 'yesterday' : dayjs(toDay).format('D MMM')}`;
@@ -35,6 +42,19 @@ export function MealActions({ entries, day, meal, single, onClose }: { entries: 
       onClose();
     } catch (e) {
       toast(`Not done: ${e instanceof Error ? e.message : 'error'}`, { severity: 'error' });
+    } finally {
+      setBusy(false);
+    }
+  };
+  const saveAmount = async () => {
+    if (!one || !(qty > 0)) return;
+    setBusy(true);
+    try {
+      const row = await setEntryAmount(one, qty);
+      toast(`✅ ${row.name}: ${row.quantity} × ${row.unit} · ${row.kcal} kcal`);
+      onClose();
+    } catch (e) {
+      toast(`Not saved: ${e instanceof Error ? e.message : 'error'}`, { severity: 'error' });
     } finally {
       setBusy(false);
     }
@@ -56,6 +76,31 @@ export function MealActions({ entries, day, meal, single, onClose }: { entries: 
       <DialogTitle>{what}</DialogTitle>
       <DialogContent>
         <Stack spacing={2.5} sx={{ pt: 0.5 }}>
+          {one && preview && (
+            <Box sx={{ pb: 2.5, borderBottom: 1, borderColor: 'divider' }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                How much you had
+              </Typography>
+              <NumberStepper label="Amount" unit={byWeight ? one.unit : `× ${one.unit}`} value={qty} step={byWeight ? 10 : 0.5} max={byWeight ? 5000 : 50} decimals={byWeight ? 0 : 1} onChange={setQty} />
+              <Typography variant="body2" sx={{ mt: 1, fontVariantNumeric: 'tabular-nums' }}>
+                {preview.kcal} kcal · P {preview.protein} g · C {preview.carbs} g · F {preview.fat} g
+                {preview.kcal !== one.kcal && (
+                  <Typography component="span" variant="body2" color="text.secondary">
+                    {' '}
+                    (was {one.kcal} kcal)
+                  </Typography>
+                )}
+              </Typography>
+              <Button variant="contained" sx={{ mt: 1.5 }} disabled={busy || !(qty > 0) || qty === one.quantity} onClick={() => void saveAmount()}>
+                Save amount
+              </Button>
+            </Box>
+          )}
+          {one && (
+            <Typography variant="body2" color="text.secondary" sx={{ mb: -1 }}>
+              Or copy or move it
+            </Typography>
+          )}
           <ToggleButtonGroup exclusive fullWidth value={mode} onChange={(_, v) => v && setMode(v)} aria-label="Copy or move">
             <ToggleButton value="copy" sx={{ minHeight: 48 }}>
               Copy

@@ -95,7 +95,7 @@ export default function DashboardPage() {
               {rate?.spansAway && ' This comparison spans an away period, so read it with care.'}
             </Alert>
             {chartData.length === 0 && (
-              <Box sx={{ height: 120, display: 'grid', placeItems: 'center', textAlign: 'center', border: 1, borderStyle: 'dashed', borderColor: 'divider', borderRadius: '16px', px: 2 }}>
+              <Box sx={{ height: 120, display: 'grid', placeItems: 'center', textAlign: 'center', border: 1, borderStyle: 'dashed', borderColor: 'divider', borderRadius: '4px', px: 2 }}>
                 <Typography variant="body2" color="text.secondary">
                   📈 The weight chart appears after your first {data.settings.weigh_time === 'any' ? '' : `${data.settings.weigh_time} `}weigh-in. The weekly-average line needs 3 weigh-ins in a
                   week, and the gain rate needs two such weeks.

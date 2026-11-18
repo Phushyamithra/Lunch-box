@@ -20,7 +20,6 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { motion } from 'framer-motion';
 import type { ReactElement } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useSettings, type SyncState } from '../settings/SettingsContext';
@@ -44,7 +43,7 @@ function SyncIndicator() {
   const { label, icon } = SYNC_LABELS[syncState];
   return (
     <Tooltip title={label}>
-      <Box role="status" aria-label={label} sx={{ display: 'flex', px: 1, color: 'text.secondary' }}>
+      <Box role="status" aria-label={label} sx={{ display: 'flex', px: 1, color: 'inherit', opacity: 0.75 }}>
         {icon}
       </Box>
     </Tooltip>
@@ -77,16 +76,19 @@ export function AppShell() {
             width: RAIL_WIDTH,
             flexShrink: 0,
             position: 'sticky',
-            top: 12,
-            height: 'calc(100vh - 24px)',
-            m: 1.5,
-            mr: 0,
+            top: 0,
+            height: '100vh',
             p: 1.5,
+            borderRadius: 0,
+            borderTop: 0,
+            borderRight: `1px solid ${theme.tracker.sport.rule}`,
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, px: 1, py: 1.5 }}>
             <GlassIcon icon={<InsightsRoundedIcon />} tint={APP_TINT} size={34} />
-            <Typography variant="h6">Tracker</Typography>
+            <Typography variant="h5" component="p">
+              Tracker
+            </Typography>
           </Box>
           <List>
             {NAV_ITEMS.map((item) => (
@@ -105,28 +107,14 @@ export function AppShell() {
       )}
 
       <Box sx={{ flexGrow: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-        {/* Floating glass header — rounded like the tab bar and the cards. */}
-        <AppBar
-          position="sticky"
-          color="inherit"
-          elevation={0}
-          sx={{
-            top: 'calc(10px + env(safe-area-inset-top))',
-            mt: 'calc(10px + env(safe-area-inset-top))',
-            mx: { xs: 1.5, md: 2 },
-            width: 'auto',
-            borderRadius: '24px',
-            border: `1px solid ${theme.tracker.glassBorder}`,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-            overflow: 'hidden',
-          }}
-        >
+        {/* The ink band: the screen's name in condensed capitals, like a results-sheet mast. */}
+        <AppBar position="sticky" elevation={0} sx={{ top: 0, pt: 'env(safe-area-inset-top)' }}>
           <Toolbar sx={{ gap: 1, minHeight: { xs: 60, sm: 64 } }}>
-            <Typography variant="h5" component="h1" sx={{ flexGrow: 1 }}>
+            <Typography variant="h5" component="h1" sx={{ flexGrow: 1, fontSize: { xs: '1.9rem', sm: '2.1rem' } }}>
               {title}
             </Typography>
             <SyncIndicator />
-            <IconButton aria-label="Settings" onClick={() => navigate('/settings')} size="large">
+            <IconButton aria-label="Settings" onClick={() => navigate('/settings')} size="large" sx={{ color: 'inherit' }}>
               <SettingsRoundedIcon />
             </IconButton>
           </Toolbar>
@@ -141,31 +129,31 @@ export function AppShell() {
             mx: 'auto',
             px: 2.5,
             pt: 3,
-            pb: wide ? 4 : 'calc(104px + env(safe-area-inset-bottom))',
+            pb: wide ? 4 : 'calc(96px + env(safe-area-inset-bottom))',
           }}
         >
           <OfflineBanner />
-          {/* Each section fades/slides in; reduced-motion users get no movement (MotionConfig). */}
-          <motion.div key={section} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28, ease: [0.2, 0.8, 0.2, 1] }}>
+            <div key={section}>
             <Outlet />
-          </motion.div>
+          </div>
         </Box>
       </Box>
 
       {!wide && (
-        // Floating glass tab bar with Material 3 pill indicators.
+        // The ink tab bar: the current section sits on volt.
         <Paper
           component="nav"
           aria-label="Main"
-          variant="outlined"
           sx={{
             position: 'fixed',
-            left: 12,
-            right: 12,
-            bottom: 'calc(12px + env(safe-area-inset-bottom))',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            pb: 'env(safe-area-inset-bottom)',
             zIndex: 10,
-            borderRadius: '28px',
-            overflow: 'hidden',
+            borderRadius: 0,
+            backgroundColor: theme.tracker.sport.band,
+            borderTop: theme.tracker.minimal ? `1px solid ${theme.tracker.sport.rule}` : 0,
           }}
         >
           <BottomNavigation
@@ -183,18 +171,19 @@ export function AppShell() {
                 sx={{
                   minWidth: 0,
                   px: 0.5,
-                  color: 'text.secondary',
+                  color: theme.tracker.sport.onBand,
+                  opacity: 0.72,
                   '& .nav-pill': {
                     width: { xs: 46, sm: 56 },
                     height: 32,
-                    borderRadius: 999,
+                    borderRadius: '4px',
                     display: 'grid',
                     placeItems: 'center',
                     mb: 0.5,
-                    transition: 'background-color 200ms',
+                    transition: 'background-color 150ms',
                   },
-                  '&.Mui-selected': { color: theme.tracker.onTonal },
-                  '&.Mui-selected .nav-pill': { bgcolor: theme.tracker.tonal },
+                  '&.Mui-selected': { color: theme.tracker.sport.onBand, opacity: 1 },
+                  '&.Mui-selected .nav-pill': { bgcolor: theme.tracker.cta, color: theme.tracker.onCta },
                   '& .MuiBottomNavigationAction-label': { fontWeight: 600, fontSize: { xs: 11, sm: 12 }, whiteSpace: 'nowrap' },
                   '& .MuiBottomNavigationAction-label.Mui-selected': { fontSize: { xs: 11, sm: 12 } },
                 }}

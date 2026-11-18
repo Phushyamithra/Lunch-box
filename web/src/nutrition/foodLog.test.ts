@@ -7,6 +7,7 @@ import {
   mealPrepSnapshot,
   nutrientsFor,
   progressAgainst,
+  rescaleEntry,
   unitsFor,
   validateFood,
   type Entry,
@@ -151,5 +152,17 @@ describe('helpers', () => {
 
   it('turns a meal-prep delivery into a snapshot', () => {
     expect(mealPrepSnapshot({ name: 'Paneer bowl', calories: 612.4, protein: 38.25, carbs: 60, fat: 22, fiber: 7 })).toMatchObject({ kcal: 612, protein: 38.3, fibre: 7 });
+  });
+});
+
+describe('changing a logged amount', () => {
+  it('recounts from the food when it is known, in the same unit', () => {
+    const oats = food({ id: 'oats', basis: '100g', kcal: 380, protein: 13, carbs: 66, fat: 7, fibre: 10 });
+    const logged = e({ food_id: 'oats', quantity: 40, unit: 'g', grams: 40, kcal: 152, protein: 5.2, carbs: 26.4, fat: 2.8, fibre: 4 });
+    expect(rescaleEntry(logged, 60, oats)).toMatchObject({ quantity: 60, grams: 60, kcal: 228, protein: 7.8, carbs: 39.6, fat: 4.2, fibre: 6 });
+  });
+  it('scales a quick add or restaurant entry from what it counted', () => {
+    const roll = e({ source: 'quick', quantity: 1, unit: 'serving', kcal: 450, protein: 18, carbs: 40, fat: 22, fibre: 3, sodium_mg: 900 });
+    expect(rescaleEntry(roll, 1.5)).toMatchObject({ quantity: 1.5, grams: null, kcal: 675, protein: 27, carbs: 60, fat: 33, fibre: 4.5, sodium_mg: 1350 });
   });
 });

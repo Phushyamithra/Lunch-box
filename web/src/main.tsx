@@ -1,3 +1,9 @@
+// Hallmark "Sport" faces, self-hosted (cached by the service worker for offline use).
+import '@fontsource/saira-condensed/800.css';
+import '@fontsource/albert-sans/400.css';
+import '@fontsource/albert-sans/500.css';
+import '@fontsource/albert-sans/600.css';
+import '@fontsource/jetbrains-mono/500.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';

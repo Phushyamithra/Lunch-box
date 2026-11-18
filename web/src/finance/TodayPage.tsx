@@ -267,7 +267,7 @@ export default function FinanceToday() {
                     {formatINR(c.spent)} <Typography component="span" variant="body2" color="text.secondary">/ {formatINR(c.card.limit)}</Typography>
                   </Typography>
                 </Stack>
-                <LinearProgress variant="determinate" value={Math.min(100, ratio * 100)} color={c.level === 'over' ? 'error' : c.level === 'warn' ? 'warning' : 'primary'} sx={{ height: 8, borderRadius: 4 }} aria-label={`${c.card.name} used`} />
+                <LinearProgress variant="determinate" value={Math.min(100, ratio * 100)} color={c.level === 'over' ? 'error' : c.level === 'warn' ? 'warning' : 'primary'} sx={{ height: 8, borderRadius: 1 }} aria-label={`${c.card.name} used`} />
               </Box>
             );
           })}
@@ -289,10 +289,9 @@ export default function FinanceToday() {
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(3, 1fr)' }, gap: 1.5 }}>
         {FINANCE_SECTIONS.map((s) => (
           <Paper key={s.path} variant="outlined" component="button" onClick={() => navigate(s.path)} sx={{ p: 2, textAlign: 'left', cursor: 'pointer', color: 'inherit', font: 'inherit' }}>
-            <Typography sx={{ fontSize: 22, lineHeight: 1.2 }} aria-hidden>
-              {s.emoji}
+            <Typography variant="subtitle1" component="span" sx={{ display: 'block', fontSize: '1.25rem' }}>
+              {s.label}
             </Typography>
-            <Typography sx={{ fontWeight: 700, mt: 0.75 }}>{s.label}</Typography>
             <Typography variant="caption" color="text.secondary">
               {s.hint}
             </Typography>
