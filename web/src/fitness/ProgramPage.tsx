@@ -7,7 +7,7 @@ import { useFitness } from './FitnessContext';
 import type { SlotRow } from './fitnessApi';
 import { CYCLE_DAYS, WEEK_DAYS, finisherCards, nextCycleDay, suggestVariant } from './dayPlan';
 import { addDays, isoWeekday, variantIndexFor, weekStart } from './rules';
-import { FinishersCard, ImportReferenceCard, ClassicSplitCard, PresetsCard } from './ProgramExtras';
+import { FinishersCard, ImportReferenceCard, BuiltInSplitsCard, PresetsCard } from './ProgramExtras';
 import { Card } from './ui';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -76,7 +76,7 @@ export default function ProgramPage() {
           {!hasSplit(days) && ' This split is empty: load its reference file below.'}
         </Typography>
       </Card>
-      <ClassicSplitCard data={data} />
+      <BuiltInSplitsCard data={data} />
       <ImportReferenceCard data={data} />
       {cards.length > 0 && (
         <Card title="⭐ Quick cards">

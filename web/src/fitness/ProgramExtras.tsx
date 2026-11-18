@@ -21,32 +21,40 @@ import { useMemo, useState, type ChangeEvent } from 'react';
 import { useSnackbar } from '../layout/Snackbar';
 import { useFitness } from './FitnessContext';
 import type { FitnessData } from './fitnessApi';
-import { classicWeekly } from './classicSplit';
+import { classicWeekly, rotatingCycle } from './classicSplit';
 import { NumberStepper } from './NumberStepper';
 import { deriveKeyLifts, exerciseOptions, parseReference, type ParsedReference } from './referenceImport';
 import { Card } from './ui';
 
 const DAY = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+/** The two splits kept in the app, each loadable in one tap. */
+const BUILT_IN = [
+  { key: 'classic', title: 'Classic weekly (Mon–Sat)', parse: classicWeekly, days: [1, 2, 3, 4, 5, 6], name: (d: number) => DAY[d] },
+  { key: 'cycle', title: 'Rotating 5-day', parse: rotatingCycle, days: [11, 12, 13, 14, 15], name: (d: number) => `Day ${d - 10}` },
+] as const;
+
 /**
- * The classic Mon–Sat split, built in: loads its six days (five slots, seven
- * variants each) and the Abs / Forearms finishers without needing the old
- * reference file. The rotating cycle and the active split are left alone.
+ * Both splits, built in: the classic Mon–Sat split (7 variants a slot) and
+ * the current rotating cycle (6 variants a slot), each with its finishers.
+ * Loading one fills only its own days: the other split, targets, logged
+ * sessions and the split Today follows are left alone.
  */
-export function ClassicSplitCard({ data }: { data: FitnessData }) {
+export function BuiltInSplitsCard({ data }: { data: FitnessData }) {
   const { importProgram } = useFitness();
   const toast = useSnackbar();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState<(typeof BUILT_IN)[number] | null>(null);
   const [busy, setBusy] = useState(false);
-  const classic = useMemo(() => classicWeekly(), []);
-  const loaded = [1, 2, 3, 4, 5].every((d) => data.slots.some((s) => s.weekday === d && s.variants.some(Boolean)));
+  const parsed = useMemo(() => Object.fromEntries(BUILT_IN.map((b) => [b.key, b.parse()])) as Record<(typeof BUILT_IN)[number]['key'], ParsedReference>, []);
+  const isLoaded = (days: readonly number[]) => days.every((d) => data.slots.some((s) => s.weekday === d && s.variants.some(Boolean)));
 
   const load = async () => {
+    if (!open) return;
     setBusy(true);
     try {
-      await importProgram(classic, false);
-      toast('Classic weekly split loaded. Pick “Weekly” above to train it.');
-      setOpen(false);
+      await importProgram(parsed[open.key], false);
+      toast(`${open.title} loaded. Pick it under Your split to train it.`);
+      setOpen(null);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'error';
       toast(/program_mode|cycle_start|_check|check constraint/i.test(msg) ? 'Run migration 0018 in Supabase first, then load again.' : `Not loaded: ${msg}`, { severity: 'error' });
@@ -56,32 +64,48 @@ export function ClassicSplitCard({ data }: { data: FitnessData }) {
   };
 
   return (
-    <Card title="Classic weekly split">
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-        The older Mon–Sat split, built in, with all seven variants per slot:
+    <Card title="Built-in splits">
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        Both splits live in the app with every variant. Load either (or both) any time: each fills only its own days.
       </Typography>
-      <Stack spacing={0.5} sx={{ mb: 2 }}>
-        {[1, 2, 3, 4, 5, 6].map((d) => (
-          <Typography key={d} variant="body2">
-            <strong>{DAY[d]}</strong> · {classic.dayFocus[String(d)] ?? ''}
-          </Typography>
-        ))}
+      <Stack spacing={2.5}>
+        {BUILT_IN.map((b) => {
+          const p = parsed[b.key];
+          const variants = Math.max(...p.slots.map((s) => s.variants.filter(Boolean).length));
+          const loaded = isLoaded(b.days);
+          return (
+            <Box key={b.key}>
+              <Typography sx={{ fontWeight: 700, mb: 0.5 }}>
+                {b.title} · {variants} variants
+              </Typography>
+              <Stack spacing={0.25} sx={{ mb: 1.25 }}>
+                {b.days.map((d) => (
+                  <Typography key={d} variant="body2">
+                    <strong>{b.name(d)}</strong> · {p.dayFocus[String(d)] ?? ''}
+                  </Typography>
+                ))}
+              </Stack>
+              <Button variant={loaded ? 'outlined' : 'contained'} startIcon={<HistoryRoundedIcon />} onClick={() => setOpen(b)}>
+                {loaded ? 'Reload' : 'Load'} {b.key === 'classic' ? 'classic split' : 'rotating split'}
+              </Button>
+            </Box>
+          );
+        })}
       </Stack>
-      <Button variant={loaded ? 'outlined' : 'contained'} startIcon={<HistoryRoundedIcon />} onClick={() => setOpen(true)}>
-        {loaded ? 'Reload classic split' : 'Load classic split'}
-      </Button>
-      <Dialog open={open} onClose={() => !busy && setOpen(false)} maxWidth="sm" fullWidth aria-labelledby="classic-title">
-        <DialogTitle id="classic-title">Load the classic weekly split?</DialogTitle>
+      <Dialog open={Boolean(open)} onClose={() => !busy && setOpen(null)} maxWidth="sm" fullWidth aria-labelledby="builtin-title">
+        <DialogTitle id="builtin-title">Load {open?.title}?</DialogTitle>
         <DialogContent>
           <Stack spacing={1.5}>
             <Typography variant="body2">
-              Fills Mon–Sat with its slots, set counts and variants, and adds the Abs (Mon, Wed, Fri) and Forearms (Tue, Thu, Sat) finishers.
+              {open?.key === 'classic'
+                ? 'Fills Mon–Sat with its slots, set counts and all 7 variants, and adds the Abs (Mon, Wed, Fri) and Forearms (Tue, Thu, Sat) finishers.'
+                : 'Fills Upper, Lower, Push, Pull and Legs with their slots, set counts and all 6 variants, and adds the Abs (Upper, Push, Legs) and Forearms (Lower) finishers.'}
             </Typography>
-            <Alert severity="info">Your rotating cycle, targets and logged sessions stay as they are. Today keeps following the split you picked above.</Alert>
+            <Alert severity="info">The other split, your targets and logged sessions stay as they are. Today keeps following the split you picked under Your split.</Alert>
           </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setOpen(false)} disabled={busy}>
+          <Button onClick={() => setOpen(null)} disabled={busy}>
             Cancel
           </Button>
           <Button variant="contained" onClick={() => void load()} disabled={busy}>

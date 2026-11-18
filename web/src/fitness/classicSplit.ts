@@ -186,3 +186,168 @@ export function classicWeekly(): ParsedReference {
   const parsed = parseReference(CLASSIC_WEEKLY_MD);
   return { ...parsed, baselineDate: null, stepsTarget: null, phaseMonths: null };
 }
+
+/**
+ * The current rotating split (Upper → Lower → Push → Pull → Legs, any
+ * weekday), five or six slots a day with six variants each, plus its Abs and
+ * Forearms finishers. Tables only, as above.
+ */
+export const ROTATING_CYCLE_MD = `## THE ROTATION
+
+| Order | Day | Focus | Sets | Finisher |
+|-----|-------|------|------|----------|
+| 1 | **Upper** | Chest + Back + Shoulders + Arms (lighter, frequency top-up) | 14 | Abs |
+| 2 | **Lower** | Quads + Hamstrings + Glutes + Calves (secondary leg day) | 12 | Forearms |
+| 3 | **Push** | Chest + Shoulders + Triceps (the heavy chest day) | 16 | Abs |
+| 4 | **Pull** | Back + Biceps + Forearms (the heavy back day) | 15 | — *(forearm slot built in)* |
+| 5 | **Legs** | Full lower body — quads, hams, glutes, calves (the heavy leg day) | 14 | Abs |
+
+# PART 2 — TRAINING
+
+## DAY 1 — UPPER
+**3 / 3 / 2 / 2 / 2 / 2 = 14 sets** · finisher: Abs
+
+| # | Target | Sets | This cycle |
+|---|---|---|---|
+| 1 | Chest (incline-biased) | 3 | |
+| 2 | Back — Row | 3 | |
+| 3 | Shoulder Press | 2 | |
+| 4 | Back — Vertical / Pull-up skill work | 2 | |
+| 5 | Biceps | 2 | |
+| 6 | Triceps | 2 | |
+
+<details><summary><b>Variant bank — Upper</b></summary>
+
+| # | V1 | V2 | V3 | V4 | V5 | V6 |
+|---|----|----|----|----|----|-----|
+| 1 | Incline DB Press / Incline Barbell | Incline Barbell / Incline DB Press | Machine Chest Press / Wide Chest Press | Incline DB Fly / Low-High Cable | Wide Chest Press / Machine Chest Press | Decline Barbell / DB Bench |
+| 2 | Seated Cable Row / Chest-Supported Row | Chest-Supported Row / Machine Row | Single-Arm DB Row / Landmine Row | Machine Row / Cable Row | Landmine Row / Barbell Row | Cable Row / Chest-Supported Row |
+| 3 | DB Shoulder Press / Machine Shoulder Press | Arnold Press / Military Press | Machine Shoulder Press / DB Shoulder Press | Military Press / Arnold Press | Standing DB Press / Arnold Press | Seated DB Arnold / Machine Shoulder |
+| 4 | **Bodyweight Pull-ups** / Assisted Pull-ups (8–12 reps, technique focus — no added load here) | Lat Pulldown (wide) / Pull-ups | Neutral-Grip Pull-ups / Lat Pulldown | Lat Pulldown / Chin-ups | Chin-ups / Lat Pulldown | Assisted Pull-ups / Lat Pulldown |
+| 5 | EZ-Bar Curl / DB Hammer | Preacher Curl / Incline DB Curl | Hammer Curl / EZ-Bar Cable | Incline 50° Curl / Machine Preacher | Cable Biceps Curl / DB Curl | EZ-Bar Cable Curl / DB Curl |
+| 6 | Rope Pressdown / Skullcrushers | Skullcrushers / Overhead DB Ext | Parallel Dips / Close-Grip Bench | V-Bar Pressdown / Dips | Overhead DB Ext / Rope | Close-Grip Bench / Dips |
+
+</details>
+
+## DAY 2 — LOWER
+**3 / 3 / 2 / 2 / 2 = 12 sets** · finisher: Forearms
+
+| # | Target | Sets | This cycle |
+|---|---|---|---|
+| 1 | Quad Compound | 3 | |
+| 2 | Hamstring | 3 | |
+| 3 | Unilateral | 2 | |
+| 4 | Glutes / Posterior | 2 | |
+| 5 | Calves | 2 | |
+
+<details><summary><b>Variant bank — Lower</b></summary>
+
+| # | V1 | V2 | V3 | V4 | V5 | V6 |
+|---|----|----|----|----|----|-----|
+| 1 | Front Squat / Goblet Squat | Hack Squat / Leg Press | Leg Press / Front Squat | DB Sumo Squat / Leg Press | Front Squat / Goblet Squat | Hack Squat / Barbell Squat |
+| 2 | Romanian DL / Lying Leg Curl | Lying Leg Curl / Romanian DL | Single-Leg RDL / Good Mornings | Romanian DL / Cable Ham Curl | Glute Ham Raise / Romanian DL | Seated Leg Curl / Lying Leg Curl |
+| 3 | Walking Lunges / Bulgarian Split | DB Lunges / Step-ups | Bulgarian Split / Walking Lunges | DB Step-ups / Bulgarians | Walking Lunges / Reverse Lunge | Single RDL / Good Morning |
+| 4 | Hip Thrust / Glute Bridge | Cable Hip Thrust / Glute Bridge | Hip Thrust / Cable Pull-Through | Glute Bridge / Hip Thrust | Hip Thrust / DB Sumo Squat | Glute Bridge / Cable Thrust |
+| 5 | Standing Calf / Seated Calf | Seated Calf / Standing Calf | Calf Press / Standing Calf | Donkey Calf / Standing Calf | Standing Calf / Seated Calf | Calf Press / Donkey Calf |
+
+</details>
+
+## DAY 3 — PUSH
+**3 / 3 / 2 / 3 / 2 / 3 = 16 sets** · finisher: Abs
+
+| # | Target | Sets | This cycle |
+|---|---|---|---|
+| 1 | Mid Chest | 3 | |
+| 2 | Upper Chest / Fly | 3 | |
+| 3 | Chest Isolation | 2 | |
+| 4 | Front Delt | 3 | |
+| 5 | Side Delt | 2 | |
+| 6 | Triceps | 3 | |
+
+<details><summary><b>Variant bank — Push</b></summary>
+
+| # | V1 | V2 | V3 | V4 | V5 | V6 |
+|---|----|----|----|----|----|-----|
+| 1 | Barbell Bench / DB Press | DB Bench / Barbell | Incline Barbell / Decline | Decline Barbell / DB | Weighted Push-ups / DB | Wide Chest Press / Barbell |
+| 2 | Incline DB / Barbell | Low-to-High Cable / Pec-Dec | Machine Chest Press / Push-ups | Flat DB Fly / Pec-Dec | Chest Press Machine / Barbell | Incline DB Fly / Cable |
+| 3 | Pec-Dec Fly / Cable | Incline Hammer / DB | DB Fly / Cable | Push-ups / Machine Press | Cable Crossover / DB Fly | Flat DB Press / Decline |
+| 4 | Military Press / Arnold | DB Shoulder Press / Machine | Arnold Press / Military | Machine Shoulder Press / DB | Upright Row / Lateral Raise | Standing DB Press / Arnold |
+| 5 | Lateral Raise / Front Raise | Cable Lateral / Plate Raise | Machine Lateral / DB | DB Front Raise / Lateral | DB Arnold Press / Military | Cable Lateral / Upright Row |
+| 6 | Rope Pressdown / Skullcrushers | V-Bar Pressdown / DB Ext | Dips / Close-Grip Bench | Skullcrushers / Kickbacks | Overhead DB Ext / Rope | Close-Grip Bench / Dips |
+
+</details>
+
+## DAY 4 — PULL
+**3 / 3 / 3 / 2 / 2 / 2 = 15 sets** · finisher: *(forearm slot built in — no separate finisher needed)*
+
+| # | Target | Sets | This cycle |
+|---|---|---|---|
+| 1 | Vertical Pull — **weighted pull-ups** | 3 | |
+| 2 | Row — Thickness | 3 | |
+| 3 | Upper Back | 3 | |
+| 4 | Delts / Traps | 2 | |
+| 5 | Biceps | 2 | |
+| 6 | Lower Arm / Forearm | 2 | |
+
+<details><summary><b>Variant bank — Pull</b></summary>
+
+| # | V1 | V2 | V3 | V4 | V5 | V6 |
+|---|----|----|----|----|----|-----|
+| 1 | **Weighted Pull-ups** / Lat Pulldown | Chin-ups / Close Lat Pull | Lat Pulldown / Pull-ups | Rack Pulls / Deadlift | Deadlift / Romanian DL | Neutral Pull-ups / Lat Pull |
+| 2 | Machine Row / Cable Row | Single DB Row / Landmine Row | Barbell Row / DB Row | Seated Cable Row / DB Row | Lat Pulldown / Pull-ups | Barbell Row / DB Row |
+| 3 | Landmine Row / High Row (bench-rigged) | High Row (bench-rigged) / Meadows Row | Cable Row / Machine Row | Lat Pulldown (Neutral) / Chin | Machine Row / High Row (bench-rigged) | Chest Supported Row / Cable |
+| 4 | Face Pulls / Rear Delt Fly | Barbell Shrugs / Upright Row | Rear Delt Cable Fly / Face Pull | Face Pulls / DB Shrugs | DB Rear Delt Fly / Face Pull | Face Pulls / DB Shrugs |
+| 5 | EZ-Bar Curl / DB Curl | Preacher Curl / Concentration | Hammer Curl / EZ-Bar | Incline DB Curl / Preacher | Cable Biceps Curl / DB Curl | EZ-Bar Cable Curl / DB Curl |
+| 6 | Hammer Curl / Cable Hammer | Reverse Curl / Wrist Roller | DB Biceps Curl / Cable | Spider Curl / Barbell | Preacher DB Curl / Machine | Wrist Roller / Reverse Curl |
+
+</details>
+
+## DAY 5 — LEGS
+**3 / 3 / 2 / 2 / 2 / 2 = 14 sets** · finisher: Abs
+
+| # | Target | Sets | This cycle |
+|---|---|---|---|
+| 1 | Compound | 3 | |
+| 2 | Quads / Hams | 3 | |
+| 3 | Isolation | 2 | |
+| 4 | Unilateral | 2 | |
+| 5 | Posterior | 2 | |
+| 6 | Calves | 2 | |
+
+<details><summary><b>Variant bank — Legs</b></summary>
+
+| # | V1 | V2 | V3 | V4 | V5 | V6 |
+|---|----|----|----|----|----|-----|
+| 1 | Barbell Squat / Leg Press | Front Squat / Goblet | Sumo Deadlift / Conv. DL | Leg Press / Hack Squat | Barbell Squat / Goblet | Hack Squat / Barbell |
+| 2 | Romanian DL / Leg Curl | Hack Squat / Leg Press | Leg Extension / Goblet | DB Sumo Squat / Barbell | Front Squat / Leg Press | DB Sumo Squat / Leg Press |
+| 3 | Leg Extension / Goblet | Lying Leg Curl / Romanian DL | Front Squat / Back Squat | Glute Ham Raise / Leg Curl | Romanian DL / Glute Ham | Standing Calf / Seated |
+| 4 | Walking Lunges / Bulgarians | DB Lunges / Leg Press | Romanian DL / Cable Curl | Bulgarian Split / Lunges | Walking Lunges / Bulgarians | Single RDL / Good Morning |
+| 5 | Hip Thrust / Glute Bridge | Seated Calf / Standing | Glute Bridge / Hip Thrust | Leg Curl / Cable Pull | Leg Extension / Hack Squat | Glute Bridge / Cable Thrust |
+| 6 | Standing Calf / Seated | Single RDL / Good Morning | Calf Press / Standing | Donkey Calf / Standing | Seated Leg Curl / Lying | Lunges / Step-ups |
+
+</details>
+
+## FINISHERS
+
+### Abs — after Upper / Push / Legs (3 of 5 days)
+
+| Exercise | Sets | Reps |
+|---|---|---|
+| Weighted Cable Crunch | 3 | 10–15 |
+| Hanging Leg Raise (weighted if possible) | 3 | 10–15 |
+| Weighted Decline Crunch | 2 | 12–15 |
+
+### Forearms — after Lower (Pull already has a built-in forearm slot)
+
+| Exercise | Sets | Reps / Duration |
+|---|---|---|
+| Wrist Roller | 2 | To failure |
+| Reverse Barbell Curl | 2 | 12–15 |
+| Farmer's Carry / Plate Pinch | 2 | 30–40 sec |
+`;
+
+/** The rotating split, parsed for import. It never changes targets or the phase start. */
+export function rotatingCycle(): ParsedReference {
+  const parsed = parseReference(ROTATING_CYCLE_MD);
+  return { ...parsed, baselineDate: null, stepsTarget: null, phaseMonths: null };
+}

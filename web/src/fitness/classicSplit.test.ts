@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { classicWeekly } from './classicSplit';
+import { classicWeekly, rotatingCycle } from './classicSplit';
 
 describe('classic weekly split', () => {
   const parsed = classicWeekly();
@@ -26,6 +26,27 @@ describe('classic weekly split', () => {
   it('brings the Abs and Forearms finishers and no targets', () => {
     expect(parsed.finishers.map((f) => f.name)).toEqual(['Abs', 'Forearms']);
     expect(parsed.finishers[0].days).toEqual([1, 3, 5]);
+    expect(parsed.baselineDate).toBeNull();
+    expect(parsed.stepsTarget).toBeNull();
+  });
+});
+
+describe('rotating cycle', () => {
+  const parsed = rotatingCycle();
+
+  it('has the five cycle days with six variants per slot', () => {
+    expect(parsed.cycle).toBe(true);
+    expect(parsed.warnings).toEqual([]);
+    expect(Object.keys(parsed.dayFocus).sort()).toEqual(['11', '12', '13', '14', '15']);
+    for (const d of [11, 12, 13, 14, 15]) expect(parsed.slots.filter((s) => s.weekday === d).length).toBeGreaterThanOrEqual(5);
+    for (const s of parsed.slots) expect(s.variants.filter(Boolean)).toHaveLength(6);
+  });
+
+  it('brings its finishers and no targets', () => {
+    expect(parsed.finishers.map((f) => [f.name, f.days])).toEqual([
+      ['Abs', [11, 13, 15]],
+      ['Forearms', [12]],
+    ]);
     expect(parsed.baselineDate).toBeNull();
     expect(parsed.stepsTarget).toBeNull();
   });
