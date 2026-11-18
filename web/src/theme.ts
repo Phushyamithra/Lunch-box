@@ -1,4 +1,4 @@
-import { createTheme, type Theme } from '@mui/material/styles';
+import { alpha, createTheme, type Theme } from '@mui/material/styles';
 import type { ResolvedThemeMode } from '../../src/models';
 import { MOODS, type MoodColors, type MoodName } from './moods';
 
@@ -37,6 +37,21 @@ export function createTrackerTheme(mode: ResolvedThemeMode, moodName: MoodName =
   };
   const buttonFont = mood.button.font === 'display' ? mood.fonts.display : mood.fonts.body;
   const grain = mood.grain ? (appDark ? mood.grain.dark : mood.grain.light) : null;
+  // Frosted glass for tracks, menus and pressed states: a see-through pane with a hairline edge.
+  const glass = {
+    fill: groundDark ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.55)',
+    edge: groundDark ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.8)',
+    press: groundDark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.4)',
+    shade: groundDark ? '0 8px 24px -12px rgba(0,0,0,0.7)' : `0 8px 24px -14px ${alpha(c.ink, 0.35)}`,
+    blur: 'blur(14px) saturate(1.4)',
+  };
+  const glassTrack = {
+    backgroundColor: groundDark ? glass.fill : alpha(c.paper3, 0.55),
+    border: `1px solid ${glass.edge}`,
+    boxShadow: `inset 0 1px 0 ${glass.edge}`,
+    backdropFilter: glass.blur,
+    WebkitBackdropFilter: glass.blur,
+  };
 
   const theme = createTheme({
     palette: {
@@ -80,8 +95,8 @@ export function createTrackerTheme(mode: ResolvedThemeMode, moodName: MoodName =
     tracker: {
       tonal: c.paper3,
       onTonal: c.ink,
-      glassFill: c.paper,
-      glassBorder: c.rule,
+      glassFill: glass.fill,
+      glassBorder: glass.edge,
       cta: c.accent,
       onCta: c.onAccent,
       minimal: appDark,
@@ -95,6 +110,35 @@ export function createTrackerTheme(mode: ResolvedThemeMode, moodName: MoodName =
     },
     components: {
       MuiCssBaseline: { styleOverrides: globalStyles(c, groundDark, grain) },
+      // Every tap: no square flash, a soft press, ripples clipped to the shape.
+      MuiButtonBase: {
+        styleOverrides: {
+          root: {
+            WebkitTapHighlightColor: 'transparent',
+            transition: 'transform 140ms ease, background-color 160ms, box-shadow 160ms',
+            '&:active': { transform: 'scale(0.97)' },
+            '& .MuiTouchRipple-child': { backgroundColor: groundDark ? 'rgba(255,255,255,0.9)' : alpha(c.ink, 0.5) },
+          },
+        },
+      },
+      MuiBottomNavigationAction: {
+        defaultProps: { disableRipple: true },
+        styleOverrides: { root: { '&:active': { transform: 'none' }, '&:active .nav-pill': { transform: 'scale(0.92)' } } },
+      },
+      MuiTabs: {
+        styleOverrides: {
+          root: { ...glassTrack, borderRadius: 999, padding: 4, minHeight: 0 },
+          indicator: { display: 'none' },
+          scrollButtons: { borderRadius: 999, width: 36 },
+        },
+      },
+      MuiMenu: {
+        styleOverrides: {
+          paper: { borderRadius: 18, marginTop: 6, backgroundColor: alpha(groundDark ? c.paper2 : c.card, 0.86), border: `1px solid ${glass.edge}`, boxShadow: glass.shade, backdropFilter: glass.blur, WebkitBackdropFilter: glass.blur },
+          list: { padding: 6 },
+        },
+      },
+      MuiPopover: { styleOverrides: { paper: { borderRadius: 18 } } },
       MuiPaper: {
         defaultProps: { elevation: 0 },
         styleOverrides: {
@@ -125,8 +169,23 @@ export function createTrackerTheme(mode: ResolvedThemeMode, moodName: MoodName =
         },
       },
       MuiCheckbox: { styleOverrides: { root: { padding: 12 } } },
-      MuiMenuItem: { styleOverrides: { root: { minHeight: 48 } } },
-      MuiTab: { styleOverrides: { root: { minHeight: 48, fontFamily: mood.fonts.body, fontWeight: 600, textTransform: 'none', fontSize: '0.95rem' } } },
+      MuiMenuItem: { styleOverrides: { root: { minHeight: 48, borderRadius: 12 } } },
+      MuiTab: {
+        styleOverrides: {
+          root: {
+            minHeight: 44,
+            minWidth: 0,
+            paddingInline: 16,
+            borderRadius: 999,
+            fontFamily: mood.fonts.body,
+            fontWeight: 600,
+            textTransform: 'none',
+            fontSize: '0.95rem',
+            color: c.muted,
+            '&.Mui-selected': { backgroundColor: c.accent, color: c.onAccent, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35)' },
+          },
+        },
+      },
       MuiButton: {
         defaultProps: { disableElevation: true },
         styleOverrides: {
@@ -152,7 +211,7 @@ export function createTrackerTheme(mode: ResolvedThemeMode, moodName: MoodName =
         },
       },
       MuiToggleButtonGroup: {
-        styleOverrides: { root: { borderRadius: Math.min(mood.radius.control, 16), gap: 4, padding: 4, backgroundColor: groundDark ? c.paper3 : c.paper2 } },
+        styleOverrides: { root: { ...glassTrack, borderRadius: 999, gap: 4, padding: 4 } },
       },
       MuiToggleButton: {
         styleOverrides: {
@@ -162,9 +221,9 @@ export function createTrackerTheme(mode: ResolvedThemeMode, moodName: MoodName =
             fontWeight: 600,
             fontSize: '0.95rem',
             border: 0,
-            borderRadius: `${Math.min(mood.radius.control, 14)}px !important`,
+            borderRadius: '999px !important',
             color: c.muted,
-            '&.Mui-selected, &.Mui-selected:hover': { backgroundColor: c.accent, color: c.onAccent },
+            '&.Mui-selected, &.Mui-selected:hover': { backgroundColor: c.accent, color: c.onAccent, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35)' },
           },
         },
       },
@@ -197,7 +256,9 @@ export function createTrackerTheme(mode: ResolvedThemeMode, moodName: MoodName =
         },
       },
       MuiTooltip: { styleOverrides: { tooltip: { backgroundColor: c.band, color: c.onBand, borderRadius: 10, fontSize: 13 } } },
-      MuiSnackbarContent: { styleOverrides: { root: { backgroundColor: c.band, color: c.onBand, borderRadius: Math.min(mood.radius.control, 12) } } },
+      MuiSnackbarContent: {
+        styleOverrides: { root: { backgroundColor: alpha(c.band, 0.9), color: c.onBand, borderRadius: 18, border: `1px solid ${alpha(c.onBand, 0.14)}`, backdropFilter: glass.blur, WebkitBackdropFilter: glass.blur } },
+      },
       MuiSwitch: {
         styleOverrides: {
           switchBase: { '&.Mui-checked + .MuiSwitch-track': { backgroundColor: c.focus, opacity: 1 } },
@@ -212,6 +273,13 @@ export function createTrackerTheme(mode: ResolvedThemeMode, moodName: MoodName =
 export function globalStyles(c: MoodColors, groundDark: boolean, grain: string | null = null) {
   return {
     ':root': { colorScheme: groundDark ? 'dark' : 'light' },
+    // No square tap flash anywhere; tappable tiles and rows press in with a glass sheen that follows their curve.
+    '*': { WebkitTapHighlightColor: 'transparent' },
+    'button:not(.MuiButtonBase-root)': { transition: 'transform 140ms ease, box-shadow 160ms' },
+    'button:not(.MuiButtonBase-root):active': {
+      transform: 'scale(0.97)',
+      boxShadow: `inset 0 0 0 999px ${groundDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.45)'}, inset 0 1px 0 rgba(255,255,255,0.5)`,
+    },
     'html, body': { overflowX: 'clip', backgroundColor: c.paper },
     // The mood's paper grain, if it has one (Finance's cotton stock).
     body: { color: c.ink, fontVariantNumeric: 'tabular-nums', backgroundImage: grain ?? 'none' },

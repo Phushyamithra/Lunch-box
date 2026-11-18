@@ -21,6 +21,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { GlobalStyles, ThemeProvider } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { useEffect, useMemo, type ReactElement } from 'react';
 import { moodFor, tornMask } from '../moods';
 import { createTrackerTheme, globalStyles } from '../theme';
@@ -137,6 +138,10 @@ function ShellFrame() {
           sx={{
             top: 0,
             pt: 'env(safe-area-inset-top)',
+            // Frosted: the screen scrolls softly under the band.
+            backgroundColor: alpha(theme.tracker.mood.band, 0.88),
+            backdropFilter: 'blur(16px) saturate(1.4)',
+            WebkitBackdropFilter: 'blur(16px) saturate(1.4)',
             ...(theme.tracker.torn ? { pb: '8px', ...tornMask('bottom') } : { borderRadius: '0 0 24px 24px' }),
           }}
         >
@@ -182,7 +187,9 @@ function ShellFrame() {
             bottom: 0,
             pb: 'env(safe-area-inset-bottom)',
             zIndex: 10,
-            backgroundColor: theme.tracker.mood.band,
+            backgroundColor: alpha(theme.tracker.mood.band, 0.88),
+            backdropFilter: 'blur(16px) saturate(1.4)',
+            WebkitBackdropFilter: 'blur(16px) saturate(1.4)',
             ...(theme.tracker.torn
               ? { borderRadius: 0, pt: '8px', ...tornMask('top') }
               : { borderRadius: '24px 24px 0 0', borderTop: theme.tracker.minimal ? `1px solid ${theme.tracker.mood.rule}` : 0 }),
@@ -212,10 +219,10 @@ function ShellFrame() {
                     display: 'grid',
                     placeItems: 'center',
                     mb: 0.5,
-                    transition: 'background-color 150ms',
+                    transition: 'background-color 150ms, transform 140ms ease',
                   },
                   '&.Mui-selected': { color: theme.tracker.mood.onBand, opacity: 1 },
-                  '&.Mui-selected .nav-pill': { bgcolor: theme.tracker.cta, color: theme.tracker.onCta },
+                  '&.Mui-selected .nav-pill': { bgcolor: theme.tracker.cta, color: theme.tracker.onCta, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35)' },
                   '& .MuiBottomNavigationAction-label': { fontWeight: 600, fontSize: { xs: 11, sm: 12 }, whiteSpace: 'nowrap' },
                   '& .MuiBottomNavigationAction-label.Mui-selected': { fontSize: { xs: 11, sm: 12 } },
                 }}
