@@ -1,39 +1,22 @@
-import { Alert, Box, Button, CircularProgress, Tab, Tabs } from '@mui/material';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Alert, Box, Button, CircularProgress } from '@mui/material';
+import { Outlet, useLocation } from 'react-router-dom';
+import { SectionBar, SectionTiles } from '../layout/SectionNav';
 import { useGoals } from './GoalsContext';
 
-const TABS = [
-  { path: '/goals', label: 'Goals' },
-  { path: '/goals/timeline', label: 'Timeline' },
+/** Goals' sections, shown as tiles under the goals list. */
+const SECTIONS = [
+  { path: '/goals/timeline', label: 'Timeline', hint: 'Milestones by date' },
+  { path: '/templates', label: 'Bulk add', hint: 'Templates and upload' },
 ];
 
 /** Frame for goal screens: section tabs plus load/error states. */
 export function GoalsLayout() {
   const { pathname } = useLocation();
-  const navigate = useNavigate();
   const goals = useGoals();
-  const current = TABS.find((t) => t.path === pathname)?.path ?? false;
 
   return (
     <Box>
-      <Tabs
-        value={current}
-        onChange={(_, path: string) => navigate(path)}
-        variant="scrollable"
-        allowScrollButtonsMobile
-        aria-label="Goals sections"
-        sx={{
-          mb: 2,
-          minHeight: 44,
-          '& .MuiTabs-indicator': { display: 'none' },
-          '& .MuiTab-root': { minHeight: 48, borderRadius: 1, textTransform: 'none', fontWeight: 600, px: 2, mr: 0.5 },
-          '& .Mui-selected': { bgcolor: (t) => t.tracker.cta, color: (t) => `${t.tracker.onCta} !important` },
-        }}
-      >
-        {TABS.map((t) => (
-          <Tab key={t.path} value={t.path} label={t.label} />
-        ))}
-      </Tabs>
+      <SectionBar home="/goals" sections={SECTIONS} pathname={pathname} />
       {goals.error ? (
         <Alert severity="error" action={<Button color="inherit" onClick={() => void goals.reload()}>Retry</Button>}>
           {goals.error}
@@ -46,6 +29,11 @@ export function GoalsLayout() {
       ) : (
         <div key={pathname}>
           <Outlet />
+          {pathname === '/goals' && (
+            <Box sx={{ mt: 4 }}>
+              <SectionTiles sections={SECTIONS} title="More in Goals" />
+            </Box>
+          )}
         </div>
       )}
     </Box>

@@ -1,6 +1,7 @@
-import { Alert, Box, Button, CircularProgress, Paper, Tab, Tabs, Typography } from '@mui/material';
+import { Alert, Box, Button, CircularProgress, Paper, Typography } from '@mui/material';
 import type { ReactNode } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
+import { SectionBar, SectionTiles } from '../layout/SectionNav';
 import { useFitness } from './FitnessContext';
 
 /** A leading emoji isn't an icon in this material: the condensed title carries it alone. */
@@ -49,42 +50,24 @@ export const minutes = (sec: number): string => {
 export const kg = (v: number | null | undefined, digits = 1): string => (v === null || v === undefined ? '–' : v.toFixed(digits));
 export const signed = (v: number, digits = 2): string => `${v > 0 ? '+' : ''}${v.toFixed(digits)}`;
 
-const TABS = [
-  { path: '/fitness', label: 'Today' },
-  { path: '/fitness/dashboard', label: 'Dashboard' },
-  { path: '/fitness/training', label: 'Training' },
-  { path: '/fitness/program', label: 'Program' },
-  { path: '/fitness/review', label: 'Review' },
-  { path: '/fitness/settings', label: 'Targets & away' },
+/** Fitness's sections, shown as tiles under Today. */
+const SECTIONS = [
+  { path: '/fitness/dashboard', label: 'Dashboard', hint: 'Weight, waist and muscles' },
+  { path: '/fitness/training', label: 'Training', hint: 'Sessions and history' },
+  { path: '/fitness/program', label: 'Program', hint: 'Your splits and days' },
+  { path: '/fitness/review', label: 'Review', hint: 'Weekly check-in' },
+  { path: '/fitness/settings', label: 'Targets & away', hint: 'Goals and time off' },
+  { path: '/templates', label: 'Bulk add', hint: 'Templates and upload' },
 ];
 
 /** Frame for every fitness screen: section tabs plus load/error states. */
 export function FitnessLayout() {
   const { pathname } = useLocation();
-  const navigate = useNavigate();
   const { loading, error, data, reload } = useFitness();
-  const current = TABS.find((t) => t.path === pathname)?.path ?? false;
 
   return (
     <Box>
-      <Tabs
-        value={current}
-        onChange={(_, path: string) => navigate(path)}
-        variant="scrollable"
-        allowScrollButtonsMobile
-        aria-label="Fitness sections"
-        sx={{
-          mb: 2,
-          minHeight: 44,
-          '& .MuiTabs-indicator': { display: 'none' },
-          '& .MuiTab-root': { minHeight: 48, borderRadius: 1, textTransform: 'none', fontWeight: 600, px: 2, mr: 0.5 },
-          '& .Mui-selected': { bgcolor: (t) => t.tracker.cta, color: (t) => `${t.tracker.onCta} !important` },
-        }}
-      >
-        {TABS.map((t) => (
-          <Tab key={t.path} value={t.path} label={t.label} />
-        ))}
-      </Tabs>
+      <SectionBar home="/fitness" sections={SECTIONS} pathname={pathname} />
       {error ? (
         <Alert severity="error" action={<Button color="inherit" onClick={() => void reload()}>Retry</Button>}>
           {error}
@@ -96,6 +79,11 @@ export function FitnessLayout() {
       ) : (
         <div key={pathname}>
           <Outlet />
+          {pathname === '/fitness' && (
+            <Box sx={{ mt: 4 }}>
+              <SectionTiles sections={SECTIONS} title="More in Fitness" />
+            </Box>
+          )}
         </div>
       )}
     </Box>

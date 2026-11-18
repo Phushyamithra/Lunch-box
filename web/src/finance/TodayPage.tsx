@@ -10,6 +10,7 @@ import { cardStatus, combinedCap, monthOf, monthSummary, salaryDate, salaryRecei
 import { useFinance } from './FinanceContext';
 import { balanceEntries, MONEY_IN_KINDS, simpleBalance, type BalanceEntry, type CardOwed, type MoneyInKind } from './balance';
 import { budgetMonth, formatINR, planFor, type MoneyEvent, type Paise, type SalaryReceipt, type Transaction } from './model';
+import { SectionTiles } from '../layout/SectionNav';
 import { tornMask } from '../moods';
 import { WeeklyCapBar } from './PlannerCards';
 import { EditTransactionDialog, QuickAdd, TransactionRow } from './TransactionForm';
@@ -290,18 +291,7 @@ export default function FinanceToday() {
         </Box>
       </Card>
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(3, 1fr)' }, gap: 1.5 }}>
-        {FINANCE_SECTIONS.map((s) => (
-          <Paper key={s.path} variant="outlined" component="button" onClick={() => navigate(s.path)} sx={{ p: 2, textAlign: 'left', cursor: 'pointer', color: 'inherit', font: 'inherit' }}>
-            <Typography variant="subtitle1" component="span" sx={{ display: 'block', fontSize: '1.25rem' }}>
-              {s.label}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {s.hint}
-            </Typography>
-          </Paper>
-        ))}
-      </Box>
+      <SectionTiles sections={FINANCE_SECTIONS} />
 
       <Card title="🧾 Recent" aside={<Button size="small" onClick={() => navigate('/finance/transactions')}>All</Button>}>
         {recent.length ? (
