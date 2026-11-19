@@ -27,6 +27,7 @@ import { moodFor, tornMask } from '../moods';
 import { createTrackerTheme, globalStyles } from '../theme';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useSettings, type SyncState } from '../settings/SettingsContext';
+import { ErrorBoundary } from './ErrorBoundary';
 import { GlassIcon, type IconTint } from './GlassIcon';
 import { NAV_ITEMS, activeNavPath } from './navItems';
 import { OfflineBanner } from './OfflineBanner';
@@ -170,7 +171,10 @@ function ShellFrame() {
         >
           <OfflineBanner />
             <div key={section}>
-            <Outlet />
+            {/* A screen that fails shows its error here; the header, tabs and other screens keep working. */}
+            <ErrorBoundary key={location.pathname} label="This screen">
+              <Outlet />
+            </ErrorBoundary>
           </div>
         </Box>
       </Box>

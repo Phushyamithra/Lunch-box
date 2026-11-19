@@ -17,6 +17,7 @@ import dayjs from 'dayjs';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { useSnackbar } from '../layout/Snackbar';
+import { ErrorBoundary } from '../layout/ErrorBoundary';
 import { useFitness } from './FitnessContext';
 import type { FitnessData } from './fitnessApi';
 import {
@@ -76,11 +77,22 @@ export default function TodayPage() {
       )}
       {day === today && <DueToday data={data} today={today} />}
       {day === today && <GoalsDue />}
-      <WeightCard key={`w-${day}`} day={day} data={data} />
-      <SessionLogger key={`t-${day}`} day={day} data={data} />
-      <DietCard key={`d-${day}`} day={day} data={data} />
-      <StepsCard key={`s-${day}`} day={day} data={data} />
-      <WaistCard key={`c-${day}`} day={day} data={data} />
+      {/* Each card is guarded: if one can't draw a day, the others and the day arrows keep working. */}
+      <ErrorBoundary key={`w-${day}`} label="Weight">
+        <WeightCard day={day} data={data} />
+      </ErrorBoundary>
+      <ErrorBoundary key={`t-${day}`} label="The workout">
+        <SessionLogger day={day} data={data} />
+      </ErrorBoundary>
+      <ErrorBoundary key={`d-${day}`} label="Diet">
+        <DietCard day={day} data={data} />
+      </ErrorBoundary>
+      <ErrorBoundary key={`s-${day}`} label="Steps">
+        <StepsCard day={day} data={data} />
+      </ErrorBoundary>
+      <ErrorBoundary key={`c-${day}`} label="Waist">
+        <WaistCard day={day} data={data} />
+      </ErrorBoundary>
     </Stack>
   );
 }

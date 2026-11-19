@@ -137,17 +137,19 @@ export function buildDayPlan(input: {
 }): PlanItem[] {
   const { weekday, session, slots, finishers, workouts } = input;
   const custom = session.custom_workout_id ? workouts.find((w) => w.id === session.custom_workout_id) : undefined;
+  // Older or hand-edited rows can miss fields: never let one break the day.
+  const extras = Array.isArray(session.extras) ? session.extras.filter(Boolean) : [];
   const items: PlanItem[] = [];
   if (custom) {
-    custom.exercises.slice(0, MAX_CUSTOM_EXERCISES).forEach((e, i) =>
+    (Array.isArray(custom.exercises) ? custom.exercises.filter(Boolean) : []).slice(0, MAX_CUSTOM_EXERCISES).forEach((e, i) =>
       items.push({
         key: `custom-${custom.id}-${i}`,
         kind: 'custom',
         slot: CUSTOM_SLOT_BASE + i,
         programSlot: null,
-        title: e.label.trim() || e.exercise,
-        options: exerciseOptions(e.exercise),
-        sets: e.sets,
+        title: (e.label ?? '').trim() || e.exercise || 'Exercise',
+        options: exerciseOptions(e.exercise ?? ''),
+        sets: Number(e.sets) || 1,
         repsHint: e.reps,
         compound: i < 2 && e.sets >= 3,
         variantIndex: null,
@@ -171,15 +173,15 @@ export function buildDayPlan(input: {
       });
     }
   }
-  for (const f of finishers.filter((f) => f.days.includes(weekday))) {
-    f.exercises.forEach((e, i) =>
+  for (const f of finishers.filter((f) => Array.isArray(f.days) && f.days.includes(weekday))) {
+    (f.exercises ?? []).forEach((e, i) =>
       items.push({
         key: `fin-${f.name}-${i}`,
         kind: 'finisher',
         slot: FINISHER_SLOT,
         programSlot: null,
         title: `${f.name} finisher`,
-        options: exerciseOptions(e.name),
+        options: exerciseOptions(e.name ?? ''),
         sets: e.sets,
         repsHint: e.reps,
         compound: false,
@@ -188,14 +190,14 @@ export function buildDayPlan(input: {
       }),
     );
   }
-  session.extras.slice(0, MAX_EXTRAS).forEach((e, i) =>
+  extras.slice(0, MAX_EXTRAS).forEach((e, i) =>
     items.push({
       key: `extra-${i}`,
       kind: 'extra',
       slot: EXTRA_SLOT_BASE + i,
       programSlot: null,
-      title: e.label.trim() || e.exercise,
-      options: exerciseOptions(e.exercise),
+      title: (e.label ?? '').trim() || e.exercise || 'Exercise',
+      options: exerciseOptions(e.exercise ?? ''),
       sets: e.sets,
       repsHint: e.reps,
       compound: false,

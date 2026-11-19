@@ -88,8 +88,13 @@ const normaliseTarget = (r: TargetRow): TargetRow => {
   return out as unknown as TargetRow;
 };
 
+/** Database errors that mean a migration hasn't been run yet, in plain words. */
+const MIGRATION_HINTS: [RegExp, string][] = [
+  [/food_log_entries_source_check/, 'Restaurant meals need a database update: run supabase/migrations/0013_restaurant_entries.sql in the Supabase SQL Editor, then add it again.'],
+];
+
 const check = <T>(r: { data: T | null; error: { message: string } | null }): T => {
-  if (r.error) throw new Error(r.error.message);
+  if (r.error) throw new Error(MIGRATION_HINTS.find(([re]) => re.test(r.error!.message))?.[1] ?? r.error.message);
   return r.data as T;
 };
 
