@@ -4,7 +4,7 @@
  * it. Logged entries keep a snapshot, so menu updates never change past days.
  */
 import type { DietType, Nutrients } from '../foodLog';
-import { CB_SIDES, CB_SOURCE } from './californiaBurrito';
+import { CB_ITEMS, CB_SIDES, CB_SOURCE } from './californiaBurrito';
 import { DOMINOS, DOMINOS_SOURCE } from './dominos';
 import { MCDONALDS, MCD_SOURCE } from './mcdonalds';
 import type { Chain, ChainId, MenuItem, RawMenuItem, RawOption } from './types';
@@ -29,7 +29,7 @@ export const CHAINS: Chain[] = [
     name: 'California Burrito',
     emoji: '🌯',
     source: CB_SOURCE,
-    coverage: 'Build your burrito or bowl from the chain’s own per-ingredient values, plus sides.',
+    coverage: 'Build your burrito or bowl from the chain’s own per-ingredient values, plus sides, desserts (Chocodilla, Churros), quesadillas, Overcrowded tacos, nachos and munchies, and dips. Build-your-own tacos (one / three) aren’t covered yet.',
   },
 ];
 
@@ -54,7 +54,7 @@ const slug = (s: string) =>
 const withIds = (chain: ChainId, items: RawMenuItem[]): MenuItem[] =>
   items.map((i) => ({ ...i, id: `${chain}:${slug(i.name)}`, chain, diet: i.diet ?? inferDiet(i.name) }));
 
-export const MENU: MenuItem[] = [...withIds('mcdonalds', MCDONALDS), ...withIds('dominos', DOMINOS), ...withIds('california-burrito', CB_SIDES)];
+export const MENU: MenuItem[] = [...withIds('mcdonalds', MCDONALDS), ...withIds('dominos', DOMINOS), ...withIds('california-burrito', [...CB_SIDES, ...CB_ITEMS])];
 
 export const chainOf = (id: ChainId): Chain => CHAINS.find((c) => c.id === id) as Chain;
 

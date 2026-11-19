@@ -2,7 +2,9 @@
  * Staples missing from IFCT 2017 (sugar, butter, curd…), from USDA
  * FoodData Central, SR Legacy (public domain), per 100 g. Fetched 2026-10-19.
  * Carbs are *available* carbohydrate (USDA "by difference" minus fibre) to
- * match IFCT; kcal is USDA's own value.
+ * match IFCT; kcal is USDA's own value. Chocolate, cocoa, rice flour, coconut
+ * milk and mozzarella fetched 2026-11-20 (coconut milk has no fibre or sugar
+ * in its record, so fibre is 0 and sugar blank).
  */
 export interface RefNutrients {
   kcal: number;
@@ -22,5 +24,11 @@ export const USDA: Record<string, RefNutrients & { name: string; fdcId: number }
   curd: { fdcId: 171284, name: 'Yogurt, plain, whole milk', kcal: 61, protein: 3.47, fat: 3.25, carbs: 4.66, fibre: 0, sugar: 4.66, sodium_mg: 46 },
   oats: { fdcId: 173904, name: 'Cereals, oats, regular and quick, not fortified, dry', kcal: 379, protein: 13.2, fat: 6.52, carbs: 57.6, fibre: 10.1, sugar: 0.99, sodium_mg: 6 },
   peanut_butter: { fdcId: 172470, name: 'Peanut butter, smooth style, without salt', kcal: 598, protein: 22.2, fat: 51.4, carbs: 17.3, fibre: 5, sugar: 10.5, sodium_mg: 17 },
+  cocoa: { fdcId: 169593, name: 'Cocoa, dry powder, unsweetened', kcal: 228, protein: 19.6, fat: 13.7, carbs: 20.9, fibre: 37, sugar: 1.75, sodium_mg: 21 },
+  milk_chocolate: { fdcId: 167587, name: 'Candies, milk chocolate', kcal: 535, protein: 7.65, fat: 29.7, carbs: 56, fibre: 3.4, sugar: 51.5, sodium_mg: 79 },
+  dark_chocolate: { fdcId: 170273, name: 'Chocolate, dark, 70-85% cacao solids', kcal: 598, protein: 7.79, fat: 42.6, carbs: 35, fibre: 10.9, sugar: 24, sodium_mg: 20 },
+  rice_flour: { fdcId: 169714, name: 'Rice flour, white, unenriched', kcal: 366, protein: 5.95, fat: 1.42, carbs: 77.7, fibre: 2.4, sugar: 0.12, sodium_mg: 0 },
+  coconut_milk: { fdcId: 170173, name: 'Nuts, coconut milk, canned (liquid expressed from grated meat and water)', kcal: 197, protein: 2.02, fat: 21.3, carbs: 2.81, fibre: 0, sugar: null, sodium_mg: 13 },
+  mozzarella: { fdcId: 170845, name: 'Cheese, mozzarella, whole milk', kcal: 299, protein: 22.2, fat: 22.1, carbs: 2.4, fibre: 0, sugar: 0, sodium_mg: 486 },
   soy_flour_defatted: { fdcId: 174275, name: 'Soy flour, defatted', kcal: 327, protein: 51.5, fat: 1.22, carbs: 16.4, fibre: 17.5, sugar: 16.4, sodium_mg: 20 },
 };

@@ -30,7 +30,12 @@ export interface CbGroup {
 }
 
 type Sized = Record<string, CbComponent[]>;
-const D = data as unknown as Record<string, Record<string, Sized | CbComponent[]>> & { sides: CbComponent[] };
+type CbItem = CbComponent & { type?: 'veg' | 'nonveg' };
+const D = data as unknown as Record<string, Record<string, Sized | CbComponent[]>> & {
+  sides: CbComponent[];
+  /** Ready-made items from the same calculator (captured 2026-11-20). */
+  menu: Record<'desserts' | 'munchies' | 'dips' | 'quesadillas' | 'quesadillaAddOns' | 'overcrowdedTacos', CbItem[]>;
+};
 
 export const CB_MEALS: { key: CbMeal; label: string; emoji: string }[] = [
   { key: 'burrito', label: 'Burrito', emoji: '🌯' },
@@ -100,6 +105,26 @@ export function cbTotal(sel: CbSelection): { kcal: number; protein: number; carb
 export function cbDefaults(meal: CbMeal, size: string): Record<string, string[]> {
   return Object.fromEntries(cbGroups(meal, size).filter((g) => g.pick === 'one').map((g) => [g.key, [g.options[0].name]]));
 }
+
+/** "CHEESY CHIPOTLE CHICKEN" → "Cheesy chipotle chicken"; mixed-case names stay as they are. */
+const tidy = (name: string) => (name === name.toUpperCase() ? `${name[0]}${name.slice(1).toLowerCase()}` : name);
+const dietOf = (c: CbItem) => (c.type === 'nonveg' || /chicken/i.test(c.name) ? 'nonveg' : 'veg') as 'veg' | 'nonveg';
+const item = (c: CbItem, category: string, suffix: string, label: string): RawMenuItem => ({
+  name: `${tidy(c.name)}${suffix}`,
+  category,
+  diet: dietOf(c),
+  options: [{ label, kcal: c.cal, protein: c.protein, carbs: c.carbs, fat: c.fat }],
+});
+
+/** Desserts, munchies, quesadillas, Overcrowded tacos, dips and add-ons, each as the calculator lists it. */
+export const CB_ITEMS: RawMenuItem[] = [
+  ...D.menu.desserts.map((c) => item(c, 'Desserts', '', '1 serving')),
+  ...D.menu.quesadillas.map((c) => item(c, 'Quesadillas', ' quesadilla', '1 quesadilla (no dip or add-ons)')),
+  ...D.menu.overcrowdedTacos.map((c) => item(c, 'Tacos', ' (Overcrowded)', '1 Overcrowded taco plate')),
+  ...D.menu.munchies.map((c) => item(c, 'Munchies', '', '1 serving')),
+  ...D.menu.dips.map((c) => item(c, 'Dips & add-ons', ' (dip)', '1 dip')),
+  ...D.menu.quesadillaAddOns.map((c) => item(c, 'Dips & add-ons', ' (quesadilla add-on)', '1 add-on')),
+];
 
 /** Sides sold on their own (whole portion, as the calculator lists them). */
 export const CB_SIDES: RawMenuItem[] = D.sides.map((s) => ({

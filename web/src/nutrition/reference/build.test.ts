@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { energyCheck, validateFood } from '../foodLog';
 import { buildDish, buildReferenceFoods, combineDiet, ingredient } from './build';
-import { DISHES, INGREDIENTS } from './catalog';
+import { BRANDED, DISHES, INGREDIENTS } from './catalog';
 
 const foods = buildReferenceFoods();
 const byCode = new Map(foods.map((f) => [f.code, f]));
@@ -9,7 +9,7 @@ const byCode = new Map(foods.map((f) => [f.code, f]));
 describe('reference catalog', () => {
   it('has unique codes and only known ingredients', () => {
     expect(new Set(foods.map((f) => f.code)).size).toBe(foods.length);
-    expect(foods.length).toBe(INGREDIENTS.length + DISHES.length);
+    expect(foods.length).toBe(INGREDIENTS.length + DISHES.length + BRANDED.length);
     for (const d of DISHES) for (const [ref] of d.recipe) expect(() => ingredient(ref)).not.toThrow();
   });
 
@@ -21,7 +21,10 @@ describe('reference catalog', () => {
   });
 
   it('calories agree with the macros (4/4/9 plus fibre) within label tolerance', () => {
-    const off = foods.filter((f) => !energyCheck(f).ok && Math.abs(energyCheck(f).computed - f.kcal) > 20);
+    // USDA works cocoa out with its own (lower) energy factors, so its published
+    // 228 kcal sits below the generic 4/4/9 sum. Kept as published.
+    const SPECIFIC_FACTORS = new Set(['ing-cocoa']);
+    const off = foods.filter((f) => !SPECIFIC_FACTORS.has(f.code) && !energyCheck(f).ok && Math.abs(energyCheck(f).computed - f.kcal) > 20);
     expect(off.map((f) => `${f.code} ${f.kcal} vs ${energyCheck(f).computed}`)).toEqual([]);
   });
 

@@ -7,6 +7,9 @@
  *   weight), so they are labelled *estimated*. Salt isn't counted (sodium is
  *   left blank), and real kitchens vary, especially in oil.
  *
+ * - Packaged foods: the maker's own label, per 100 g → official (the page
+ *   is linked). Where the label prints no fibre, fibre is 0 and noted.
+ *
  * Ingredient keys: an IFCT code ("A015") or "usda:<key>" (see usda.ts).
  * Household portions are approximate and always shown in grams.
  */
@@ -61,6 +64,18 @@ export interface IngredientDef {
   category: Category;
   basis?: '100g' | '100ml';
   portions: PortionDef[];
+}
+
+export interface BrandedDef {
+  code: string;
+  name: string;
+  aliases: string;
+  category: Category;
+  diet: 'vegan' | 'veg' | 'egg' | 'nonveg';
+  per100: { kcal: number; protein: number; fat: number; carbs: number; fibre: number; sugar: number | null; sodium_mg: number | null };
+  portions: PortionDef[];
+  url: string;
+  note: string;
 }
 
 export interface DishDef {
@@ -193,6 +208,13 @@ export const INGREDIENTS: IngredientDef[] = [
   { ref: 'usda:sugar', code: 'ing-sugar', name: 'Sugar', aliases: 'cheeni shakkar', category: 'Oils & sugar', portions: [tsp(4), tbsp(12)] },
   { ref: 'I001', code: 'ing-jaggery', name: 'Jaggery (gur)', aliases: 'bellam vellam', category: 'Oils & sugar', portions: [tsp(5), piece(20, '1 small piece')] },
   { ref: 'usda:honey', code: 'ing-honey', name: 'Honey', aliases: 'shahad', category: 'Oils & sugar', portions: [tsp(7), tbsp(21)] },
+  // Chocolate, cocoa and a few staples (USDA)
+  { ref: 'usda:milk_chocolate', code: 'ing-milk-chocolate', name: 'Milk chocolate', aliases: 'dairy milk chocolate bar candy', category: 'Sweets', portions: [piece(6, '1 square'), { label: '1 small bar', grams: 13 }, { label: '1 bar', grams: 40 }] },
+  { ref: 'usda:dark_chocolate', code: 'ing-dark-chocolate', name: 'Dark chocolate (70–85%)', aliases: 'bitter chocolate cacao bar', category: 'Sweets', portions: [piece(10, '1 square'), { label: '1 bar', grams: 40 }] },
+  { ref: 'usda:cocoa', code: 'ing-cocoa', name: 'Cocoa powder, unsweetened', aliases: 'cacao powder', category: 'Oils & sugar', portions: [tsp(2.5), tbsp(5)] },
+  { ref: 'usda:rice_flour', code: 'ing-rice-flour', name: 'Rice flour', aliases: 'chawal ka atta akki hittu', category: 'Rice & grains', portions: [tbsp(10), { label: '1 cup', grams: 160 }] },
+  { ref: 'usda:coconut_milk', code: 'ing-coconut-milk', name: 'Coconut milk, canned', aliases: 'thengai paal nariyal doodh', category: 'Nuts & seeds', portions: [tbsp(15), { label: '1/2 cup', grams: 120 }] },
+  { ref: 'usda:mozzarella', code: 'ing-mozzarella', name: 'Mozzarella cheese', aliases: 'pizza cheese', category: 'Dairy & eggs', portions: [{ label: '1 slice', grams: 20 }, { label: '1/4 cup grated', grams: 28 }] },
   { ref: 'K002', code: 'ing-coconut-water', name: 'Coconut water', aliases: 'nariyal pani elaneer', category: 'Beverages', basis: '100ml', portions: [glass] },
 ];
 
@@ -265,7 +287,7 @@ export const DISHES: DishDef[] = [
   { code: 'dish-masala-dosa', name: 'Masala dosa', aliases: 'dosai potato', category: 'Breakfast', recipe: [['A014', 22], ['B003', 7], ['F006', 80], ['G017', 15], [OIL, 9]], cooked_g: 190, portions: [piece(190, '1 dosa')] },
   { code: 'dish-uttapam', name: 'Uttapam', aliases: 'uthappam', category: 'Breakfast', recipe: [['A014', 30], ['B003', 10], ['G017', 20], ['D076', 15], [OIL, 6]], cooked_g: 140, portions: [piece(140, '1 uttapam')] },
   { code: 'dish-medu-vada', name: 'Medu vada', aliases: 'uddina vade vadai', category: 'Breakfast', recipe: [['B003', 30], [OIL, 8]], cooked_g: 50, portions: [piece(50, '1 vada')] },
-  { code: 'dish-upma', name: 'Upma', aliases: 'uppittu rava', category: 'Breakfast', recipe: [['A022', 50], ['G017', 15], ['D061', 10], [OIL, 8]], cooked_g: 220, portions: [plate(220), katori] },
+  { code: 'dish-upma', name: 'Upma', aliases: 'uppittu rava khara bath', category: 'Breakfast', recipe: [['A022', 50], ['G017', 15], ['D061', 10], [OIL, 8]], cooked_g: 220, portions: [plate(220), katori] },
   { code: 'dish-poha', name: 'Poha', aliases: 'kanda poha aval', category: 'Breakfast', recipe: [['A011', 50], ['G017', 20], ['F006', 20], ['H012', 8], [OIL, 7]], cooked_g: 180, portions: [plate(180), katori] },
   { code: 'dish-pongal', name: 'Ven pongal', aliases: 'khara pongal', category: 'Breakfast', recipe: [['A015', 40], ['B010', 20], ['T013', 8], ['H005', 3]], cooked_g: 220, portions: [plate(220), katori] },
   { code: 'dish-besan-chilla', name: 'Besan chilla', aliases: 'puda cheela', category: 'Breakfast', recipe: [['B001', 40], ['G017', 15], ['D076', 10], [OIL, 5]], cooked_g: 90, portions: [piece(90, '1 chilla')] },
@@ -296,4 +318,70 @@ export const DISHES: DishDef[] = [
   { code: 'dish-badam-milk', name: 'Badam milk', aliases: 'almond milk sweet', category: 'Beverages', recipe: [['L002', 200], ['H001', 10], ['usda:sugar', 15]], cooked_g: 225, basis: '100ml', portions: [glass] },
   { code: 'dish-banana-shake', name: 'Banana milkshake', aliases: 'banana shake', category: 'Beverages', recipe: [['L002', 200], ['E012', 100], ['usda:sugar', 10]], cooked_g: 310, basis: '100ml', portions: [glass] },
   { code: 'dish-nimbu-pani', name: 'Nimbu pani (sweet)', aliases: 'lemonade shikanji', category: 'Beverages', recipe: [['E033', 10], ['usda:sugar', 15]], cooked_g: 250, basis: '100ml', portions: [glass] },
+  // South Indian breakfasts (more)
+  { code: 'dish-rava-dosa', name: 'Rava dosa', aliases: 'rava dosai semolina dosa', category: 'Breakfast', recipe: [['A022', 15], ['usda:rice_flour', 15], ['A018', 5], [OIL, 6]], cooked_g: 70, portions: [piece(70, '1 dosa')] },
+  { code: 'dish-set-dosa', name: 'Set dosa', aliases: 'sponge dosa', category: 'Breakfast', recipe: [['A014', 18], ['B003', 4], [OIL, 3]], cooked_g: 65, portions: [piece(65, '1 dosa'), { label: '1 set (3)', grams: 195 }] },
+  { code: 'dish-ghee-roast-dosa', name: 'Ghee roast dosa', aliases: 'ghee dosa nei roast', category: 'Breakfast', recipe: [['A014', 22], ['B003', 7], ['T013', 8]], cooked_g: 80, portions: [piece(80, '1 dosa')] },
+  { code: 'dish-mysore-masala-dosa', name: 'Mysore masala dosa', aliases: 'mysore dosai red chutney', category: 'Breakfast', recipe: [['A014', 22], ['B003', 7], ['F006', 80], ['G017', 15], ['H007', 5], [OIL, 11]], cooked_g: 200, portions: [piece(200, '1 dosa')] },
+  { code: 'dish-cheese-dosa', name: 'Cheese dosa', aliases: 'cheese dosai', category: 'Breakfast', recipe: [['A014', 22], ['B003', 7], ['usda:mozzarella', 25], [OIL, 5]], cooked_g: 105, portions: [piece(105, '1 dosa')] },
+  { code: 'dish-neer-dosa', name: 'Neer dosa', aliases: 'neer dose', category: 'Breakfast', recipe: [['A015', 25], ['H007', 5], [OIL, 2]], cooked_g: 70, portions: [piece(70, '1 dosa')] },
+  { code: 'dish-ragi-dosa', name: 'Ragi dosa', aliases: 'nachni dosa finger millet', category: 'Breakfast', recipe: [['A010', 20], ['A015', 5], [OIL, 4]], cooked_g: 60, portions: [piece(60, '1 dosa')] },
+  { code: 'dish-pesarattu', name: 'Pesarattu', aliases: 'moong dosa green gram dosa', category: 'Breakfast', recipe: [['B011', 35], ['A015', 5], ['G017', 10], [OIL, 5]], cooked_g: 90, portions: [piece(90, '1 pesarattu')] },
+  { code: 'dish-rava-idli', name: 'Rava idli', aliases: 'semolina idli', category: 'Breakfast', recipe: [['A022', 25], ['usda:curd', 15], [OIL, 2]], cooked_g: 50, portions: [piece(50, '1 idli')] },
+  { code: 'dish-appam', name: 'Appam', aliases: 'palappam hoppers', category: 'Breakfast', recipe: [['A015', 30], ['H007', 8], ['usda:sugar', 2]], cooked_g: 75, portions: [piece(75, '1 appam')] },
+  { code: 'dish-idiyappam', name: 'Idiyappam', aliases: 'string hoppers nool puttu', category: 'Breakfast', recipe: [['usda:rice_flour', 100]], cooked_g: 230, portions: [piece(40, '1 idiyappam')] },
+  { code: 'dish-puttu', name: 'Puttu', aliases: 'rice puttu', category: 'Breakfast', recipe: [['usda:rice_flour', 60], ['H007', 20]], cooked_g: 130, portions: [piece(130, '1 puttu')] },
+  { code: 'dish-masala-vada', name: 'Masala vada', aliases: 'parippu vada chana vada ambode', category: 'Breakfast', recipe: [['B001', 30], ['G017', 10], [OIL, 8]], cooked_g: 50, portions: [piece(50, '1 vada')] },
+  { code: 'dish-kesari-bath', name: 'Kesari bath (rava kesari)', aliases: 'sheera kesari sweet', category: 'Sweets', recipe: [['A022', 40], ['usda:sugar', 40], ['T013', 15], ['H005', 5], ['E057', 5]], cooked_g: 200, portions: [katori, { label: '1 small bowl', grams: 100 }] },
+  { code: 'dish-bisi-bele-bath', name: 'Bisi bele bath', aliases: 'bisibele sambar rice', category: 'Rice & grains', recipe: [['A015', 40], ['B021', 25], ['F002', 15], ['D049', 15], ['D061', 10], ['G017', 10], ['E064', 3], ['T013', 5], [OIL, 5]], cooked_g: 330, portions: [plate(300), katori] },
+  { code: 'dish-tomato-rice', name: 'Tomato rice', aliases: 'thakkali sadam tomato bath', category: 'Rice & grains', recipe: [['A015', 60], ['D076', 60], ['G017', 20], [OIL, 8]], cooked_g: 230, portions: [katori, plate(250)] },
+  { code: 'dish-vangi-bath', name: 'Vangi bath', aliases: 'brinjal rice baingan rice', category: 'Rice & grains', recipe: [['A015', 60], ['D031', 60], ['G017', 15], ['H012', 5], [OIL, 10]], cooked_g: 230, portions: [katori, plate(250)] },
+  { code: 'dish-puliyogare', name: 'Puliyogare (tamarind rice)', aliases: 'puliyodarai pulihora imli rice', category: 'Rice & grains', recipe: [['A015', 60], ['E064', 8], ['H012', 8], ['I001', 3], [OIL, 10]], cooked_g: 200, portions: [katori, plate(250)] },
+  // Curries (more)
+  { code: 'dish-kadai-paneer', name: 'Kadai paneer', aliases: 'karahi paneer', category: 'Sabzi & curries', recipe: [['L003', 150], ['D033', 60], ['G017', 50], ['D076', 80], [OIL, 15]], cooked_g: 330, portions: [katori] },
+  { code: 'dish-paneer-tikka-masala', name: 'Paneer tikka masala', aliases: 'paneer masala', category: 'Sabzi & curries', recipe: [['L003', 150], ['usda:curd', 30], ['D076', 100], ['G017', 40], ['usda:cream', 15], [OIL, 12]], cooked_g: 330, portions: [katori] },
+  { code: 'dish-shahi-paneer', name: 'Shahi paneer', aliases: 'paneer korma', category: 'Sabzi & curries', recipe: [['L003', 150], ['usda:cream', 30], ['H005', 15], ['usda:curd', 30], ['G017', 30], ['T013', 10]], cooked_g: 300, portions: [katori] },
+  { code: 'dish-malai-kofta', name: 'Malai kofta', aliases: 'kofta curry', category: 'Sabzi & curries', recipe: [['L003', 60], ['F006', 60], ['A018', 5], [OIL, 23], ['usda:cream', 30], ['D076', 80], ['G017', 30], ['H005', 15]], cooked_g: 320, portions: [katori, piece(60, '1 kofta with gravy')] },
+  { code: 'dish-paneer-tikka', name: 'Paneer tikka (dry)', aliases: 'paneer kebab tandoori paneer', category: 'Sabzi & curries', recipe: [['L003', 150], ['usda:curd', 30], ['D033', 30], ['G017', 30], [OIL, 8]], cooked_g: 210, portions: [{ label: '6 pieces', grams: 150 }] },
+  { code: 'dish-veg-kurma', name: 'Veg kurma', aliases: 'korma vegetable kuruma', category: 'Sabzi & curries', recipe: [['F002', 40], ['D049', 40], ['D061', 40], ['F006', 50], ['H007', 30], ['H005', 5], ['G017', 20], [OIL, 10]], cooked_g: 330, portions: [katori] },
+  { code: 'dish-avial', name: 'Avial', aliases: 'aviyal mixed veg coconut', category: 'Sabzi & curries', recipe: [['F002', 40], ['D049', 40], ['D046', 30], ['D066', 40], ['H007', 40], ['usda:curd', 30], ['T001', 8]], cooked_g: 280, portions: [katori] },
+  { code: 'dish-aloo-matar', name: 'Aloo matar', aliases: 'potato peas curry', category: 'Sabzi & curries', recipe: [['F006', 120], ['D061', 60], ['G017', 30], ['D076', 60], [OIL, 10]], cooked_g: 330, portions: [katori] },
+  { code: 'dish-mushroom-masala', name: 'Mushroom masala', aliases: 'mushroom curry khumb', category: 'Sabzi & curries', recipe: [['J001', 200], ['G017', 50], ['D076', 80], [OIL, 12], ['usda:cream', 10]], cooked_g: 300, portions: [katori] },
+  { code: 'dish-dal-fry', name: 'Dal fry', aliases: 'dal tadka restaurant', category: 'Dals & legumes', recipe: [['B021', 50], ['G017', 20], ['D076', 30], [OIL, 8], ['T013', 3]], cooked_g: 250, portions: [katori] },
+  { code: 'dish-palak-dal', name: 'Palak dal', aliases: 'dal palak spinach dal keerai', category: 'Dals & legumes', recipe: [['B010', 50], ['C033', 80], ['D076', 20], [OIL, 5]], cooked_g: 300, portions: [katori] },
+  { code: 'dish-chicken-tikka-masala', name: 'Chicken tikka masala', aliases: 'tikka masala murgh', category: 'Non-veg', recipe: [['N003', 150], ['usda:curd', 30], ['D076', 100], ['G017', 40], ['usda:cream', 20], [OIL, 12]], cooked_g: 330, portions: [katori] },
+  { code: 'dish-kadai-chicken', name: 'Kadai chicken', aliases: 'karahi chicken', category: 'Non-veg', recipe: [['N001', 200], ['D033', 50], ['G017', 50], ['D076', 80], [OIL, 15]], cooked_g: 360, portions: [katori] },
+  { code: 'dish-chicken-chettinad', name: 'Chicken chettinad', aliases: 'chettinad kozhi', category: 'Non-veg', recipe: [['N001', 200], ['G017', 60], ['D076', 60], ['H007', 20], [OIL, 15]], cooked_g: 360, portions: [katori] },
+  { code: 'dish-chicken-korma', name: 'Chicken korma', aliases: 'murgh korma kurma', category: 'Non-veg', recipe: [['N001', 200], ['usda:curd', 50], ['G017', 60], ['H005', 15], ['T013', 10], [OIL, 10]], cooked_g: 380, portions: [katori] },
+  { code: 'dish-rogan-josh', name: 'Mutton rogan josh', aliases: 'roghan josh lamb curry', category: 'Non-veg', recipe: [['O003', 200], ['usda:curd', 50], ['G017', 40], [OIL, 15], ['T013', 5]], cooked_g: 330, portions: [katori] },
+  { code: 'dish-kerala-fish-curry', name: 'Kerala fish curry (coconut)', aliases: 'meen curry fish moilee', category: 'Non-veg', recipe: [['P034', 200], ['usda:coconut_milk', 80], ['G017', 30], ['D076', 40], ['E064', 5], ['T001', 10]], cooked_g: 400, portions: [katori] },
+  // Hot chocolate
+  { code: 'dish-hot-chocolate', name: 'Hot chocolate (cocoa, milk, sugar)', aliases: 'hot cocoa drinking chocolate', category: 'Beverages', recipe: [['L002', 200], ['usda:cocoa', 10], ['usda:sugar', 15]], cooked_g: 220, basis: '100ml', portions: [{ label: '1 mug', grams: 250 }, cup] },
+  { code: 'dish-hot-chocolate-bar', name: 'Hot chocolate (melted milk chocolate)', aliases: 'hot cocoa rich chocolate drink', category: 'Beverages', recipe: [['L002', 200], ['usda:milk_chocolate', 30]], cooked_g: 230, basis: '100ml', portions: [{ label: '1 mug', grams: 250 }, cup] },
+];
+
+/** Packaged foods, from the maker's own label (per 100 g). */
+export const BRANDED: BrandedDef[] = [
+  {
+    code: 'brand-ferrero-rocher',
+    name: 'Ferrero Rocher',
+    aliases: 'ferrero chocolate praline hazelnut',
+    category: 'Sweets',
+    diet: 'veg',
+    per100: { kcal: 603, protein: 8.2, fat: 42.7, carbs: 44.4, fibre: 0, sugar: 39.9, sodium_mg: 60 },
+    portions: [piece(12.5, '1 piece'), { label: 'Pack of 4', grams: 50 }],
+    url: 'https://www.ferrerorocher.com/in/en/our-products/ferrero-rocher/sharing-pack-with-4-pieces',
+    note: 'Ferrero India label, per 100 g (1 piece = 12.5 g), read 2026-11-20. Fibre isn’t printed, so it shows as 0.',
+  },
+  {
+    code: 'brand-nutella',
+    name: 'Nutella hazelnut spread',
+    aliases: 'nutella chocolate spread',
+    category: 'Sweets',
+    diet: 'veg',
+    per100: { kcal: 533, protein: 6.3, fat: 30.9, carbs: 57.5, fibre: 0, sugar: 56.3, sodium_mg: 43 },
+    portions: [{ label: '1 portion (about 1 tsp)', grams: 15 }, tbsp(20)],
+    url: 'https://www.nutella.com/in/en/products/nutella',
+    note: 'Nutella India label, per 100 g (portion 15 g), read 2026-11-20. Sodium from the printed salt (0.107 g). Fibre isn’t printed, so it shows as 0.',
+  },
 ];

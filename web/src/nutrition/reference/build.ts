@@ -7,7 +7,7 @@
  * weight → per 100 g. Salt isn't in the recipes, so a dish's sodium is null.
  */
 import type { DietType } from '../foodLog';
-import { DISHES, INGREDIENTS, type Category, type DishDef, type IngredientDef, type PortionDef } from './catalog';
+import { BRANDED, DISHES, INGREDIENTS, type BrandedDef, type Category, type DishDef, type IngredientDef, type PortionDef } from './catalog';
 import { IFCT } from './ifct';
 import { USDA, type RefNutrients } from './usda';
 
@@ -19,7 +19,7 @@ export interface ReferenceFood extends RefNutrients {
   diet: DietType;
   basis: '100g' | '100ml';
   portions: PortionDef[];
-  source: 'ifct' | 'usda' | 'recipe';
+  source: 'ifct' | 'usda' | 'recipe' | 'label';
   verification: 'official' | 'estimated';
   source_url: string | null;
   notes: string;
@@ -34,7 +34,7 @@ export function ingredient(ref: string): RefNutrients & { name: string; diet: Di
   if (ref.startsWith('usda:')) {
     const u = USDA[ref.slice(5)];
     if (!u) throw new Error(`Unknown USDA ingredient ${ref}`);
-    const diet: DietType = ['butter', 'cream', 'curd', 'honey'].includes(ref.slice(5)) ? 'veg' : 'vegan';
+    const diet: DietType = ['butter', 'cream', 'curd', 'honey', 'milk_chocolate', 'dark_chocolate', 'mozzarella'].includes(ref.slice(5)) ? 'veg' : 'vegan';
     const { fdcId, name, ...n } = u;
     return { ...n, name, diet, source: 'usda', url: usdaUrl(fdcId) };
   }
@@ -107,6 +107,31 @@ export function buildDish(d: DishDef): ReferenceFood {
   };
 }
 
+/** A packaged food, exactly as its maker prints it (per 100 g). */
+export function buildBranded(d: BrandedDef): ReferenceFood {
+  const n = d.per100;
+  return {
+    code: d.code,
+    name: d.name,
+    aliases: d.aliases,
+    category: d.category,
+    diet: d.diet,
+    basis: '100g',
+    portions: d.portions,
+    kcal: n.kcal,
+    protein: n.protein,
+    fat: n.fat,
+    carbs: n.carbs,
+    fibre: n.fibre,
+    sugar: n.sugar,
+    sodium_mg: n.sodium_mg,
+    source: 'label',
+    verification: 'official',
+    source_url: d.url,
+    notes: d.note,
+  };
+}
+
 export function buildReferenceFoods(): ReferenceFood[] {
-  return [...INGREDIENTS.map(buildIngredient), ...DISHES.map(buildDish)];
+  return [...INGREDIENTS.map(buildIngredient), ...DISHES.map(buildDish), ...BRANDED.map(buildBranded)];
 }
