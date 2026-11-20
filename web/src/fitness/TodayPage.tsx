@@ -15,7 +15,10 @@ import {
 } from '@mui/material';
 import dayjs from 'dayjs';
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { dayTotals } from '../nutrition/foodLog';
+import { dietVerdict, MIN_LOGGED_KCAL } from './dietAuto';
 import { useSnackbar } from '../layout/Snackbar';
 import { ErrorBoundary } from '../layout/ErrorBoundary';
 import { useFitness } from './FitnessContext';
@@ -218,29 +221,96 @@ function WeightCard({ day, data }: { day: string; data: FitnessData }) {
   );
 }
 
+/** A diet row saved by "Use food log" (and so kept in sync with it until you pick a tag yourself). */
+const FROM_LOG = 'From food log:';
+
 function DietCard({ day, data }: { day: string; data: FitnessData }) {
   const { setDiet } = useFitness();
   const toast = useSnackbar();
+  const navigate = useNavigate();
+  const nutrition = useNutrition().data;
   const current = data.diet.find((d) => d.day === day);
   const [kcal, setKcal] = useState(current?.kcal_estimate ? String(current.kcal_estimate) : '');
   const [notes, setNotes] = useState(current?.notes ?? '');
   const save = async (tag: DietDay['tag'] | undefined = current?.tag) => {
     if (!tag) return toast('Pick a tag first.', { severity: 'info' });
+    // Your own pick: drop the food-log note so it stops following the log.
+    const note = notes.trim().startsWith(FROM_LOG) && tag !== current?.tag ? null : notes.trim() || null;
+    if (note === null && notes.trim().startsWith(FROM_LOG)) setNotes('');
     try {
-      await setDiet(day, tag, parseNum(kcal), notes.trim() || null);
+      await setDiet(day, tag, parseNum(kcal), note);
     } catch (e) {
       toast(`Not saved: ${e instanceof Error ? e.message : 'error'}`, { severity: 'error' });
     }
   };
   // Nutrition targets (versioned) win; Fitness's own numbers are the fallback.
-  const nt = activeTarget(useNutrition().data?.targets ?? [], day);
+  const nt = activeTarget(nutrition?.targets ?? [], day);
   const s = data.settings;
   const t = nt
     ? { kcal_target: nt.kcal, protein_min_g: nt.protein_min, protein_max_g: nt.protein_max, fat_min_g: nt.fat_min, fat_max_g: nt.fat_max, carbs_target_g: nt.carbs_g }
     : s;
+  // What the food log says about this day.
+  const logged = useMemo(() => (nutrition ? dayTotals(nutrition.entries, day).total : null), [nutrition, day]);
+  const verdict = logged ? dietVerdict(logged, { kcal: t.kcal_target, protein_min: t.protein_min_g }) : null;
+  const applied = Boolean(current && verdict && current.tag === verdict.tag && current.kcal_estimate === verdict.kcal && current.notes === verdict.note);
+  const syncing = useRef(false);
+  const applyLog = async (quiet = false) => {
+    if (!verdict || syncing.current) return;
+    syncing.current = true;
+    try {
+      await setDiet(day, verdict.tag, verdict.kcal, verdict.note);
+      setKcal(String(verdict.kcal));
+      setNotes(verdict.note);
+      if (!quiet) toast(`Diet: ${verdict.label}${verdict.tag === 'partial' ? ' (saved as Partial)' : ''}`);
+    } catch (e) {
+      if (!quiet) toast(`Not saved: ${e instanceof Error ? e.message : 'error'}`, { severity: 'error' });
+    } finally {
+      syncing.current = false;
+    }
+  };
+  // Once you've used the food log for a day, keep that day in step as you log more food.
+  const following = Boolean(current?.notes?.startsWith(FROM_LOG));
+  useEffect(() => {
+    if (following && verdict && !applied) void applyLog(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [following, verdict?.note, applied]);
+
   return (
     <Card title="Diet">
       <Stack spacing={1.5}>
+        <Box sx={(th) => ({ p: 1.5, borderRadius: 2, backgroundColor: th.tracker.mood.paper3 })}>
+          {verdict ? (
+            <Stack spacing={1}>
+              <Typography variant="body2">
+                Food log: <strong>{verdict.kcal.toLocaleString('en-IN')}</strong> / {Math.round(t.kcal_target).toLocaleString('en-IN')} kcal ({verdict.delta >= 0 ? '+' : '−'}
+                {Math.round(Math.abs(verdict.delta) * 100)}%) · protein <strong>{verdict.protein} g</strong>
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                <Chip color={verdict.tag === 'on_plan' ? 'success' : 'warning'} label={verdict.label} />
+                {applied ? (
+                  <Typography variant="body2" color="text.secondary">
+                    {following ? 'Saved · follows your food log' : 'Saved'}
+                  </Typography>
+                ) : (
+                  <Button variant="contained" size="small" onClick={() => void applyLog()}>
+                    Use this{verdict.tag === 'partial' ? ' (Partial)' : ''}
+                  </Button>
+                )}
+              </Box>
+            </Stack>
+          ) : (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+              <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>
+                {logged && logged.kcal > 0
+                  ? `${Math.round(logged.kcal)} kcal logged so far. Log at least ${MIN_LOGGED_KCAL} kcal in Nutrition for a suggestion.`
+                  : 'Log the day’s food in Nutrition and this fills in for you.'}
+              </Typography>
+              <Button size="small" onClick={() => navigate('/nutrition', { state: { day } })}>
+                Open food log
+              </Button>
+            </Box>
+          )}
+        </Box>
         <ToggleButtonGroup value={current?.tag ?? null} exclusive onChange={(_, v) => v && void save(v)} fullWidth aria-label="Diet tag">
           <ToggleButton value="on_plan">On plan</ToggleButton>
           <ToggleButton value="partial">Partial</ToggleButton>
