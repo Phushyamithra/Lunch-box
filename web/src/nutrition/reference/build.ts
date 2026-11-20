@@ -31,10 +31,16 @@ const usdaUrl = (id: number) => `https://fdc.nal.usda.gov/food-details/${id}/nut
 
 /** Per-100 g nutrients and diet for an ingredient key ("A015" or "usda:butter"). */
 export function ingredient(ref: string): RefNutrients & { name: string; diet: DietType; source: 'ifct' | 'usda'; url: string } {
+  // A packaged food as a recipe ingredient ("brand:brand-biscoff"), at its label values.
+  if (ref.startsWith('brand:')) {
+    const b = BRANDED.find((x) => x.code === ref.slice(6));
+    if (!b) throw new Error(`Unknown packaged food ${ref}`);
+    return { ...b.per100, name: b.name, diet: b.diet, source: 'usda', url: b.url };
+  }
   if (ref.startsWith('usda:')) {
     const u = USDA[ref.slice(5)];
     if (!u) throw new Error(`Unknown USDA ingredient ${ref}`);
-    const diet: DietType = ['butter', 'cream', 'curd', 'honey', 'milk_chocolate', 'dark_chocolate', 'mozzarella'].includes(ref.slice(5)) ? 'veg' : 'vegan';
+    const diet: DietType = ['butter', 'cream', 'curd', 'honey', 'milk_chocolate', 'dark_chocolate', 'mozzarella', 'cream_cheese'].includes(ref.slice(5)) ? 'veg' : 'vegan';
     const { fdcId, name, ...n } = u;
     return { ...n, name, diet, source: 'usda', url: usdaUrl(fdcId) };
   }

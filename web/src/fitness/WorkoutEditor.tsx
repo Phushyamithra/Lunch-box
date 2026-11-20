@@ -1,3 +1,4 @@
+import { LIBRARY_EXERCISES } from './exerciseLibrary';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import {
@@ -36,6 +37,8 @@ export function knownExercises(data: FitnessData): string[] {
   for (const f of data.settings.finishers) for (const e of f.exercises) e.name.split('/').forEach(add);
   for (const p of data.presets) add(p.exercise);
   for (const w of data.workouts) for (const e of w.exercises) e.exercise.split('/').forEach(add);
+  // Common machines and moves, so they can be picked before you've ever logged them.
+  LIBRARY_EXERCISES.forEach(add);
   return [...names.values()].sort((a, b) => a.localeCompare(b));
 }
 

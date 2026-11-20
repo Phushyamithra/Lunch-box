@@ -30,5 +30,6 @@ export const USDA: Record<string, RefNutrients & { name: string; fdcId: number }
   rice_flour: { fdcId: 169714, name: 'Rice flour, white, unenriched', kcal: 366, protein: 5.95, fat: 1.42, carbs: 77.7, fibre: 2.4, sugar: 0.12, sodium_mg: 0 },
   coconut_milk: { fdcId: 170173, name: 'Nuts, coconut milk, canned (liquid expressed from grated meat and water)', kcal: 197, protein: 2.02, fat: 21.3, carbs: 2.81, fibre: 0, sugar: null, sodium_mg: 13 },
   mozzarella: { fdcId: 170845, name: 'Cheese, mozzarella, whole milk', kcal: 299, protein: 22.2, fat: 22.1, carbs: 2.4, fibre: 0, sugar: 0, sodium_mg: 486 },
+  cream_cheese: { fdcId: 173418, name: 'Cheese, cream', kcal: 350, protein: 6.15, fat: 34.4, carbs: 5.52, fibre: 0, sugar: 3.76, sodium_mg: 314 },
   soy_flour_defatted: { fdcId: 174275, name: 'Soy flour, defatted', kcal: 327, protein: 51.5, fat: 1.22, carbs: 16.4, fibre: 17.5, sugar: 16.4, sodium_mg: 20 },
 };

@@ -6,6 +6,7 @@
  * back to keyword matching. Weekly coverage compares logged working sets
  * per muscle with what the program plans for the days so far.
  */
+import { EXERCISE_LIBRARY, libraryMuscle } from './exerciseLibrary';
 import { exerciseOptions } from './referenceImport';
 
 export type Muscle =
@@ -72,7 +73,7 @@ export function muscleForTarget(label: string): Muscle | null {
 }
 
 export function guessMuscle(exercise: string): Muscle | null {
-  return EXERCISE_RULES.find(([re]) => re.test(exercise))?.[1] ?? null;
+  return libraryMuscle(exercise) ?? EXERCISE_RULES.find(([re]) => re.test(exercise))?.[1] ?? null;
 }
 
 export interface ProgramSlot {
@@ -189,10 +190,13 @@ export function swapGroups(
   const sameMuscle = muscle
     ? take(allSlots.flatMap((s) => s.variants.flatMap(exerciseOptions)).filter((n) => muscleOf(n, map) === muscle)).sort()
     : [];
+  // Then common machines and moves for the same muscle (pendulum squat, machine chest presses…).
+  const library = muscle ? take(EXERCISE_LIBRARY[muscle]) : [];
   return [
     { label: 'Today', options: today },
     { label: 'Other variants', options: others },
     { label: `Other ${muscle ?? 'similar'} exercises`, options: sameMuscle },
+    { label: `More ${muscle} exercises`, options: library },
   ].filter((g) => g.options.length > 0);
 }
 

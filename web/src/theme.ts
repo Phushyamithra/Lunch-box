@@ -134,7 +134,7 @@ export function createTrackerTheme(mode: ResolvedThemeMode, moodName: MoodName =
       },
       MuiMenu: {
         styleOverrides: {
-          paper: { borderRadius: 18, marginTop: 6, backgroundColor: alpha(groundDark ? c.paper2 : c.card, 0.86), border: `1px solid ${glass.edge}`, boxShadow: glass.shade, backdropFilter: glass.blur, WebkitBackdropFilter: glass.blur },
+          paper: { borderRadius: 18, marginTop: 6, backgroundColor: alpha(groundDark ? c.paper2 : c.card, 0.94), border: `1px solid ${glass.edge}`, boxShadow: glass.shade, backdropFilter: glass.blur, WebkitBackdropFilter: glass.blur },
           list: { padding: 6 },
         },
       },
