@@ -40,7 +40,7 @@ export function ingredient(ref: string): RefNutrients & { name: string; diet: Di
   if (ref.startsWith('usda:')) {
     const u = USDA[ref.slice(5)];
     if (!u) throw new Error(`Unknown USDA ingredient ${ref}`);
-    const diet: DietType = ['butter', 'cream', 'curd', 'honey', 'milk_chocolate', 'dark_chocolate', 'mozzarella', 'cream_cheese'].includes(ref.slice(5)) ? 'veg' : 'vegan';
+    const diet: DietType = ['butter', 'cream', 'curd', 'honey', 'milk_chocolate', 'dark_chocolate', 'mozzarella', 'cream_cheese', 'popcorn_microwave', 'popcorn_caramel', 'popcorn_cheese', 'cheese_puffs'].includes(ref.slice(5)) ? 'veg' : 'vegan';
     const { fdcId, name, ...n } = u;
     return { ...n, name, diet, source: 'usda', url: usdaUrl(fdcId) };
   }

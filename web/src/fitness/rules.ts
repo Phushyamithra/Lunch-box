@@ -42,7 +42,8 @@ export interface Session {
 }
 export interface DietDay {
   day: string;
-  tag: 'on_plan' | 'partial' | 'event';
+  /** on_plan On track · under Below target · over Slightly above · way_off Way off · event · partial (older days). */
+  tag: 'on_plan' | 'under' | 'over' | 'way_off' | 'partial' | 'event';
   kcal_estimate: number | null;
 }
 export interface SetRow {
@@ -301,19 +302,41 @@ export function weekAdherence(start: string, sessions: Session[], periods: AwayP
 
 export interface DietSummary {
   onPlan: number;
+  under: number;
+  over: number;
+  wayOff: number;
+  /** Days tagged Partial before the finer tags existed. */
   partial: number;
   event: number;
-  /** Share of non-event tagged days that were on plan; null if none. */
+  /** Share of non-event tagged days that were on track; null if none. */
   adherence: number | null;
 }
 
 /** Event/travel days are kept apart: they are neither wins nor failures. */
 export function dietSummary(days: DietDay[], from: string, to: string): DietSummary {
   const inRange = days.filter((d) => d.day >= from && d.day <= to);
-  const onPlan = inRange.filter((d) => d.tag === 'on_plan').length;
-  const partial = inRange.filter((d) => d.tag === 'partial').length;
-  const event = inRange.filter((d) => d.tag === 'event').length;
-  return { onPlan, partial, event, adherence: onPlan + partial > 0 ? onPlan / (onPlan + partial) : null };
+  const count = (tag: DietDay['tag']) => inRange.filter((d) => d.tag === tag).length;
+  const onPlan = count('on_plan');
+  const under = count('under');
+  const over = count('over');
+  const wayOff = count('way_off');
+  const partial = count('partial');
+  const event = count('event');
+  const counted = onPlan + under + over + wayOff + partial;
+  return { onPlan, under, over, wayOff, partial, event, adherence: counted > 0 ? onPlan / counted : null };
+}
+
+/** "2 below · 1 above · 1 way off" for the days that weren't on track. */
+export function dietMisses(s: DietSummary): string {
+  return [
+    s.under && `${s.under} below`,
+    s.over && `${s.over} above`,
+    s.wayOff && `${s.wayOff} way off`,
+    s.partial && `${s.partial} partial`,
+    s.event && `${s.event} event`,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 }
 
 // ---------- Key lifts ----------

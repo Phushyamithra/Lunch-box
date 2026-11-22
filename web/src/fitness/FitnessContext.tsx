@@ -20,6 +20,8 @@ interface FitnessValue {
   /** Soft delete (and undo) for weigh-ins and waist entries. */
   setMeasurementDeleted: (kind: 'weight' | 'waist', row: api.WeighInRow | api.WaistRow, deleted: boolean) => Promise<void>;
   setDiet: (day: string, tag: DietDay['tag'], kcal: number | null, notes: string | null) => Promise<void>;
+  /** Save many days' diet tags at once (back-fill from the food log). */
+  setDietMany: (rows: { day: string; tag: DietDay['tag']; kcal_estimate: number | null; notes: string | null }[]) => Promise<number>;
   setSteps: (day: string, steps: number) => Promise<void>;
   saveAway: (input: { starts_on: string; ends_on: string; label: string | null }, id?: string) => Promise<void>;
   removeAway: (id: string) => Promise<void>;
@@ -109,6 +111,11 @@ export function FitnessProvider({ client, children }: { client: SupabaseClient; 
       async setDiet(day, tag, kcal, notes) {
         const row = await api.upsertDiet(client, { day, tag, kcal_estimate: kcal, notes });
         patch((d) => ({ ...d, diet: upsertBy(d.diet, row, (r) => r.day === day) }));
+      },
+      async setDietMany(rows) {
+        const saved = await api.upsertDietMany(client, rows);
+        patch((d) => ({ ...d, diet: saved.reduce((list, row) => upsertBy(list, row, (r) => r.day === row.day), d.diet) }));
+        return saved.length;
       },
       async setSteps(day, steps) {
         const row = await api.upsertSteps(client, day, steps);

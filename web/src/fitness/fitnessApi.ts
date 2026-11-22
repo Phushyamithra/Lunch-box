@@ -256,6 +256,24 @@ export async function upsertDiet(
   ) as DietRow;
 }
 
+/** Many days at once (the food-log back-fill): one request, matched by day. */
+export async function upsertDietMany(
+  client: SupabaseClient,
+  rows: { day: string; tag: DietDay['tag']; kcal_estimate: number | null; notes: string | null }[],
+): Promise<DietRow[]> {
+  if (rows.length === 0) return [];
+  const now = new Date().toISOString();
+  return check(
+    await client
+      .from('diet_days')
+      .upsert(
+        rows.map((r) => ({ ...r, updated_at: now })),
+        { onConflict: 'user_id,day' },
+      )
+      .select('id, day, tag, kcal_estimate, notes'),
+  ) as DietRow[];
+}
+
 export async function upsertSteps(client: SupabaseClient, day: string, steps: number): Promise<StepRow> {
   return check(
     await client

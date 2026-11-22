@@ -18,7 +18,7 @@ import { motion } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { dayTotals } from '../nutrition/foodLog';
-import { dietVerdict, MIN_LOGGED_KCAL } from './dietAuto';
+import { dietVerdict, FROM_LOG, MIN_LOGGED_KCAL, TAG_LABEL } from './dietAuto';
 import { useSnackbar } from '../layout/Snackbar';
 import { ErrorBoundary } from '../layout/ErrorBoundary';
 import { useFitness } from './FitnessContext';
@@ -221,8 +221,14 @@ function WeightCard({ day, data }: { day: string; data: FitnessData }) {
   );
 }
 
-/** A diet row saved by "Use food log" (and so kept in sync with it until you pick a tag yourself). */
-const FROM_LOG = 'From food log:';
+/** Diet tags as buttons; Partial only shows on older days that carry it. */
+const TAG_BUTTONS: DietDay['tag'][] = ['on_plan', 'under', 'over', 'way_off', 'event'];
+/** A save the database refused because migration 0019 (finer diet tags) hasn't run yet. */
+const needs0019 = (msg: string) => /diet_days_tag_check|check constraint/i.test(msg);
+const dietError = (e: unknown) => {
+  const msg = e instanceof Error ? e.message : 'error';
+  return needs0019(msg) ? 'Run supabase/migrations/0019_diet_tags.sql in the Supabase SQL Editor to use the new diet tags, then try again.' : `Not saved: ${msg}`;
+};
 
 function DietCard({ day, data }: { day: string; data: FitnessData }) {
   const { setDiet } = useFitness();
@@ -240,7 +246,7 @@ function DietCard({ day, data }: { day: string; data: FitnessData }) {
     try {
       await setDiet(day, tag, parseNum(kcal), note);
     } catch (e) {
-      toast(`Not saved: ${e instanceof Error ? e.message : 'error'}`, { severity: 'error' });
+      toast(dietError(e), { severity: 'error' });
     }
   };
   // Nutrition targets (versioned) win; Fitness's own numbers are the fallback.
@@ -261,9 +267,9 @@ function DietCard({ day, data }: { day: string; data: FitnessData }) {
       await setDiet(day, verdict.tag, verdict.kcal, verdict.note);
       setKcal(String(verdict.kcal));
       setNotes(verdict.note);
-      if (!quiet) toast(`Diet: ${verdict.label}${verdict.tag === 'partial' ? ' (saved as Partial)' : ''}`);
+      if (!quiet) toast(`Diet: ${verdict.label}`);
     } catch (e) {
-      if (!quiet) toast(`Not saved: ${e instanceof Error ? e.message : 'error'}`, { severity: 'error' });
+      if (!quiet) toast(dietError(e), { severity: 'error' });
     } finally {
       syncing.current = false;
     }
@@ -286,14 +292,14 @@ function DietCard({ day, data }: { day: string; data: FitnessData }) {
                 {Math.round(Math.abs(verdict.delta) * 100)}%) · protein <strong>{verdict.protein} g</strong>
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                <Chip color={verdict.tag === 'on_plan' ? 'success' : 'warning'} label={verdict.label} />
+                <Chip color={verdict.tag === 'on_plan' ? 'success' : verdict.tag === 'way_off' ? 'error' : 'warning'} label={verdict.label} />
                 {applied ? (
                   <Typography variant="body2" color="text.secondary">
                     {following ? 'Saved · follows your food log' : 'Saved'}
                   </Typography>
                 ) : (
                   <Button variant="contained" size="small" onClick={() => void applyLog()}>
-                    Use this{verdict.tag === 'partial' ? ' (Partial)' : ''}
+                    Use this
                   </Button>
                 )}
               </Box>
@@ -311,14 +317,23 @@ function DietCard({ day, data }: { day: string; data: FitnessData }) {
             </Box>
           )}
         </Box>
-        <ToggleButtonGroup value={current?.tag ?? null} exclusive onChange={(_, v) => v && void save(v)} fullWidth aria-label="Diet tag">
-          <ToggleButton value="on_plan">On plan</ToggleButton>
-          <ToggleButton value="partial">Partial</ToggleButton>
-          <ToggleButton value="event">Event / travel</ToggleButton>
+        <ToggleButtonGroup
+          value={current?.tag ?? null}
+          exclusive
+          onChange={(_, v) => v && void save(v)}
+          aria-label="Diet tag"
+          sx={{ flexWrap: 'wrap', borderRadius: '24px', '& .MuiToggleButton-root': { flex: '1 1 30%', minHeight: 44, px: 1 } }}
+        >
+          {[...TAG_BUTTONS, ...(current?.tag === 'partial' ? (['partial'] as const) : [])].map((tag) => (
+            <ToggleButton key={tag} value={tag}>
+              {TAG_LABEL[tag]}
+            </ToggleButton>
+          ))}
         </ToggleButtonGroup>
         <Typography variant="caption" color="text.secondary">
           Target ≈ {t.kcal_target} kcal · protein {t.protein_min_g}–{t.protein_max_g} g · fat {t.fat_min_g}–{t.fat_max_g} g · carbs ≈ {t.carbs_target_g} g.
-          Event days are kept separate from adherence.
+          On track is within ±10% of calories with protein met; below or above by up to 25% is Below target / Slightly above, more is Way off. Event days are kept out of
+          adherence.
         </Typography>
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 2fr' }, gap: 1 }}>
           <TextField size="small" label="kcal estimate (optional)" inputMode="numeric" value={kcal} onChange={(e) => setKcal(e.target.value)} onBlur={() => current && void save()} />

@@ -20,6 +20,7 @@ import {
   baselineWeight,
   compositionSignal,
   dailyWeights,
+  dietMisses,
   dietSummary,
   gainRate,
   trendsResumeOn,
@@ -200,8 +201,8 @@ export default function DashboardPage() {
 
         <Card title="Diet">
           <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-            <Metric value={diet7.adherence === null ? '–' : `${Math.round(diet7.adherence * 100)}%`} caption={`on plan, last 7 days${diet7.event ? ` · ${diet7.event} event` : ''}`} />
-            <Metric value={diet30.adherence === null ? '–' : `${Math.round(diet30.adherence * 100)}%`} caption={`last 30 days${diet30.event ? ` · ${diet30.event} event` : ''}`} />
+            <Metric value={diet7.adherence === null ? '–' : `${Math.round(diet7.adherence * 100)}%`} caption={`on track, last 7 days${dietMisses(diet7) ? ` · ${dietMisses(diet7)}` : ''}`} />
+            <Metric value={diet30.adherence === null ? '–' : `${Math.round(diet30.adherence * 100)}%`} caption={`last 30 days${dietMisses(diet30) ? ` · ${dietMisses(diet30)}` : ''}`} />
           </Box>
           <Typography variant="caption" color="text.secondary">
             Share of tagged days marked on plan. Event and travel days are counted separately.

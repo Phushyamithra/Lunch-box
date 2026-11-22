@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { SectionBar, SectionTiles } from '../layout/SectionNav';
 import { useFitness } from './FitnessContext';
+import { useDietBackfill } from './useDietBackfill';
 
 /** A leading emoji isn't an icon in this material: the condensed title carries it alone. */
 const LEADING_EMOJI = /^(?:\p{Extended_Pictographic}|\p{Emoji_Presentation})[\uFE0F\u200D\p{Extended_Pictographic}]*\s*/u;
@@ -64,6 +65,8 @@ const SECTIONS = [
 export function FitnessLayout() {
   const { pathname } = useLocation();
   const { loading, error, data, reload } = useFitness();
+  // Tag past days' diet from the food log (only what changed).
+  useDietBackfill();
 
   return (
     <Box>

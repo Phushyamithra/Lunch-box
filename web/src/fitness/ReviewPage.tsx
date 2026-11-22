@@ -5,7 +5,7 @@ import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 import { ReportCard } from '../report/ReportCard';
 import { useFitness } from './FitnessContext';
-import { addDays, assessGain, dietSummary, gainRate, isAway, waistSummary, weekAdherence, weeklyAverages } from './rules';
+import { addDays, assessGain, dietMisses, dietSummary, gainRate, isAway, waistSummary, weekAdherence, weeklyAverages } from './rules';
 import { Card, kg, Metric, signed } from './ui';
 
 const KEY = 'YYYY-MM-DD';
@@ -72,7 +72,7 @@ export default function ReviewPage() {
           <Metric value={`${training.completed}/${training.eligible}`} caption="eligible sessions" />
         </Card>
         <Card title="Diet">
-          <Metric value={diet.adherence === null ? '–' : `${Math.round(diet.adherence * 100)}%`} caption={`on plan · ${diet.event} event day${diet.event === 1 ? '' : 's'}`} />
+          <Metric value={diet.adherence === null ? '–' : `${Math.round(diet.adherence * 100)}%`} caption={`on track${dietMisses(diet) ? ` · ${dietMisses(diet)}` : ''}`} />
         </Card>
       </Box>
 
