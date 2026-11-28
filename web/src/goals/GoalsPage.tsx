@@ -1,5 +1,7 @@
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
+import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import {
+  IconButton,
   Alert,
   Box,
   Button,
@@ -42,6 +44,7 @@ import {
   type GoalInput,
   type GoalSummary,
 } from './engine';
+import { restartVersions } from './engine';
 import { useGoals } from './GoalsContext';
 import { useGoalContext } from './hooks';
 
@@ -158,7 +161,14 @@ function GoalCard({ s, today, onEdit, onToggleCheckin, busy }: { s: GoalSummary;
         <Typography component="span" sx={{ fontSize: 24, lineHeight: 1.2 }} aria-hidden>
           {goal.emoji ?? '🎯'}
         </Typography>
-        <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+        <Box
+          role="button"
+          tabIndex={0}
+          aria-label={`Edit ${goal.title}`}
+          onClick={onEdit}
+          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onEdit())}
+          sx={{ flexGrow: 1, minWidth: 0, cursor: 'pointer', borderRadius: 2 }}
+        >
           <Typography variant="subtitle1" component="h2" sx={{ lineHeight: 1.3 }}>
             {goal.title}
           </Typography>
@@ -175,9 +185,9 @@ function GoalCard({ s, today, onEdit, onToggleCheckin, busy }: { s: GoalSummary;
             inputProps={{ 'aria-label': checked ? 'Undo check-in' : 'Check in' }}
           />
         )}
-        <Button size="small" onClick={onEdit}>
-          Edit
-        </Button>
+        <IconButton aria-label={`Edit ${goal.title}`} onClick={onEdit} size="small">
+          <EditRoundedIcon fontSize="small" />
+        </IconButton>
       </Stack>
       {body}
     </Paper>
@@ -242,7 +252,14 @@ function GoalDialog({ goal, onClose, ctx }: { goal: Goal | 'new'; onClose: () =>
         const last = goal.versions[goal.versions.length - 1];
         const versions =
           last.target === form.target ? goal.versions : last.from >= ctx.today ? [...goal.versions.slice(0, -1), { from: last.from, target: form.target }] : [...goal.versions, { from: ctx.today, target: form.target }];
-        await goals.updateGoal(goal.id, { title: form.title.trim(), emoji: form.emoji?.trim() || null, params: form.params, versions, ends_on: form.ends_on });
+        await goals.updateGoal(goal.id, {
+          title: form.title.trim(),
+          emoji: form.emoji?.trim() || null,
+          params: form.params,
+          versions: form.starts_on === goal.starts_on ? versions : restartVersions(versions, form.starts_on),
+          starts_on: form.starts_on,
+          ends_on: form.ends_on,
+        });
         toast('Goal saved');
       }
       onClose();
@@ -278,7 +295,14 @@ function GoalDialog({ goal, onClose, ctx }: { goal: Goal | 'new'; onClose: () =>
       <DialogTitle>{isNew ? 'New goal' : 'Edit goal'}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
-          <TextField select label="Measure" value={form.metric} onChange={(e) => set({ metric: e.target.value, params: {} })} disabled={!isNew} helperText={metric?.hint}>
+          <TextField
+            select
+            label="Measure"
+            value={form.metric}
+            onChange={(e) => set({ metric: e.target.value, params: {} })}
+            disabled={!isNew}
+            helperText={isNew ? metric?.hint : `${CADENCE_LABEL[form.cadence]}. What it measures and how often stay fixed so past check-ins keep their meaning; to change them, archive this goal and add a new one.`}
+          >
             {grouped}
           </TextField>
           {isNew && metric && metric.cadences.length > 1 && (
@@ -291,7 +315,7 @@ function GoalDialog({ goal, onClose, ctx }: { goal: Goal | 'new'; onClose: () =>
             </ToggleButtonGroup>
           )}
           {form.metric === 'fitness.lift_reach' && (
-            <TextField select label="Key lift" value={String(form.params.lift ?? '')} onChange={(e) => set({ params: { lift: e.target.value } })} disabled={!isNew}>
+            <TextField select label="Key lift" value={String(form.params.lift ?? '')} onChange={(e) => set({ params: { lift: e.target.value } })}>
               {lifts.map((l) => (
                 <MenuItem key={l.label} value={l.label}>
                   {l.label}
@@ -299,7 +323,7 @@ function GoalDialog({ goal, onClose, ctx }: { goal: Goal | 'new'; onClose: () =>
               ))}
             </TextField>
           )}
-          {form.metric === 'fitness.weight_reach' && isNew && (
+          {form.metric === 'fitness.weight_reach' && (
             <ToggleButtonGroup exclusive size="small" value={form.params.direction === 'down' ? 'down' : 'up'} onChange={(_, v: string | null) => v && set({ params: { direction: v } })} aria-label="Direction">
               <ToggleButton value="up" sx={{ textTransform: 'none', px: 2 }}>
                 Up to (bulk)
@@ -334,7 +358,6 @@ function GoalDialog({ goal, onClose, ctx }: { goal: Goal | 'new'; onClose: () =>
               type="date"
               value={form.starts_on}
               onChange={(e) => setForm((f) => ({ ...f, starts_on: e.target.value }))}
-              disabled={!isNew}
               InputLabelProps={{ shrink: true }}
               fullWidth
             />

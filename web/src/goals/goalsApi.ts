@@ -53,7 +53,7 @@ export async function addGoals(client: SupabaseClient, rows: NewGoal[]): Promise
   return ((check(await client.from('goals').insert(rows).select(GOAL_COLUMNS)) ?? []) as Goal[]).map(normaliseGoal);
 }
 
-export type GoalPatch = Partial<Pick<Goal, 'title' | 'emoji' | 'params' | 'versions' | 'ends_on' | 'archived_at' | 'sort_order'>>;
+export type GoalPatch = Partial<Pick<Goal, 'title' | 'emoji' | 'params' | 'versions' | 'starts_on' | 'ends_on' | 'archived_at' | 'sort_order'>>;
 export async function updateGoal(client: SupabaseClient, id: string, patch: GoalPatch): Promise<Goal> {
   return normaliseGoal(check(await client.from('goals').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id).select(GOAL_COLUMNS).single()) as Goal);
 }

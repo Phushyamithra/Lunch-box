@@ -1,6 +1,7 @@
 import { Alert, Box, Button, CircularProgress, Paper, Typography } from '@mui/material';
 import type { ReactNode } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { FitFigure, FitTitle } from '../layout/Fit';
 import { SectionBar, SectionTiles } from '../layout/SectionNav';
 import { useFitness } from './FitnessContext';
 import { useDietBackfill } from './useDietBackfill';
@@ -14,9 +15,8 @@ export function Card({ title, aside, children, id }: { title: string; aside?: Re
   return (
     <Paper variant="outlined" id={id} sx={{ p: { xs: 2.5, sm: 3 }, scrollMarginTop: 96 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-        <Typography variant="subtitle1" component="h2" sx={{ flexGrow: 1, minWidth: 0, overflowWrap: 'break-word' }}>
-          {plainTitle(title)}
-        </Typography>
+        {/* The title keeps room for its longest word; a long note beside it wraps instead. */}
+        <FitTitle text={plainTitle(title)} holdFull />
         {aside}
       </Box>
       {children}
@@ -27,15 +27,9 @@ export function Card({ title, aside, children, id }: { title: string; aside?: Re
 /** Big number with a small caption, for headline metrics. */
 export function Metric({ value, unit, caption }: { value: string; unit?: string; caption: string }) {
   return (
-    <Box>
-      <Typography component="p" sx={(t) => ({ fontFamily: t.tracker.fonts.display, fontSize: 34, fontWeight: t.typography.h1.fontWeight, lineHeight: 1, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' })}>
-        {value}
-        {unit && (
-          <Typography component="span" sx={{ fontSize: 16, fontWeight: 600, ml: 0.5 }} color="text.secondary">
-            {unit}
-          </Typography>
-        )}
-      </Typography>
+    <Box sx={{ minWidth: 0 }}>
+      {/* Kept on one line: shrinks to fit a narrow column instead of wrapping. */}
+      <FitFigure value={value} unit={unit} max={34} />
       <Typography variant="body2" color="text.secondary">
         {caption}
       </Typography>

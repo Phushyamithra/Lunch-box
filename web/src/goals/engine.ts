@@ -470,3 +470,15 @@ export function suggestedGoals(f: FitnessData | null, today: string): GoalInput[
     { ...base, title: 'Monthly photos in natural light', emoji: '📸', metric: 'manual', cadence: 'monthly', target: 1 },
   ];
 }
+
+/**
+ * A goal moved to a new start date: target changes from before it fold into
+ * one first version that starts on it; later changes keep their dates.
+ */
+export function restartVersions(versions: { from: string; target: number }[], start: string): { from: string; target: number }[] {
+  const sorted = [...versions].sort((a, b) => a.from.localeCompare(b.from));
+  const before = sorted.filter((v) => v.from <= start);
+  const after = sorted.filter((v) => v.from > start);
+  const first = before[before.length - 1] ?? sorted[0];
+  return [{ from: start, target: first.target }, ...after.filter((v) => v !== first)];
+}
